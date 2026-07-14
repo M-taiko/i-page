@@ -213,7 +213,7 @@
     <div class="app-container">
         <!-- Sidebar -->
         <div class="app-sidebar">
-            @if(auth()->check() && auth()->user()->organizations()->count() > 0)
+            @if(auth()->check() && (auth()->user()->hasRole('super_admin') || auth()->user()->organizations()->count() > 0))
                 @include('layouts.sidebar-modern')
             @else
                 @include('layouts.sidebar-guest')
