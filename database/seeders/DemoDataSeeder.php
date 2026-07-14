@@ -24,7 +24,9 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Layer 1 data: generic organizations across industries (not hotel-specific).
+     * Layer 1 data: generic organizations across industries (not hotel-specific),
+     * with a heavier weighting toward hotel groups since hospitality is the
+     * primary reference vertical for demos.
      */
     private function seedOrganizations(): array
     {
@@ -40,9 +42,9 @@ class DemoDataSeeder extends Seeder
                 'country' => 'Egypt',
             ],
             [
-                'name' => 'Grand Palace Hotel',
+                'name' => 'Grand Palace Hotels & Resorts',
                 'slug' => 'grand-palace-hotel',
-                'description' => 'A luxury hotel chain with world-class amenities.',
+                'description' => 'A luxury hotel group with properties across Egypt\'s Red Sea and Mediterranean coasts.',
                 'email' => 'info@grandpalace.com',
                 'phone' => '+20-100-000-0002',
                 'address' => '456 Beach Road',
@@ -57,6 +59,26 @@ class DemoDataSeeder extends Seeder
                 'phone' => '+20-100-000-0003',
                 'address' => '789 Commerce Ave',
                 'city' => 'Giza',
+                'country' => 'Egypt',
+            ],
+            [
+                'name' => 'Nile Breeze Resorts',
+                'slug' => 'nile-breeze-resorts',
+                'description' => 'Boutique riverside resorts and floating hotels along the Nile.',
+                'email' => 'info@nilebreeze.com',
+                'phone' => '+20-100-000-0004',
+                'address' => '12 Corniche El Nil',
+                'city' => 'Luxor',
+                'country' => 'Egypt',
+            ],
+            [
+                'name' => 'Royal Oasis Hotels',
+                'slug' => 'royal-oasis-hotels',
+                'description' => 'Desert oasis resorts offering spa retreats and eco-tourism experiences.',
+                'email' => 'info@royaloasis.com',
+                'phone' => '+20-100-000-0005',
+                'address' => '5 Oasis Highway',
+                'city' => 'Siwa',
                 'country' => 'Egypt',
             ],
         ];
@@ -74,6 +96,9 @@ class DemoDataSeeder extends Seeder
 
     /**
      * Each organization gets brands; each brand gets public + private channels.
+     * Hotel groups get one brand per physical property, matching how a real
+     * hotel chain would structure its channels (each property manages its own
+     * announcements/events/staff room, but rolls up under the group).
      */
     private function seedBrandsAndChannels(array $organizations): void
     {
@@ -81,8 +106,10 @@ class DemoDataSeeder extends Seeder
 
         $brandsByOrg = [
             'cairo-university' => ['Faculty of Engineering', 'Faculty of Medicine'],
-            'grand-palace-hotel' => ['Grand Palace Downtown', 'Grand Palace Marina'],
+            'grand-palace-hotel' => ['Grand Palace Downtown Cairo', 'Grand Palace Marina Alexandria', 'Grand Palace Red Sea Hurghada'],
             'megamart' => ['MegaMart Retail', 'MegaMart Wholesale'],
+            'nile-breeze-resorts' => ['Nile Breeze Luxor', 'Nile Breeze Aswan Floating Hotel'],
+            'royal-oasis-hotels' => ['Royal Oasis Siwa Spa Resort', 'Royal Oasis Bahariya Eco-Lodge'],
         ];
 
         foreach ($organizations as $organization) {
@@ -178,21 +205,67 @@ class DemoDataSeeder extends Seeder
         $member->syncRoles(['member']);
     }
 
+    /**
+     * Realistic, hand-written post copy per channel type — deliberately avoids
+     * Faker/fake() so seeding works in production where dev dependencies
+     * (fakerphp/faker) are not installed.
+     */
     private function seedPosts(array $organizations): void
     {
         $author = User::where('email', 'o.o@o.com')->first();
 
+        $announcementPosts = [
+            ['title' => 'Renovated Lobby Now Open', 'body' => "We're delighted to unveil our newly renovated lobby, featuring a redesigned reception area, a dedicated concierge desk, and a coffee lounge for our guests and visitors. Stop by and experience the new look!"],
+            ['title' => 'New Contactless Check-In', 'body' => 'Starting this week, all guests can complete check-in through our mobile app — skip the front desk queue and go straight to your room. Ask our staff for the app download link.'],
+            ['title' => 'Extended Wi-Fi Coverage', 'body' => 'High-speed Wi-Fi is now available across all outdoor terraces, the pool deck, and the parking area, in addition to every room and public space.'],
+            ['title' => 'Holiday Schedule Update', 'body' => 'Please note that our front office, spa, and restaurant will operate on adjusted holiday hours next week. Full schedule is posted at the reception desk and on our app.'],
+        ];
+
+        $eventPosts = [
+            ['title' => 'Live Jazz Night This Friday', 'body' => 'Join us this Friday from 8 PM at the poolside terrace for a live jazz performance, accompanied by a curated tapas menu from our head chef.'],
+            ['title' => 'Weekend Brunch Buffet', 'body' => "Our signature weekend brunch returns this Saturday and Sunday, 12 PM to 4 PM, featuring international cuisine stations, a live pasta bar, and free-flowing juices for the whole family."],
+            ['title' => 'Kids Summer Activity Camp', 'body' => 'Registration is now open for our supervised kids activity camp, running daily from 10 AM to 1 PM throughout the summer season. Includes arts & crafts, swimming lessons, and beach games.'],
+            ['title' => 'Sunset Yoga Sessions', 'body' => 'Unwind with a complimentary sunset yoga session on the beach every Tuesday and Thursday at 6 PM. Mats provided, all levels welcome.'],
+        ];
+
+        $staffPosts = [
+            ['title' => 'Shift Handover Reminder', 'body' => 'Please make sure all shift handover notes are logged in the system before clocking out. This includes VIP arrivals, maintenance requests, and any guest complaints still open.'],
+            ['title' => 'Monthly Team Meeting', 'body' => 'The monthly all-staff meeting is scheduled for next Monday at 9 AM in the main conference room. Attendance is mandatory for all department heads.'],
+            ['title' => 'Updated Uniform Policy', 'body' => 'A reminder that the updated uniform and grooming policy takes effect starting next week. Please collect your new name badges from HR by Thursday.'],
+            ['title' => 'Safety Training Session', 'body' => 'Fire safety and emergency evacuation refresher training will be held for all staff this Wednesday at 2 PM. Please confirm your attendance with your supervisor.'],
+        ];
+
+        $postsByChannelName = [
+            'Announcements' => $announcementPosts,
+            'Events' => $eventPosts,
+            'Staff Room' => $staffPosts,
+        ];
+
         foreach ($organizations as $organization) {
             foreach ($organization->channels as $channel) {
-                for ($i = 1; $i <= 3; $i++) {
-                    Post::factory()->published()->create([
-                        'channel_id' => $channel->id,
-                        'organization_id' => $organization->id,
-                        'brand_id' => $channel->brand_id,
-                        'author_id' => $author?->id ?? 1,
-                        'body' => "Test post #$i in {$channel->name}.",
-                        'audience' => $channel->type === 'public' ? 'all' : 'team',
-                    ]);
+                $baseName = trim(explode('—', $channel->name)[0]);
+                $pool = $postsByChannelName[$baseName] ?? $announcementPosts;
+
+                foreach ($pool as $index => $postData) {
+                    Post::firstOrCreate(
+                        [
+                            'channel_id' => $channel->id,
+                            'title' => $postData['title'],
+                        ],
+                        [
+                            'organization_id' => $organization->id,
+                            'brand_id' => $channel->brand_id,
+                            'author_id' => $author?->id ?? 1,
+                            'body' => $postData['body'],
+                            'summary' => Str::limit($postData['body'], 120),
+                            'post_type' => 'announcement',
+                            'priority' => 'medium',
+                            'language' => 'en',
+                            'audience' => $channel->type === 'public' ? 'all' : 'team',
+                            'status' => 'published',
+                            'published_at' => now()->subDays(count($pool) - $index),
+                        ]
+                    );
                 }
             }
         }
