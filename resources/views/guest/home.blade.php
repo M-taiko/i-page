@@ -21,11 +21,20 @@
     /* Tabs */
     .feed-tabs {
         display: flex;
-        background-color: var(--surface-bg);
-        border-bottom: 1px solid var(--surface-border);
+        background-color: var(--primary-100);
+        border: 1px solid var(--primary-400);
+        border-top: none;
+        border-bottom-left-radius: var(--radius-xl);
+        border-bottom-right-radius: var(--radius-xl);
         position: sticky;
         top: 0;
         z-index: 10;
+        overflow: hidden;
+    }
+
+    [data-theme="dark"] .feed-tabs {
+        background-color: #1b2559;
+        border-color: var(--primary-500);
     }
 
     .feed-tab {
