@@ -15,7 +15,7 @@
 
 <!-- Form Card -->
 <x-card-modern style="max-width: 500px;">
-    <form method="POST" action="{{ route('dashboard.users.store', session('current_organization_id')) }}">
+    <form method="POST" action="{{ route('dashboard.users.store', $organization) }}">
         @csrf
 
         <!-- First Name -->
@@ -139,7 +139,7 @@
 
         <!-- Form Footer -->
         <div style="display: flex; gap: var(--space-3); border-top: 1px solid var(--surface-border); padding-top: var(--space-6);">
-            <a href="{{ route('dashboard.users.index', session('current_organization_id')) }}"
+            <a href="{{ route('dashboard.users.index', $organization) }}"
                class="btn"
                style="flex: 1; background-color: var(--surface-hover); color: var(--text-primary); border: 1px solid var(--surface-border); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-medium); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: var(--space-2);">
                 <i class="bi bi-arrow-left"></i>

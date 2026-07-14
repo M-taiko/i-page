@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app-modern')
 
 @section('content')
 <div class="container-fluid">
@@ -9,7 +9,7 @@
     <div class="row">
         <div class="col-lg-6">
             <x-card>
-                <form action="{{ route('dashboard.users.update', $user) }}" method="POST">
+                <form action="{{ route('dashboard.users.update', [$organization, $user]) }}" method="POST">
                     @csrf
                     @method('PUT')
 
@@ -75,7 +75,7 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Update User</button>
-                        <a href="{{ route('dashboard.users.show', $user) }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ route('dashboard.users.show', [$organization, $user]) }}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </x-card>

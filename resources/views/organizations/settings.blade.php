@@ -208,6 +208,9 @@
             <div class="settings-card">
                 <div class="card-header bg-light p-4 border-0 rounded-top-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-people"></i> Team Members</h5>
+                    <a href="{{ route('dashboard.users.create', $organization) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add Member
+                    </a>
                 </div>
                 <div class="table-responsive">
                             <table class="table table-hover mb-0">
@@ -216,6 +219,7 @@
                                         <th>Name</th>
                                         <th>Email</th>
                                         <th>Role</th>
+                                        <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -229,12 +233,26 @@
                                                         ->where('organization_id', $organization->id)
                                                         ->first()?->pivot->role ?? 'member';
                                                 @endphp
-                                                <span class="badge bg-primary">{{ ucfirst($role) }}</span>
+                                                <span class="badge bg-primary">{{ ucfirst(str_replace('_', ' ', $role)) }}</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ route('dashboard.users.edit', [$organization, $user]) }}" class="btn btn-sm btn-outline-warning">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                @if($user->id !== auth()->id())
+                                                    <form action="{{ route('dashboard.users.destroy', [$organization, $user]) }}" method="POST" style="display: inline;">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this member from the organization?')">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="3" class="text-center text-muted py-4">No members yet</td>
+                                            <td colspan="4" class="text-center text-muted py-4">No members yet</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -246,8 +264,11 @@
         <!-- Brands -->
         <div class="tab-pane fade" id="brands" role="tabpanel">
             <div class="settings-card">
-                <div class="card-header bg-light p-4 border-0 rounded-top-3">
+                <div class="card-header bg-light p-4 border-0 rounded-top-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-box-seam"></i> Brands</h5>
+                    <a href="{{ route('organizations.brands.create', $organization) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add Brand
+                    </a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
@@ -255,6 +276,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Status</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -266,10 +288,22 @@
                                             {{ $brand->is_active ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
+                                    <td class="text-end">
+                                        <a href="{{ route('organizations.brands.edit', [$organization, $brand]) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ route('organizations.brands.destroy', [$organization, $brand]) }}" method="POST" style="display: inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this brand? Its channels will be affected.')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="2" class="text-center text-muted py-4">No brands yet</td>
+                                    <td colspan="3" class="text-center text-muted py-4">No brands yet</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -281,8 +315,11 @@
         <!-- Locations -->
         <div class="tab-pane fade" id="locations" role="tabpanel">
             <div class="settings-card">
-                <div class="card-header bg-light p-4 border-0 rounded-top-3">
+                <div class="card-header bg-light p-4 border-0 rounded-top-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Locations</h5>
+                    <a href="{{ route('organizations.locations.create', $organization) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add Location
+                    </a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
@@ -291,6 +328,7 @@
                                 <th>Name</th>
                                 <th>City</th>
                                 <th>Country</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -299,10 +337,22 @@
                                     <td>{{ $location->name }}</td>
                                     <td>{{ $location->city }}</td>
                                     <td>{{ $location->country }}</td>
+                                    <td class="text-end">
+                                        <a href="{{ route('organizations.locations.edit', [$organization, $location]) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ route('organizations.locations.destroy', [$organization, $location]) }}" method="POST" style="display: inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this location?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">No locations yet</td>
+                                    <td colspan="4" class="text-center text-muted py-4">No locations yet</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -314,8 +364,11 @@
         <!-- SLA Rules -->
         <div class="tab-pane fade" id="sla" role="tabpanel">
             <div class="settings-card">
-                <div class="card-header bg-light p-4 border-0 rounded-top-3">
+                <div class="card-header bg-light p-4 border-0 rounded-top-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-clock-history"></i> SLA Rules</h5>
+                    <a href="{{ route('organizations.sla-rules.create', $organization) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add SLA Rule
+                    </a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
@@ -325,6 +378,7 @@
                                 <th>First Response</th>
                                 <th>Resolution</th>
                                 <th>Status</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -338,10 +392,22 @@
                                             {{ $rule->is_active ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
+                                    <td class="text-end">
+                                        <a href="{{ route('organizations.sla-rules.edit', [$organization, $rule]) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ route('organizations.sla-rules.destroy', [$organization, $rule]) }}" method="POST" style="display: inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this SLA rule?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No SLA rules yet</td>
+                                    <td colspan="5" class="text-center text-muted py-4">No SLA rules yet</td>
                                 </tr>
                             @endforelse
                         </tbody>

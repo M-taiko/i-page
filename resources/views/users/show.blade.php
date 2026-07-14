@@ -1,15 +1,15 @@
-@extends('layouts.app')
+@extends('layouts.app-modern')
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">{{ $user->name }}</h1>
+            <h1 class="h3 mb-0">{{ $user->full_name }}</h1>
             <small class="text-muted">{{ $user->ipage_id }}</small>
         </div>
         <div>
-            <a href="{{ route('dashboard.users.edit', $user) }}" class="btn btn-warning">Edit</a>
-            <a href="{{ route('dashboard.users.index') }}" class="btn btn-secondary">Back</a>
+            <a href="{{ route('dashboard.users.edit', [$organization, $user]) }}" class="btn btn-warning">Edit</a>
+            <a href="{{ route('dashboard.users.index', $organization) }}" class="btn btn-secondary">Back</a>
         </div>
     </div>
 
@@ -57,10 +57,10 @@
                     <div class="col-md-6">
                         <strong>Status</strong>
                         <p class="text-muted">
-                            @if ($user->is_active)
-                                <x-badge color="success">Active</x-badge>
+                            @if ($user->email_verified_at)
+                                <x-badge color="success">Verified</x-badge>
                             @else
-                                <x-badge color="danger">Inactive</x-badge>
+                                <x-badge color="danger">Unverified</x-badge>
                             @endif
                         </p>
                     </div>
@@ -109,7 +109,7 @@
 
                     <div class="list-group">
                         @foreach ($user->groups as $group)
-                            <a href="{{ route('dashboard.groups.show', $group) }}" class="list-group-item list-group-item-action">
+                            <a href="{{ route('dashboard.groups.show', [$organization, $group]) }}" class="list-group-item list-group-item-action">
                                 <strong>{{ $group->name }}</strong>
                                 @if ($group->branch)
                                     <small class="d-block text-muted">{{ $group->branch->name }}</small>
@@ -128,7 +128,7 @@
 
                     <div class="list-group">
                         @foreach ($user->channels as $channel)
-                            <a href="{{ route('dashboard.channels.show', $channel) }}" class="list-group-item list-group-item-action">
+                            <a href="{{ route('dashboard.channels.show', [$organization, $channel]) }}" class="list-group-item list-group-item-action">
                                 <strong>{{ $channel->name }}</strong>
                                 <small class="d-block text-muted">{{ ucfirst($channel->type) }} Channel</small>
                             </a>
@@ -144,11 +144,11 @@
                     <h5 class="mb-0">Actions</h5>
                 </x-slot:header>
 
-                <a href="{{ route('dashboard.users.edit', $user) }}" class="btn btn-warning w-100 mb-2">
+                <a href="{{ route('dashboard.users.edit', [$organization, $user]) }}" class="btn btn-warning w-100 mb-2">
                     <i class="bi bi-pencil"></i> Edit User
                 </a>
 
-                <form action="{{ route('dashboard.users.destroy', $user) }}" method="POST">
+                <form action="{{ route('dashboard.users.destroy', [$organization, $user]) }}" method="POST">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure? This action cannot be undone.')">
