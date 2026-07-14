@@ -27,7 +27,8 @@
         .shell {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100vh; /* fallback for browsers without dvh support */
+            height: 100dvh;
             width: 100%;
             margin: 0 auto;
             background-color: var(--surface-bg-secondary);
