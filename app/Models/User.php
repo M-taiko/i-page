@@ -101,16 +101,29 @@ class User extends Authenticatable
     /**
      * Canonical "current organization" resolution used everywhere:
      * session-selected org (if the user belongs to it), else first active membership.
+     *
+     * Super admins have no organization_membership by design (Layer 1 is
+     * global), but still need a tenant workspace to manage any organization's
+     * channels/posts directly — so for them the session selection is resolved
+     * against ALL organizations, not just their (nonexistent) memberships.
      */
     public function getCurrentOrganizationAttribute(): ?Organization
     {
         $sessionId = session('current_organization_id');
+        $isSuperAdmin = $this->hasRole('super_admin');
 
         if ($sessionId) {
-            $selected = $this->organizations()->where('organizations.id', $sessionId)->first();
+            $selected = $isSuperAdmin
+                ? Organization::find($sessionId)
+                : $this->organizations()->where('organizations.id', $sessionId)->first();
+
             if ($selected) {
                 return $selected;
             }
+        }
+
+        if ($isSuperAdmin) {
+            return Organization::orderBy('name')->first();
         }
 
         return $this->organizations()

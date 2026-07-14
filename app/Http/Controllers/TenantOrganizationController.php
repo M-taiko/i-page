@@ -9,11 +9,7 @@ class TenantOrganizationController extends Controller
 {
     public function dashboard()
     {
-        if (auth()->user()->hasRole('super_admin')) {
-            $organization = auth()->user()->organizations()->first();
-        } else {
-            $organization = auth()->user()->currentOrganization;
-        }
+        $organization = auth()->user()->currentOrganization;
 
         if (!$organization) {
             abort(403, 'No organization context');
@@ -26,11 +22,7 @@ class TenantOrganizationController extends Controller
 
     public function settings()
     {
-        if (auth()->user()->hasRole('super_admin')) {
-            $organization = auth()->user()->organizations()->first();
-        } else {
-            $organization = auth()->user()->currentOrganization;
-        }
+        $organization = auth()->user()->currentOrganization;
 
         if (!$organization) {
             abort(403, 'No organization context');

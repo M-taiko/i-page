@@ -172,7 +172,9 @@ Route::middleware(['auth', 'verified', 'CheckRole:super_admin'])->prefix('admin'
 // Tenant (Organization Admin) Routes
 Route::middleware(['auth', 'verified'])->prefix('tenant')->name('tenant.')->group(function () {
     Route::get('/', [TenantDashboardController::class, 'index'])->name('dashboard');
+    Route::post('switch-organization', [TenantDashboardController::class, 'switchOrganization'])->name('switch-organization');
     Route::resource('channels', TenantChannelController::class);
+    Route::post('channels/{channel}/toggle-status', [TenantChannelController::class, 'toggleStatus'])->name('channels.toggle-status');
 
     // Channel Posts
     Route::get('channels/{channel}/posts/create', [\App\Http\Controllers\TenantChannelPostController::class, 'create'])->name('channels.posts.create');

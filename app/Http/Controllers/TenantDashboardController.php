@@ -11,7 +11,7 @@ class TenantDashboardController extends Controller
 {
     public function index()
     {
-        $organization = auth()->user()->organizations()->first();
+        $organization = auth()->user()->currentOrganization;
         if (!$organization) {
             abort(403, __('Unauthorized'));
         }
@@ -29,5 +29,27 @@ class TenantDashboardController extends Controller
         ];
 
         return view('tenant.dashboard', compact('organization', 'stats'));
+    }
+
+    /**
+     * Switch which organization the tenant workspace (/tenant, /tenant/channels)
+     * operates on. Only super admins may target an organization they're not a
+     * member of — regular org admins are restricted to their own memberships.
+     */
+    public function switchOrganization(Request $request)
+    {
+        $validated = $request->validate([
+            'organization_id' => 'required|integer|exists:organizations,id',
+        ]);
+
+        $user = auth()->user();
+
+        if (!$user->hasRole('super_admin') && !$user->organizations()->where('organizations.id', $validated['organization_id'])->exists()) {
+            abort(403);
+        }
+
+        session(['current_organization_id' => (int) $validated['organization_id']]);
+
+        return back()->with('success', __('Switched organization.'));
     }
 }

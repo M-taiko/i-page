@@ -171,6 +171,25 @@ class TenantChannelController extends Controller
     }
 
     /**
+     * Pause (archive) or resume (activate) a channel without deleting it.
+     */
+    public function toggleStatus(Channel $channel)
+    {
+        $organization = auth()->user()->currentOrganization;
+        if (!$organization || $channel->organization_id !== $organization->id) {
+            abort(403);
+        }
+
+        $channel->update([
+            'status' => $channel->status === 'active' ? 'archived' : 'active',
+        ]);
+
+        return back()->with('success', $channel->status === 'active'
+            ? __('Channel resumed.')
+            : __('Channel paused.'));
+    }
+
+    /**
      * Invite a user (registered or not) into this channel with a role.
      * If the email doesn't belong to an existing user, an account is created for them.
      */

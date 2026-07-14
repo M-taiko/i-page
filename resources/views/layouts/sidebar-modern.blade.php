@@ -332,12 +332,17 @@
         </div>
 
         <!-- Organization Section -->
-        @if(auth()->user()->organizations()->exists())
+        @if(auth()->user()->organizations()->exists() || auth()->user()->hasRole('super_admin'))
         @php
             $sidebarOrg = auth()->user()->currentOrganization;
         @endphp
         <div class="sidebar-section">
-            <div class="sidebar-section-title">{{ __('Organization') }}</div>
+            <div class="sidebar-section-title">
+                {{ __('Organization') }}
+                @if(auth()->user()->hasRole('super_admin') && $sidebarOrg)
+                    <span style="font-weight: normal; color: var(--text-tertiary);">— {{ $sidebarOrg->name }}</span>
+                @endif
+            </div>
             <nav class="sidebar-nav">
                 <a href="{{ route('organizations.dashboard') }}" @class(['sidebar-item', 'active' => request()->routeIs('organizations.dashboard')])>
                     <i class="bi bi-graph-up"></i>

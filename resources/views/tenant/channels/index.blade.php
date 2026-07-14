@@ -72,6 +72,41 @@
             background: #fce7f3;
             color: #be185d;
         }
+        .channel-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-inline-start: 0.5rem;
+        }
+        .channel-status.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .channel-status.archived {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .org-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .org-switcher select {
+            border: none;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: transparent;
+        }
+        .org-switcher select:focus {
+            outline: none;
+        }
         .channel-actions {
             display: flex;
             gap: 0.5rem;
@@ -113,10 +148,25 @@
         }
     </style>
 
+    @if(auth()->user()->hasRole('super_admin'))
+        <div class="org-switcher">
+            <i class="bi bi-building"></i>
+            <span>{{ __('Viewing') }}:</span>
+            <form action="{{ route('tenant.switch-organization') }}" method="POST" id="orgSwitcherForm">
+                @csrf
+                <select name="organization_id" onchange="document.getElementById('orgSwitcherForm').submit()">
+                    @foreach(\App\Models\Organization::orderBy('name')->get() as $org)
+                        <option value="{{ $org->id }}" @selected($org->id === $organization->id)>{{ $org->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+    @endif
+
     <div class="page-header mb-4">
         <div class="page-header-top">
             <div class="page-header-info">
-                <h1>📺 Channels</h1>
+                <h1>📺 {{ __('Channels') }} — {{ $organization->name }}</h1>
                 <p>Create and manage all channels in your organization</p>
             </div>
             <div class="page-header-actions">
@@ -169,9 +219,14 @@
                     <h4>{{ $channel->name }}</h4>
                     <p class="channel-desc">{{ $channel->description ?? 'No description' }}</p>
                 </div>
-                <span class="channel-type {{ $channel->type }}">
-                    {{ $channel->type === 'public' ? '🌍 Public' : '🔒 Private' }}
-                </span>
+                <div>
+                    <span class="channel-type {{ $channel->type }}">
+                        {{ $channel->type === 'public' ? '🌍 Public' : '🔒 Private' }}
+                    </span>
+                    <span class="channel-status {{ $channel->status }}">
+                        {{ $channel->status === 'active' ? __('Active') : __('Paused') }}
+                    </span>
+                </div>
             </div>
 
             <div class="channel-stats">
@@ -196,6 +251,16 @@
                 <a href="{{ route('tenant.channels.edit', $channel->id) }}" class="btn btn-sm btn-outline-warning">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
+                <form action="{{ route('tenant.channels.toggle-status', $channel->id) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        @if($channel->status === 'active')
+                            <i class="bi bi-pause-circle"></i> Pause
+                        @else
+                            <i class="bi bi-play-circle"></i> Resume
+                        @endif
+                    </button>
+                </form>
                 <form action="{{ route('tenant.channels.destroy', $channel->id) }}" method="POST" style="display: inline;">
                     @csrf
                     @method('DELETE')
