@@ -8,6 +8,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\OtpController;
 use App\Http\Controllers\QrScanController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\TenantDashboardController;
@@ -141,6 +142,7 @@ Route::middleware('auth')->prefix('collections')->name('collections.')->group(fu
     Route::delete('{collection}/channels/{channel}', [\App\Http\Controllers\CollectionController::class, 'removeChannel'])->name('channels.remove');
     Route::post('{collection}/organizations/{organization}', [\App\Http\Controllers\CollectionController::class, 'addOrganization'])->name('organizations.add');
     Route::post('{collection}/brands/{brand}', [\App\Http\Controllers\CollectionController::class, 'addBrand'])->name('brands.add');
+    Route::post('favorite/{channel}', [\App\Http\Controllers\CollectionController::class, 'toggleFavorite'])->name('favorite');
 });
 
 // ============================================================
@@ -184,6 +186,18 @@ Route::middleware(['auth', 'verified'])->prefix('tenant')->name('tenant.')->grou
     Route::post('channels/{channel}/members', [TenantChannelController::class, 'inviteMember'])->name('channels.members.store');
     Route::put('channels/{channel}/members/{user}', [TenantChannelController::class, 'updateMemberRole'])->name('channels.members.update');
     Route::delete('channels/{channel}/members/{user}', [TenantChannelController::class, 'removeMember'])->name('channels.members.destroy');
+
+    // Pending join requests (private channels, routed through the workflow engine)
+    Route::post('channels/{channel}/join-requests/{user}/approve', [TenantChannelController::class, 'approveJoinRequest'])->name('channels.join-requests.approve');
+    Route::post('channels/{channel}/join-requests/{user}/reject', [TenantChannelController::class, 'rejectJoinRequest'])->name('channels.join-requests.reject');
+
+    // QR code management
+    Route::post('channels/{channel}/qr-codes', [TenantChannelController::class, 'generateQrCode'])->name('channels.qr-codes.store');
+    Route::get('channels/{channel}/qr-codes/{qrCode}/download', [TenantChannelController::class, 'downloadQrCode'])->name('channels.qr-codes.download');
+    Route::get('channels/{channel}/qr-codes/{qrCode}/print', [TenantChannelController::class, 'printQrCode'])->name('channels.qr-codes.print');
+    Route::put('channels/{channel}/qr-codes/{qrCode}/welcome-message', [TenantChannelController::class, 'updateQrWelcomeMessage'])->name('channels.qr-codes.welcome-message');
+    Route::post('channels/{channel}/qr-codes/{qrCode}/toggle', [TenantChannelController::class, 'toggleQrCode'])->name('channels.qr-codes.toggle');
+    Route::delete('channels/{channel}/qr-codes/{qrCode}', [TenantChannelController::class, 'destroyQrCode'])->name('channels.qr-codes.destroy');
 });
 
 // Redirect guests trying to access protected routes
@@ -201,9 +215,17 @@ Route::middleware('guest')->prefix('tenant')->group(function () {
 
 // Public QR Code Scanning (Guest Access)
 Route::prefix('qr')->name('qr.')->group(function () {
-    Route::get('{code}', [QrScanController::class, 'redirect'])->name('redirect');
+    Route::get('lookup', [QrScanController::class, 'lookup'])->name('lookup');
     Route::get('register/{channel_id}/{organization_id}', [QrScanController::class, 'guestRegisterForm'])->name('guest-register');
     Route::post('register', [QrScanController::class, 'guestRegisterStore'])->name('guest-register.store');
+    Route::get('{code}', [QrScanController::class, 'redirect'])->name('redirect');
+});
+
+// OTP verification (guest self-registration identity check)
+Route::prefix('otp')->name('otp.')->group(function () {
+    Route::get('verify', [OtpController::class, 'show'])->name('verify');
+    Route::post('verify', [OtpController::class, 'verify'])->name('verify.store');
+    Route::post('resend', [OtpController::class, 'resend'])->name('resend');
 });
 
 // ============================================================

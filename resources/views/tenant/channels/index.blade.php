@@ -215,9 +215,17 @@
     @forelse($channels as $channel)
         <div class="channel-card">
             <div class="channel-header">
-                <div class="channel-title">
-                    <h4>{{ $channel->name }}</h4>
-                    <p class="channel-desc">{{ $channel->description ?? 'No description' }}</p>
+                <div style="display: flex; gap: 1rem; flex: 1;">
+                    <button type="button" class="btn p-0 border-0" style="flex-shrink: 0;"
+                            data-bs-toggle="modal" data-bs-target="#qrModal{{ $channel->id }}"
+                            title="{{ __('View QR Code') }}">
+                        <img src="data:image/svg+xml;base64,{{ $channel->primaryQrCode->preview_image }}"
+                             alt="QR" style="width: 64px; height: 64px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                    </button>
+                    <div class="channel-title">
+                        <h4>{{ $channel->name }}</h4>
+                        <p class="channel-desc">{{ $channel->description ?? 'No description' }}</p>
+                    </div>
                 </div>
                 <div>
                     <span class="channel-type {{ $channel->type }}">
@@ -268,6 +276,57 @@
                         <i class="bi bi-trash"></i> Delete
                     </button>
                 </form>
+            </div>
+        </div>
+
+        <!-- QR Code Modal -->
+        <div class="modal fade" id="qrModal{{ $channel->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('QR Code') }} — {{ $channel->name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img src="data:image/svg+xml;base64,{{ $channel->primaryQrCode->preview_image }}"
+                             alt="QR" style="width: 200px; height: 200px; margin-bottom: 0.5rem;">
+                        <p class="text-muted small text-break mb-3">{{ $channel->primaryQrCode->url }}</p>
+
+                        <form action="{{ route('tenant.channels.qr-codes.welcome-message', [$channel, $channel->primaryQrCode]) }}" method="POST" class="text-start mb-3">
+                            @csrf
+                            @method('PUT')
+                            <label class="form-label small fw-semibold">{{ __('Welcome message (printed under the QR)') }}</label>
+                            <textarea name="welcome_message" rows="3" class="form-control form-control-sm mb-2"
+                                      placeholder="{{ __('e.g. Scan to join our updates channel!') }}">{{ $channel->primaryQrCode->metadata['welcome_message'] ?? '' }}</textarea>
+                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="bi bi-save"></i> {{ __('Save Message') }}
+                            </button>
+                        </form>
+
+                        <div class="d-flex gap-2 mb-3">
+                            <a href="{{ route('tenant.channels.qr-codes.download', [$channel, $channel->primaryQrCode]) }}" class="btn btn-sm btn-primary flex-fill">
+                                <i class="bi bi-download"></i> {{ __('Download') }}
+                            </a>
+                            <a href="{{ route('tenant.channels.qr-codes.print', [$channel, $channel->primaryQrCode]) }}" target="_blank" class="btn btn-sm btn-outline-secondary flex-fill">
+                                <i class="bi bi-printer"></i> {{ __('Print') }}
+                            </a>
+                        </div>
+
+                        <hr>
+
+                        <form action="{{ route('tenant.channels.qr-codes.store', $channel) }}" method="POST" class="text-start">
+                            @csrf
+                            <label class="form-label small fw-semibold">{{ __('Create a custom QR for this channel') }}</label>
+                            <div class="d-flex gap-2">
+                                <input type="text" name="label" class="form-control form-control-sm" placeholder="{{ __('e.g. Front Desk Poster') }}">
+                                <button type="submit" class="btn btn-sm btn-primary text-nowrap">
+                                    <i class="bi bi-qr-code"></i> {{ __('Generate') }}
+                                </button>
+                            </div>
+                            <p class="text-muted small mt-1 mb-0">{{ __('Creates a new QR (becomes the one shown here). Manage all QR codes for this channel from its detail page.') }}</p>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     @empty

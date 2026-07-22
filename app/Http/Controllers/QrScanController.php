@@ -5,14 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Channel;
 use App\Models\QrCode;
 use App\Models\User;
+use App\Services\OtpService;
 use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class QrScanController extends Controller
 {
-    public function __construct(private QrCodeService $qrCodeService)
+    public function __construct(
+        private QrCodeService $qrCodeService,
+        private OtpService $otpService
+    ) {
+    }
+
+    /**
+     * Manual entry point: accepts either a bare QR code or a full pasted
+     * share URL (e.g. https://.../qr/{code}) and forwards to the same
+     * redirect() flow used by an actual camera scan.
+     */
+    public function lookup(Request $request)
     {
+        $validated = $request->validate([
+            'code' => 'required|string|max:255',
+        ]);
+
+        $input = trim($validated['code']);
+        $code = Str::contains($input, '/qr/')
+            ? trim(Str::afterLast($input, '/qr/'), '/')
+            : $input;
+
+        if ($code === '') {
+            return redirect()->route('guest.home')->with('error', __('Please enter a valid code.'));
+        }
+
+        return redirect()->route('qr.redirect', ['code' => $code]);
     }
 
     public function redirect(Request $request, string $code)
@@ -42,10 +68,39 @@ class QrScanController extends Controller
     {
         $user = auth()->user();
 
+        if ($channel->type === 'private') {
+            if (!$user) {
+                // So the post-login redirect (redirect()->intended()) lands
+                // back on this exact QR link instead of the default feed.
+                session(['url.intended' => $request->fullUrl()]);
+
+                return view('qr.private-access', ['channel' => $channel, 'state' => 'login-required']);
+            }
+
+            if (!$channel->canBeAccessedBy($user)) {
+                return view('qr.private-access', [
+                    'channel' => $channel,
+                    'state' => 'denied',
+                    'hasPendingRequest' => $channel->hasPendingRequestFrom($user),
+                ]);
+            }
+
+            session(['current_organization_id' => $channel->organization_id]);
+
+            return redirect()->route('dashboard.channels.show', [
+                $channel->organization_id,
+                $channel->id,
+            ]);
+        }
+
         if (!$user) {
-            return redirect()->route('qr.guest-register', [
-                'channel_id' => $channel->id,
-                'organization_id' => $channel->organization_id,
+            // Public channels are browsable by anyone — land the guest
+            // straight on the read-only public view, no signup required.
+            // (The QR self-registration flow is still reachable from that
+            // page's own "Subscribe" action if the guest wants to join.)
+            return redirect()->route('guest.channel-detail', [
+                'organization' => $channel->organization_id,
+                'channelSlug' => $channel->slug,
             ]);
         }
 
@@ -64,7 +119,7 @@ class QrScanController extends Controller
 
         $channel = Channel::findOrFail($channelId);
 
-        if ($channel->organization_id != $organizationId) {
+        if ($channel->organization_id != $organizationId || $channel->type === 'private') {
             abort(403);
         }
 
@@ -79,15 +134,15 @@ class QrScanController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'mobile' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255|required_without:mobile',
+            'mobile' => 'nullable|string|max:20|required_without:email',
             'channel_id' => 'required|exists:channels,id',
             'organization_id' => 'required|exists:organizations,id',
         ]);
 
         $channel = Channel::findOrFail($validated['channel_id']);
 
-        if ($channel->organization_id != $validated['organization_id']) {
+        if ($channel->organization_id != $validated['organization_id'] || $channel->type === 'private') {
             abort(403);
         }
 
@@ -100,15 +155,19 @@ class QrScanController extends Controller
             'ipage_id' => 'GUEST-' . Str::random(8),
         ]);
 
-        $guest->channels()->attach($channel->id, ['role' => 'member']);
+        $otpChannel = $validated['mobile'] ? 'sms' : 'email';
+        $destination = $validated['mobile'] ?: $validated['email'];
 
-        auth()->login($guest);
+        $this->otpService->generate($guest, $otpChannel, $destination);
 
-        session(['current_organization_id' => $channel->organization_id]);
+        session(['otp_pending_guest' => [
+            'user_id' => $guest->id,
+            'channel_id' => $channel->id,
+            'channel' => $otpChannel,
+            'destination' => $destination,
+        ]]);
 
-        return redirect()->route('dashboard.channels.show', [
-            $channel->organization_id,
-            $channel->id,
-        ])->with('success', __('Welcome! You have been registered as a guest.'));
+        return redirect()->route('otp.verify')
+            ->with('success', __('We sent you a verification code.'));
     }
 }

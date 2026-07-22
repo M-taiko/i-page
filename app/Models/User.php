@@ -45,6 +45,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'mobile_verified_at' => 'datetime',
             'password' => 'hashed',
             'dob' => 'date',
             'check_in_at' => 'datetime',
@@ -148,7 +149,7 @@ class User extends Authenticatable
     public function channels()
     {
         return $this->belongsToMany(Channel::class, 'channel_user')
-            ->withPivot('role', 'joined_at', 'muted_at')
+            ->withPivot('role', 'status', 'joined_at', 'muted_at')
             ->using(ChannelUser::class);
     }
 
@@ -213,7 +214,7 @@ class User extends Authenticatable
     public function subscribedChannels()
     {
         return $this->belongsToMany(Channel::class, 'channel_user')
-            ->withPivot('role', 'joined_at', 'muted_at')
+            ->withPivot('role', 'status', 'joined_at', 'muted_at')
             ->using(ChannelUser::class);
     }
 

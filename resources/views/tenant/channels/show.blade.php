@@ -209,6 +209,50 @@
         </div>
     </div>
 
+    @if($pendingMembers->count() > 0)
+        <!-- Pending Join Requests (channel.join_request workflow) -->
+        <div style="margin-top: var(--space-8);">
+            <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-4); color: var(--text-primary);">
+                <i class="bi bi-hourglass-split"></i> Pending Join Requests ({{ $pendingMembers->count() }})
+            </h2>
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th style="width: 220px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($pendingMembers as $pending)
+                                <tr>
+                                    <td>{{ $pending->full_name }}</td>
+                                    <td class="text-muted small">{{ $pending->email }}</td>
+                                    <td class="text-end">
+                                        <form action="{{ route('tenant.channels.join-requests.approve', [$channel, $pending]) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check-lg"></i> Approve
+                                            </button>
+                                        </form>
+                                        <form action="{{ route('tenant.channels.join-requests.reject', [$channel, $pending]) }}" method="POST" class="d-inline" onsubmit="return confirm('Reject this join request?')">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-x-lg"></i> Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Members Section -->
     <div style="margin-top: var(--space-8);">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
@@ -268,6 +312,65 @@
         @else
             <div style="background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--space-6); text-align: center;">
                 <p style="color: var(--text-secondary); margin: 0;">No members yet. Invite someone to get started.</p>
+            </div>
+        @endif
+    </div>
+
+    <!-- QR Codes Section -->
+    <div style="margin-top: var(--space-8);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin: 0; color: var(--text-primary);">
+                <i class="bi bi-qr-code"></i> QR Codes ({{ $qrCodes->count() }})
+            </h2>
+            <form action="{{ route('tenant.channels.qr-codes.store', $channel) }}" method="POST" class="d-flex gap-2">
+                @csrf
+                <input type="text" name="label" class="form-control form-control-sm" placeholder="Label (optional)" style="width: 180px;">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg"></i> Generate QR
+                </button>
+            </form>
+        </div>
+
+        @if($qrCodes->count() > 0)
+            <div class="row g-3">
+                @foreach($qrCodes as $qrCode)
+                    <div class="col-md-4 col-sm-6">
+                        <div class="card h-100 text-center p-3">
+                            <img src="data:image/svg+xml;base64,{{ $qrCode->preview_image }}" alt="QR code" class="mx-auto mb-1" style="width: 160px; height: 160px;">
+                            <div class="text-muted small text-break mb-1" style="font-size: 0.7rem;">{{ $qrCode->url }}</div>
+                            <div class="fw-semibold small text-truncate">{{ $qrCode->label ?? 'Untitled QR' }}</div>
+                            <div class="text-muted small mb-2">
+                                {{ $qrCode->scan_count }} {{ __('scans') }}
+                                &middot;
+                                <span class="badge {{ $qrCode->is_active ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ $qrCode->is_active ? __('Active') : __('Inactive') }}
+                                </span>
+                            </div>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a href="{{ route('tenant.channels.qr-codes.download', [$channel, $qrCode]) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <form action="{{ route('tenant.channels.qr-codes.toggle', [$channel, $qrCode]) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-{{ $qrCode->is_active ? 'pause' : 'play' }}"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ route('tenant.channels.qr-codes.destroy', [$channel, $qrCode]) }}" method="POST" onsubmit="return confirm('Delete this QR code?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div style="background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--space-6); text-align: center;">
+                <p style="color: var(--text-secondary); margin: 0;">No QR codes yet. Generate one to let guests scan their way into this channel.</p>
             </div>
         @endif
     </div>

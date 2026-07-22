@@ -88,6 +88,92 @@
             background-color: var(--surface-hover);
         }
 
+        .notif-bell-wrap { position: relative; }
+
+        .notif-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: var(--danger-600);
+            color: white;
+            font-size: 9px;
+            font-weight: var(--font-weight-bold);
+            min-width: 15px;
+            height: 15px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            border: 1.5px solid var(--surface-bg);
+            pointer-events: none;
+        }
+
+        .notif-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + var(--space-2));
+            right: 0;
+            width: 340px;
+            max-width: 90vw;
+            max-height: 420px;
+            overflow-y: auto;
+            background-color: var(--surface-bg);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl, 0 12px 32px rgba(0,0,0,0.16));
+            z-index: var(--z-dropdown, 50);
+        }
+
+        .notif-panel.show { display: block; }
+
+        .notif-panel-header {
+            padding: var(--space-3) var(--space-4);
+            font-weight: var(--font-weight-bold);
+            font-size: var(--text-sm);
+            border-bottom: 1px solid var(--surface-border);
+            color: var(--text-primary);
+        }
+
+        .notif-panel-item {
+            display: block;
+            padding: var(--space-3) var(--space-4);
+            border-bottom: 1px solid var(--surface-border);
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: var(--text-sm);
+        }
+
+        .notif-panel-item:hover { background-color: var(--surface-hover); }
+        .notif-panel-item:last-child { border-bottom: none; }
+        .notif-panel-item.unread { background-color: var(--primary-50); }
+
+        .notif-panel-time {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
+        .notif-panel-empty {
+            padding: var(--space-6) var(--space-4);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+        }
+
+        .notif-panel-footer {
+            padding: var(--space-3) var(--space-4);
+            text-align: center;
+            border-top: 1px solid var(--surface-border);
+        }
+
+        .notif-panel-footer a {
+            font-size: var(--text-sm);
+            color: var(--primary-600);
+            text-decoration: none;
+            font-weight: var(--font-weight-medium);
+        }
+
         .app-content {
             flex: 1;
             overflow-y: auto;
@@ -233,9 +319,39 @@
                     </button>
 
                     <!-- Notifications -->
-                    <button class="app-top-nav-btn" title="{{ __('Notifications') }}">
-                        <i class="bi bi-bell"></i>
-                    </button>
+                    @auth
+                        @php
+                            $navNotifications = auth()->user()->notifications()->latest()->take(8)->get();
+                            $navUnreadCount = $navNotifications->whereNull('read_at')->count();
+                        @endphp
+                        <div class="notif-bell-wrap">
+                            <button type="button" class="app-top-nav-btn" title="{{ __('Notifications') }}" onclick="toggleNotifPanel(event)">
+                                <i class="bi bi-bell"></i>
+                                @if($navUnreadCount > 0)
+                                    <span class="notif-badge">{{ $navUnreadCount > 9 ? '9+' : $navUnreadCount }}</span>
+                                @endif
+                            </button>
+                            <div class="notif-panel" id="notifPanel">
+                                <div class="notif-panel-header">{{ __('Notifications') }}</div>
+                                @forelse($navNotifications as $notification)
+                                    <a href="{{ $notification->data['link'] ?? route('user.notifications') }}"
+                                       class="notif-panel-item {{ $notification->isRead() ? '' : 'unread' }}">
+                                        <div>{{ $notification->data['message'] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}</div>
+                                        <div class="notif-panel-time">{{ $notification->created_at->diffForHumans() }}</div>
+                                    </a>
+                                @empty
+                                    <div class="notif-panel-empty">{{ __('No notifications yet') }}</div>
+                                @endforelse
+                                <div class="notif-panel-footer">
+                                    <a href="{{ route('user.notifications') }}">{{ __('View All') }}</a>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <button class="app-top-nav-btn" title="{{ __('Notifications') }}" disabled>
+                            <i class="bi bi-bell"></i>
+                        </button>
+                    @endauth
 
                     <!-- Theme Toggle -->
                     <button class="app-top-nav-btn" id="themeToggle" title="{{ __('Toggle Theme') }}">
@@ -378,6 +494,58 @@
                         searchResults.innerHTML = '<div style="padding: var(--space-6); text-align: center; color: var(--danger-600);">Error searching organizations</div>';
                     });
             }, 300);
+        });
+    </script>
+
+    <script>
+        // This layout doesn't load Bootstrap's JS bundle, so data-bs-toggle
+        // never actually opens anything — implement the minimal show/hide
+        // behavior ourselves for the design-system .modal component.
+        document.addEventListener('click', function (event) {
+            const opener = event.target.closest('[data-bs-toggle="modal"]');
+            if (opener) {
+                const target = document.querySelector(opener.getAttribute('data-bs-target'));
+                if (target) openModal(target);
+                return;
+            }
+
+            const dismisser = event.target.closest('[data-bs-dismiss="modal"]');
+            if (dismisser) {
+                const modal = dismisser.closest('.modal');
+                if (modal) closeModal(modal);
+            }
+        });
+
+        function openModal(modal) {
+            let backdrop = document.querySelector('.modal-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop';
+                document.body.appendChild(backdrop);
+            }
+            backdrop.classList.add('show');
+            backdrop.onclick = () => closeModal(modal);
+            modal.classList.add('show');
+        }
+
+        function closeModal(modal) {
+            modal.classList.remove('show');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+        }
+    </script>
+
+    <script>
+        function toggleNotifPanel(event) {
+            event.stopPropagation();
+            document.getElementById('notifPanel')?.classList.toggle('show');
+        }
+
+        document.addEventListener('click', function (event) {
+            const panel = document.getElementById('notifPanel');
+            if (panel && panel.classList.contains('show') && !panel.contains(event.target)) {
+                panel.classList.remove('show');
+            }
         });
     </script>
 </body>

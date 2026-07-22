@@ -55,7 +55,13 @@
             <div class="notif-item {{ $notification->isRead() ? '' : 'unread' }}">
                 <div class="notif-icon"><i class="bi bi-bell"></i></div>
                 <div class="notif-body">
-                    <div class="notif-title">{{ $notification->data['message'] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}</div>
+                    @if($notification->data['link'] ?? null)
+                        <a href="{{ $notification->data['link'] }}" class="notif-title" style="color: inherit; text-decoration: none;">
+                            {{ $notification->data['message'] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}
+                        </a>
+                    @else
+                        <div class="notif-title">{{ $notification->data['message'] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}</div>
+                    @endif
                     <div class="notif-time">{{ $notification->created_at->diffForHumans() }}</div>
                 </div>
                 @if(!$notification->isRead())

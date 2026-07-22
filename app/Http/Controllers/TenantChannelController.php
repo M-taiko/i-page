@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Models\Channel;
+use App\Models\QrCode;
 use App\Models\User;
+use App\Models\WorkflowInstance;
 use App\Services\QrCodeService;
+use App\Services\WorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -13,7 +16,7 @@ class TenantChannelController extends Controller
 {
     protected $qrCodeService;
 
-    public function __construct(QrCodeService $qrCodeService)
+    public function __construct(QrCodeService $qrCodeService, private WorkflowService $workflowService)
     {
         $this->qrCodeService = $qrCodeService;
     }
@@ -29,6 +32,19 @@ class TenantChannelController extends Controller
             ->with('brand')
             ->withCount('users', 'posts')
             ->paginate(10);
+
+        // Every channel should have one QR to display/print here; backfill any
+        // that predate QR generation or whose creation-time generation failed.
+        foreach ($channels as $channel) {
+            $qrCode = $channel->qrCodes()->latest()->first();
+
+            if (!$qrCode) {
+                $qrCode = $this->qrCodeService->generate($channel, $organization, "QR: {$channel->name}");
+            }
+
+            $qrCode->preview_image = $this->qrCodeService->generateImage($qrCode, 180);
+            $channel->primaryQrCode = $qrCode;
+        }
 
         return view('tenant.channels.index', compact('organization', 'channels'));
     }
@@ -84,14 +100,12 @@ class TenantChannelController extends Controller
             'admin_user_id' => auth()->id(),
         ]);
 
-        // Generate QR code for this channel
+        // Generate QR code for this channel. No explicit $url here — generate()
+        // builds it from its own freshly-generated $code, which is what keeps
+        // the encoded link and the QrCode.code column (used by qr.redirect
+        // to look the row back up) in sync.
         try {
-            $this->qrCodeService->generate(
-                $channel,
-                $organization,
-                "Channel: {$channel->name}",
-                route('qr.redirect', ['code' => Str::random(32)])
-            );
+            $this->qrCodeService->generate($channel, $organization, "Channel: {$channel->name}");
         } catch (\Exception $e) {
             // QR generation is optional
         }
@@ -108,14 +122,20 @@ class TenantChannelController extends Controller
         }
 
         $stats = [
-            'members' => $channel->users()->count(),
+            'members' => $channel->users()->wherePivot('status', 'approved')->count(),
             'posts' => $channel->posts()->count(),
             'qr_codes' => $channel->qrCodes()->count(),
         ];
 
-        $members = $channel->users()->orderByDesc('channel_user.joined_at')->get();
+        $members = $channel->users()->wherePivot('status', 'approved')->orderByDesc('channel_user.joined_at')->get();
+        $pendingMembers = $channel->users()->wherePivot('status', 'pending')->get();
 
-        return view('tenant.channels.show', compact('channel', 'organization', 'stats', 'members'));
+        $qrCodes = $channel->qrCodes()->latest()->get()->map(function ($qrCode) {
+            $qrCode->preview_image = $this->qrCodeService->generateImage($qrCode, 200);
+            return $qrCode;
+        });
+
+        return view('tenant.channels.show', compact('channel', 'organization', 'stats', 'members', 'pendingMembers', 'qrCodes'));
     }
 
     public function edit(Channel $channel)
@@ -244,6 +264,126 @@ class TenantChannelController extends Controller
         $channel->users()->detach($user->id);
 
         return back()->with('success', __('Member removed from channel.'));
+    }
+
+    public function approveJoinRequest(Channel $channel, User $user)
+    {
+        $this->authorizeChannelAccess($channel);
+
+        $instance = $this->pendingJoinInstance($channel, $user);
+
+        if ($instance) {
+            $this->workflowService->approve($instance, auth()->user());
+        }
+
+        $channel->users()->updateExistingPivot($user->id, ['status' => 'approved']);
+
+        return back()->with('success', __(':name was approved to join the channel.', ['name' => $user->full_name]));
+    }
+
+    public function rejectJoinRequest(Channel $channel, User $user)
+    {
+        $this->authorizeChannelAccess($channel);
+
+        $instance = $this->pendingJoinInstance($channel, $user);
+
+        if ($instance) {
+            $this->workflowService->reject($instance, auth()->user());
+        }
+
+        $channel->users()->detach($user->id);
+
+        return back()->with('success', __('Join request rejected.'));
+    }
+
+    public function generateQrCode(Request $request, Channel $channel)
+    {
+        $this->authorizeChannelAccess($channel);
+
+        $validated = $request->validate([
+            'label' => 'nullable|string|max:120',
+        ]);
+
+        $this->qrCodeService->generate(
+            $channel,
+            $channel->organization,
+            $validated['label'] ?? "QR: {$channel->name}"
+        );
+
+        return back()->with('success', __('QR code generated.'));
+    }
+
+    public function downloadQrCode(Channel $channel, \App\Models\QrCode $qrCode)
+    {
+        $this->authorizeChannelAccess($channel);
+        abort_unless($qrCode->ownable_type === Channel::class && $qrCode->ownable_id === $channel->id, 404);
+
+        $image = base64_decode($this->qrCodeService->generateImage($qrCode, 600));
+        $filename = Str::slug($channel->name) . '-qr-' . $qrCode->id . '.svg';
+
+        return response($image, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    public function toggleQrCode(Channel $channel, \App\Models\QrCode $qrCode)
+    {
+        $this->authorizeChannelAccess($channel);
+        abort_unless($qrCode->ownable_type === Channel::class && $qrCode->ownable_id === $channel->id, 404);
+
+        $wasActive = $qrCode->is_active;
+        $wasActive ? $this->qrCodeService->deactivate($qrCode) : $this->qrCodeService->reactivate($qrCode);
+
+        return back()->with('success', $wasActive ? __('QR code deactivated.') : __('QR code reactivated.'));
+    }
+
+    public function destroyQrCode(Channel $channel, \App\Models\QrCode $qrCode)
+    {
+        $this->authorizeChannelAccess($channel);
+        abort_unless($qrCode->ownable_type === Channel::class && $qrCode->ownable_id === $channel->id, 404);
+
+        $this->qrCodeService->delete($qrCode);
+
+        return back()->with('success', __('QR code deleted.'));
+    }
+
+    public function updateQrWelcomeMessage(Request $request, Channel $channel, \App\Models\QrCode $qrCode)
+    {
+        $this->authorizeChannelAccess($channel);
+        abort_unless($qrCode->ownable_type === Channel::class && $qrCode->ownable_id === $channel->id, 404);
+
+        $validated = $request->validate([
+            'welcome_message' => 'nullable|string|max:500',
+        ]);
+
+        $qrCode->update([
+            'metadata' => array_merge($qrCode->metadata ?? [], [
+                'welcome_message' => $validated['welcome_message'] ?? null,
+            ]),
+        ]);
+
+        return back()->with('success', __('Welcome message saved.'));
+    }
+
+    public function printQrCode(Channel $channel, \App\Models\QrCode $qrCode)
+    {
+        $this->authorizeChannelAccess($channel);
+        abort_unless($qrCode->ownable_type === Channel::class && $qrCode->ownable_id === $channel->id, 404);
+
+        $qrImage = $this->qrCodeService->generateImage($qrCode, 500);
+
+        return view('tenant.channels.qr-print', compact('channel', 'qrCode', 'qrImage'));
+    }
+
+    private function pendingJoinInstance(Channel $channel, User $user): ?WorkflowInstance
+    {
+        return WorkflowInstance::where('workflowable_type', Channel::class)
+            ->where('workflowable_id', $channel->id)
+            ->where('requested_by', $user->id)
+            ->where('status', 'pending')
+            ->latest('id')
+            ->first();
     }
 
     private function authorizeChannelAccess(Channel $channel): void

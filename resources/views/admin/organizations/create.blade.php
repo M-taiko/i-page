@@ -229,6 +229,21 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="organization_template_id" class="form-label">Organization Template</label>
+                    <select class="form-control @error('organization_template_id') is-invalid @enderror"
+                            id="organization_template_id" name="organization_template_id">
+                        <option value="">No template — start blank</option>
+                        @foreach($templates as $template)
+                            <option value="{{ $template->id }}" @selected(old('organization_template_id') == $template->id)>
+                                {{ $template->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="form-text">Seeds default departments and channels for this industry. You can customize everything afterwards.</p>
+                    @error('organization_template_id')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                </div>
+
+                <div class="form-group">
                     <label for="max_channels" class="form-label form-label-required">Allowed Number of Channels</label>
                     <div class="input-group">
                         <input type="number" class="form-control @error('max_channels') is-invalid @enderror"

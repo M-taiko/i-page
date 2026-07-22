@@ -52,7 +52,7 @@ class Channel extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'channel_user')
-            ->withPivot('role', 'joined_at', 'muted_at')
+            ->withPivot('role', 'status', 'joined_at', 'muted_at')
             ->using(ChannelUser::class);
     }
 
@@ -94,5 +94,36 @@ class Channel extends Model
     public function scopePrivate($query)
     {
         return $query->where('type', 'private');
+    }
+
+    /**
+     * Public channels are open to any authenticated user. Private channels
+     * require an approved channel_user row (or channel/org admin standing) —
+     * a "pending" join request must not grant content access.
+     */
+    public function canBeAccessedBy(User $user): bool
+    {
+        if ($this->type !== 'private') {
+            return true;
+        }
+
+        if ($this->admin_user_id === $user->id || $user->hasRole('super_admin')) {
+            return true;
+        }
+
+        if ($user->membershipFor($this->organization)?->role === 'organization_admin') {
+            return true;
+        }
+
+        $membership = $this->users()->where('user_id', $user->id)->first();
+
+        return $membership && $membership->pivot->status === 'approved';
+    }
+
+    public function hasPendingRequestFrom(User $user): bool
+    {
+        $membership = $this->users()->where('user_id', $user->id)->first();
+
+        return $membership && $membership->pivot->status === 'pending';
     }
 }

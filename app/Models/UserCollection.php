@@ -20,11 +20,13 @@ class UserCollection extends Model
         'sort_order',
         'is_pinned',
         'is_muted',
+        'is_favorites',
     ];
 
     protected $casts = [
         'is_pinned' => 'boolean',
         'is_muted' => 'boolean',
+        'is_favorites' => 'boolean',
         'sort_order' => 'integer',
     ];
 

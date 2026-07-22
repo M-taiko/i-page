@@ -236,6 +236,41 @@ class CollectionController extends Controller
         ]));
     }
 
+    /**
+     * One-click star: adds/removes a channel from the user's single default
+     * "Favorites" collection (auto-created on first use) — a lighter-weight
+     * shortcut than manually picking/creating a named collection.
+     */
+    public function toggleFavorite(Channel $channel): RedirectResponse
+    {
+        $favorites = $this->favoritesCollectionFor(auth()->user());
+
+        $this->ensureSubscribed($channel);
+
+        if ($favorites->channels()->where('channel_id', $channel->id)->exists()) {
+            $favorites->channels()->detach($channel->id);
+            $message = __('Removed from Favorites.');
+        } else {
+            $favorites->channels()->attach($channel->id);
+            $message = __('Added to Favorites.');
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function favoritesCollectionFor(\App\Models\User $user): UserCollection
+    {
+        return $user->collections()->where('is_favorites', true)->first()
+            ?? $user->collections()->create([
+                'name' => __('Favorites'),
+                'icon' => '⭐',
+                'color' => '#f59e0b',
+                'sort_order' => 0,
+                'is_pinned' => true,
+                'is_favorites' => true,
+            ]);
+    }
+
     private function ensureSubscribed(Channel $channel): void
     {
         $user = auth()->user();

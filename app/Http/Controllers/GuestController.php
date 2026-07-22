@@ -114,8 +114,12 @@ class GuestController extends Controller
         $this->recordViews($posts);
 
         $isSubscribed = auth()->check() && auth()->user()->channels()->where('channel_id', $channel->id)->exists();
+        $isFavorited = auth()->check() && auth()->user()->collections()
+            ->where('is_favorites', true)
+            ->whereHas('channels', fn ($q) => $q->where('channels.id', $channel->id))
+            ->exists();
 
-        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed'));
+        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited'));
     }
 
     /**

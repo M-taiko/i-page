@@ -268,11 +268,12 @@
                         @enderror
                     </div>
 
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: -0.5rem 0 1rem;">
+                        {{ __('Provide an email or a phone number — we\'ll send a verification code to it.') }}
+                    </p>
+
                     <div class="form-group">
-                        <label class="form-label">
-                            {{ __('Email') }}
-                            <span style="color: #999; font-size: 0.85rem; font-weight: normal;">({{ __('optional') }})</span>
-                        </label>
+                        <label class="form-label">{{ __('Email') }}</label>
                         <input
                             type="email"
                             class="form-input @error('email') is-invalid @enderror"
@@ -286,10 +287,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">
-                            {{ __('Phone Number') }}
-                            <span style="color: #999; font-size: 0.85rem; font-weight: normal;">({{ __('optional') }})</span>
-                        </label>
+                        <label class="form-label">{{ __('Phone Number') }}</label>
                         <input
                             type="tel"
                             class="form-input @error('mobile') is-invalid @enderror"

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Channel;
 use App\Repositories\Contracts\ChannelRepositoryInterface;
+use App\Services\WorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -13,8 +14,10 @@ class ChannelController extends Controller
 {
     protected $channelRepository;
 
-    public function __construct(ChannelRepositoryInterface $channelRepository)
-    {
+    public function __construct(
+        ChannelRepositoryInterface $channelRepository,
+        private WorkflowService $workflowService
+    ) {
         $this->channelRepository = $channelRepository;
     }
 
@@ -59,19 +62,45 @@ class ChannelController extends Controller
             ->with('success', 'Channel created successfully');
     }
 
+    /**
+     * Regular members never leave the Telegram-style mobile shell — this
+     * reuses the same guest.channel-detail view (it already has @auth
+     * branches for subscribe/comment/like) instead of the Bootstrap
+     * "dashboard" view. Channel management stays on /tenant/channels/*,
+     * which is the admin-facing surface and is fine to look different.
+     */
     public function show($organization, $channelId): View
     {
-        $channel = Channel::with(['users', 'admin'])
+        $channel = Channel::with(['users', 'admin', 'organization'])
             ->withCount(['users', 'posts'])
             ->findOrFail($channelId);
+
+        $organization = $channel->organization;
+
+        if (!$channel->canBeAccessedBy(auth()->user())) {
+            $membership = $channel->users()->where('user_id', auth()->id())->first();
+
+            return view('channels.pending', compact('channel', 'organization', 'membership'));
+        }
 
         $posts = $channel->posts()
             ->where('status', 'published')
             ->with(['author', 'organization', 'reactions', 'comments'])
             ->latest('published_at')
-            ->paginate(10);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('channels.show', compact('channel', 'organization', 'posts'));
+        foreach ($posts as $post) {
+            $post->recordViewFor(auth()->user());
+        }
+
+        $isSubscribed = $channel->users()->where('user_id', auth()->id())->exists();
+        $isFavorited = auth()->user()->collections()
+            ->where('is_favorites', true)
+            ->whereHas('channels', fn ($q) => $q->where('channels.id', $channel->id))
+            ->exists();
+
+        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited'));
     }
 
     public function edit($organization, $channelId): View
@@ -117,16 +146,32 @@ class ChannelController extends Controller
     public function subscribe($organization, $channelId): RedirectResponse
     {
         $channel = Channel::findOrFail($channelId);
+        $user = auth()->user();
 
-        if (!auth()->user()->subscribedChannels()->where('channel_id', $channel->id)->exists()) {
-            auth()->user()->subscribedChannels()->attach($channel->id);
-            $message = 'Successfully subscribed to ' . $channel->name;
-        } else {
-            $message = 'You are already subscribed to ' . $channel->name;
+        if ($user->subscribedChannels()->where('channel_id', $channel->id)->exists()) {
+            return redirect()->route('dashboard.channels.show', [$organization, $channelId])
+                ->with('success', 'You are already subscribed to ' . $channel->name);
         }
 
+        if ($channel->type === 'private') {
+            $user->subscribedChannels()->attach($channel->id, ['status' => 'pending']);
+
+            $this->workflowService->requestApproval(
+                $channel->organization,
+                'channel_join',
+                $channel,
+                $user,
+                ['requested_role' => 'member']
+            );
+
+            return redirect()->route('dashboard.channels.show', [$organization, $channelId])
+                ->with('success', 'Your request to join ' . $channel->name . ' is pending approval.');
+        }
+
+        $user->subscribedChannels()->attach($channel->id, ['status' => 'approved']);
+
         return redirect()->route('dashboard.channels.show', [$organization, $channelId])
-            ->with('success', $message);
+            ->with('success', 'Successfully subscribed to ' . $channel->name);
     }
 
     public function unsubscribe($organization, $channelId): RedirectResponse

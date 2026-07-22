@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
+use App\Models\OrganizationTemplate;
 use App\Models\User;
+use App\Services\OrganizationTemplateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class OrganizationController extends Controller
 {
+    public function __construct(private OrganizationTemplateService $templateService)
+    {
+    }
+
     public function index()
     {
         $organizations = Organization::with('users')->paginate(15);
@@ -19,7 +25,8 @@ class OrganizationController extends Controller
 
     public function create()
     {
-        return view('admin.organizations.create');
+        $templates = OrganizationTemplate::where('is_active', true)->orderBy('name')->get();
+        return view('admin.organizations.create', compact('templates'));
     }
 
     public function store(Request $request)
@@ -30,6 +37,7 @@ class OrganizationController extends Controller
             'city' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
             'max_channels' => 'required|integer|min:1|max:100',
+            'organization_template_id' => 'nullable|exists:organization_templates,id',
             'owner_first_name' => 'required|string|max:255',
             'owner_last_name' => 'required|string|max:255',
             'owner_email' => 'required|email|unique:users,email',
@@ -48,12 +56,16 @@ class OrganizationController extends Controller
         ]);
 
         // Every organization starts with one default brand (channels live under brands).
-        Brand::create([
+        $defaultBrand = Brand::create([
             'organization_id' => $organization->id,
             'name' => $organization->name,
             'slug' => Str::slug($organization->name),
             'is_active' => true,
         ]);
+
+        if ($template = OrganizationTemplate::find($validated['organization_template_id'] ?? null)) {
+            $this->templateService->applyToOrganization($organization, $template, $defaultBrand);
+        }
 
         $owner = User::create([
             'first_name' => $validated['owner_first_name'],

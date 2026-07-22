@@ -16,6 +16,7 @@ class Organization extends Model
     protected $table = 'organizations';
 
     protected $fillable = [
+        'organization_template_id',
         'name',
         'slug',
         'description',
@@ -50,6 +51,11 @@ class Organization extends Model
     public function isCancelled(): bool
     {
         return $this->status === 'cancelled';
+    }
+
+    public function template()
+    {
+        return $this->belongsTo(OrganizationTemplate::class, 'organization_template_id');
     }
 
     public function brands(): HasMany

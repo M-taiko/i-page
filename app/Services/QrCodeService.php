@@ -39,10 +39,15 @@ class QrCodeService
         return $qrCode;
     }
 
+    /**
+     * SVG rather than PNG: the installed simple-qrcode version only rasterizes
+     * PNG via the Imagick backend, which isn't available on this environment
+     * (only GD, which the package doesn't support). SVG needs no extension.
+     */
     public function generateImage(QrCode $qrCode, int $size = 300): string
     {
         $qrImage = QrCodeGenerator::size($size)
-            ->format('png')
+            ->format('svg')
             ->generate($qrCode->url);
 
         return base64_encode($qrImage);
@@ -56,7 +61,7 @@ class QrCodeService
         }
 
         QrCodeGenerator::size($size)
-            ->format('png')
+            ->format('svg')
             ->generate($qrCode->url, $path);
 
         return $path;
@@ -79,7 +84,7 @@ class QrCodeService
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
             'device_type' => $deviceType,
-            'referer' => request()->referer(),
+            'referer' => request()->header('referer'),
             'location' => request()->header('cf-ipcountry'),
         ]);
     }

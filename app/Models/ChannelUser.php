@@ -12,6 +12,7 @@ class ChannelUser extends Pivot
         'channel_id',
         'user_id',
         'role',
+        'status',
         'joined_at',
         'muted_at',
     ];

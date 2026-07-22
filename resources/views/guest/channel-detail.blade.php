@@ -9,6 +9,12 @@
     <div class="app-bar-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $channel->name }}</div>
     @auth
         <div class="app-bar-actions">
+            <form action="{{ route('collections.favorite', $channel->id) }}" method="POST">
+                @csrf
+                <button type="submit" class="app-bar-icon-btn" style="{{ ($isFavorited ?? false) ? 'color: #f59e0b;' : '' }}" aria-label="{{ __('Favorite') }}">
+                    <i class="bi {{ ($isFavorited ?? false) ? 'bi-star-fill' : 'bi-star' }}"></i>
+                </button>
+            </form>
             <button type="button" class="app-bar-icon-btn" onclick="openAddToCollection('channel', {{ $channel->id }}, '{{ $channel->name }}')" aria-label="{{ __('Add to Collection') }}">
                 <i class="bi bi-folder-plus"></i>
             </button>
