@@ -3,6 +3,12 @@
     <head>
         <meta charset="utf-8">
         <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/logo-mark.svg') }}">
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
+        <meta name="theme-color" content="#2563eb">
+        <link rel="apple-touch-icon" href="{{ asset('images/pwa/apple-touch-icon.png') }}">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="mobile-web-app-capable" content="yes">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -27,5 +33,12 @@
                 {{ $slot }}
             </div>
         </div>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(() => {});
+                });
+            }
+        </script>
     </body>
 </html>
