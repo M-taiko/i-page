@@ -1,26 +1,17 @@
-# Emergency stopgap only — the real fix is pointing the domain's Document Root
-# at the `public/` folder. Until that's done, this blocks direct web access
-# to sensitive files/folders when the project root is (incorrectly) served
-# directly.
+# EMERGENCY STOPGAP ONLY. The real fix is pointing the domain's Document
+# Root at the public/ folder — once that's done this file becomes
+# unreachable anyway and can be deleted. Until then, this blocks direct
+# web access to dotfiles (.env, .git, etc.) when the project root is
+# (incorrectly) served directly by the web server.
 
-<IfModule mod_rewrite.c>
-    RewriteEngine On
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
 </IfModule>
-
-# Block dotfiles (.env, .git, .htaccess itself, etc.)
-<FilesMatch "^\.">
-    Require all denied
-</FilesMatch>
-
-# Block direct access to sensitive files
-<FilesMatch "(composer\.(json|lock)|package(-lock)?\.json|artisan|phpunit\.xml|webpack\.mix\.js|README\.md)$">
-    Require all denied
-</FilesMatch>
-
-# Block entire application folders that should never be web-accessible
-RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)/ - [F,L]
-
-# Everything else: only public/ should be reachable
-RewriteCond %{REQUEST_URI} !^/public/
-RewriteCond %{REQUEST_URI} !^/index\.php
-RewriteRule ^ - [L]
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^\.">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
