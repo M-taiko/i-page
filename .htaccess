@@ -1,8 +1,12 @@
-# EMERGENCY STOPGAP ONLY. The real fix is pointing the domain's Document
-# Root at the public/ folder — once that's done this file becomes
-# unreachable anyway and can be deleted. Until then, this blocks direct
-# web access to dotfiles (.env, .git, etc.) when the project root is
-# (incorrectly) served directly by the web server.
+# This project's Document Root is the project folder itself (not public/),
+# so this file does two jobs:
+#   1. Block direct web access to dotfiles (.env, .git, etc.) — without
+#      this, files that physically exist get served as static files,
+#      bypassing Laravel entirely (this is how .env got exposed).
+#   2. Rewrite every other request through to public/index.php, so Laravel's
+#      router still handles the app normally.
+# The correct long-term fix is still pointing the domain's Document Root
+# directly at public/ — once that's done, this file is unnecessary.
 
 <IfModule mod_authz_core.c>
     <FilesMatch "^\.">
@@ -14,4 +18,28 @@
         Order allow,deny
         Deny from all
     </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+    RewriteBase /
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Serve real static assets (css/js/images/fonts) straight out of public/
+    # when they exist there — this is what asset()-generated URLs like
+    # /images/brand/logo-mark.svg need, since they're built assuming public/
+    # is the site root, but it isn't in this deployment.
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Everything else: hand off to Laravel's front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php [L]
 </IfModule>
