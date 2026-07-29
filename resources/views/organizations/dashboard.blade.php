@@ -2,332 +2,161 @@
 
 @section('content')
 <style>
-    .stat-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    .stat-card-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-    }
-
-    .stat-card-icon.primary { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .stat-card-icon.success { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-    .stat-card-icon.warning { background: rgba(247, 144, 9, 0.1); color: #f79009; }
-    .stat-card-icon.danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-
-    .header-section {
+    .org-hero {
         background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
         color: white;
-        padding: 3rem 1.5rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-    }
-
-    .header-section h1 {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .header-section p {
-        opacity: 0.9;
-        margin-bottom: 0;
-    }
-
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 1.5rem;
-        color: var(--text-primary);
-    }
-
-    .section-title-divider {
+        padding: var(--space-8) var(--space-6);
+        border-radius: var(--radius-xl);
+        margin-bottom: var(--space-6);
         display: flex;
         align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+        justify-content: space-between;
+        gap: var(--space-4);
+        flex-wrap: wrap;
     }
+    .org-hero h1 { margin: 0 0 4px; font-size: var(--text-2xl); }
+    .org-hero p { margin: 0; opacity: 0.9; font-size: var(--text-sm); }
+    .org-hero-settings-btn {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        background-color: rgba(255,255,255,0.18); color: white; text-decoration: none;
+        padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-medium);
+    }
+    .org-hero-settings-btn:hover { background-color: rgba(255,255,255,0.28); }
 
-    .section-title-divider h2 {
-        margin: 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-    }
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); }
+    @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
 
-    .section-title-divider .divider {
-        flex: 1;
-        height: 1px;
-        background: var(--surface-border);
+    .list-card .card-body { padding: 0; }
+    .list-card-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: var(--space-4); border-bottom: 1px solid var(--surface-border);
     }
+    .list-card-header h5 { margin: 0; font-size: var(--text-base); font-weight: var(--font-weight-bold); color: var(--text-primary); display: flex; align-items: center; gap: var(--space-2); }
+    .list-card-header a { font-size: var(--text-xs); color: var(--primary-600); text-decoration: none; font-weight: var(--font-weight-medium); }
+
+    .list-row { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--surface-border); }
+    .list-row:last-child { border-bottom: none; }
+    .list-row:hover { background-color: var(--surface-hover); }
+    .list-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); margin-bottom: 4px; }
+    .list-row-title { font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--text-primary); text-decoration: none; }
+    .list-row-title:hover { color: var(--primary-600); }
+    .list-row-meta { font-size: var(--text-xs); color: var(--text-tertiary); }
+
+    .pill { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--radius-full); font-size: 10px; font-weight: var(--font-weight-bold); white-space: nowrap; }
+    .pill-secondary { background-color: var(--surface-hover); color: var(--text-tertiary); }
+    .pill-success { background-color: var(--success-50); color: var(--success-700); }
+    .pill-warning { background-color: var(--warning-50, #fffbeb); color: var(--warning-700, #b45309); }
+    .pill-danger { background-color: var(--danger-50); color: var(--danger-700); }
+    .pill-info { background-color: var(--info-50, #eff6ff); color: var(--info-700, #1d4ed8); }
+
+    .empty-row { text-align: center; padding: var(--space-8) var(--space-4); color: var(--text-tertiary); font-size: var(--text-sm); }
+    .empty-row i { font-size: 1.75rem; display: block; margin-bottom: var(--space-2); opacity: 0.5; }
 
     .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        text-decoration: none;
-        color: var(--text-primary);
-        background: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        font-weight: 500;
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        text-decoration: none; color: var(--text-primary);
+        background-color: var(--surface-bg); border: 1px solid var(--surface-border);
+        border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-medium);
+        transition: all var(--transition-fast);
     }
+    .action-btn:hover { background-color: var(--primary-50); border-color: var(--primary-600); color: var(--primary-600); }
+    .action-btn i { font-size: var(--text-lg); }
 
-    .action-btn:hover {
-        background: var(--primary-50);
-        border-color: var(--primary-600);
-        color: var(--primary-600);
-    }
-
-    .recent-item {
-        padding: 1rem;
-        border-bottom: 1px solid var(--surface-border);
-        transition: background 0.3s ease;
-    }
-
-    .recent-item:hover {
-        background: var(--surface-bg-secondary);
-    }
-
-    .recent-item:last-child {
-        border-bottom: none;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--text-tertiary);
-        font-weight: 500;
-    }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); padding: var(--space-4); }
+    .info-grid-item p:first-child { margin: 0 0 4px; font-size: var(--text-xs); color: var(--text-tertiary); }
+    .info-grid-item p:last-child { margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
 </style>
 
-<div class="container-lg py-4">
-    <!-- Header -->
-    <div class="header-section">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h1>{{ $organization->name }}</h1>
-                <p>{{ $organization->email ?? 'No email' }}</p>
-            </div>
-            <a href="{{ route('organizations.settings', $organization) }}" class="btn btn-light">
-                <i class="bi bi-gear"></i> Settings
-            </a>
-        </div>
+<!-- Header -->
+<div class="org-hero">
+    <div>
+        <h1>{{ $organization->name }}</h1>
+        <p>{{ $organization->email ?? __('No email set') }}</p>
     </div>
+    <a href="{{ route('organizations.settings', $organization) }}" class="org-hero-settings-btn">
+        <i class="bi bi-gear"></i> {{ __('Settings') }}
+    </a>
+</div>
 
-    <!-- Key Statistics -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon primary">
-                        <i class="bi bi-file-text"></i>
-                    </div>
-                    <div>
-                        <p class="stat-label">Posts</p>
-                        <p class="stat-value">{{ $organization->posts()->count() }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Key Statistics -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
+    <x-stat-card title="{{ __('Posts') }}" value="{{ $organization->posts()->count() }}" icon="file-text" />
+    <x-stat-card title="{{ __('Open Tickets') }}" value="{{ $organization->tickets()->where('status', '!=', 'closed')->count() }}" icon="ticket-perforated" />
+    <x-stat-card title="{{ __('Team Members') }}" value="{{ $organization->users()->count() }}" icon="people" />
+    <x-stat-card title="{{ __('Locations') }}" value="{{ $organization->locations()->count() }}" icon="geo-alt" />
+</div>
 
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon success">
-                        <i class="bi bi-ticket"></i>
-                    </div>
-                    <div>
-                        <p class="stat-label">Open Tickets</p>
-                        <p class="stat-value">{{ $organization->tickets()->where('status', '!=', 'closed')->count() }}</p>
-                    </div>
-                </div>
-            </div>
+<!-- Recent Posts / Open Tickets -->
+<div class="dash-grid">
+    <x-card-modern class="list-card">
+        <div class="list-card-header">
+            <h5><i class="bi bi-file-text"></i> {{ __('Recent Posts') }}</h5>
+            <a href="{{ route('posts.index') }}">{{ __('View All') }} →</a>
         </div>
+        @forelse($organization->posts()->latest()->take(5)->get() as $post)
+            <div class="list-row">
+                <div class="list-row-top">
+                    <a href="{{ route('posts.show', $post) }}" class="list-row-title">{{ Str::limit($post->title, 45) }}</a>
+                    <span class="pill {{ match($post->status) {
+                        'draft' => 'pill-secondary',
+                        'published' => 'pill-success',
+                        'pending_approval' => 'pill-warning',
+                        default => 'pill-info',
+                    } }}">{{ str_replace('_', ' ', ucfirst($post->status)) }}</span>
+                </div>
+                <div class="list-row-meta">{{ $post->created_at->format('M d, Y · h:i A') }}</div>
+            </div>
+        @empty
+            <div class="empty-row"><i class="bi bi-inbox"></i>{{ __('No posts yet') }}</div>
+        @endforelse
+    </x-card-modern>
 
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon warning">
-                        <i class="bi bi-people"></i>
-                    </div>
-                    <div>
-                        <p class="stat-label">Team Members</p>
-                        <p class="stat-value">{{ $organization->users()->count() }}</p>
-                    </div>
-                </div>
-            </div>
+    <x-card-modern class="list-card">
+        <div class="list-card-header">
+            <h5><i class="bi bi-ticket-perforated"></i> {{ __('Open Tickets') }}</h5>
+            <a href="{{ route('tickets.index') }}">{{ __('View All') }} →</a>
         </div>
+        @forelse($organization->tickets()->where('status', '!=', 'closed')->latest()->take(5)->get() as $ticket)
+            <div class="list-row">
+                <div class="list-row-top">
+                    <a href="{{ route('tickets.show', $ticket) }}" class="list-row-title">
+                        <code style="font-size: var(--text-xs);">{{ $ticket->ticket_number }}</code>
+                        {{ Str::limit($ticket->title, 30) }}
+                    </a>
+                    <span class="pill {{ match($ticket->priority) {
+                        'urgent' => 'pill-danger',
+                        'high' => 'pill-warning',
+                        'medium' => 'pill-info',
+                        default => 'pill-secondary',
+                    } }}">{{ ucfirst($ticket->priority) }}</span>
+                </div>
+                <div class="list-row-meta">{{ $ticket->opened_at?->format('M d, Y') ?? __('Recently') }}</div>
+            </div>
+        @empty
+            <div class="empty-row"><i class="bi bi-check-circle"></i>{{ __('No open tickets') }}</div>
+        @endforelse
+    </x-card-modern>
+</div>
 
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon danger">
-                        <i class="bi bi-building"></i>
-                    </div>
-                    <div>
-                        <p class="stat-label">Locations</p>
-                        <p class="stat-value">{{ $organization->locations()->count() }}</p>
-                    </div>
-                </div>
-            </div>
+<!-- Quick Actions / Organization Info -->
+<div class="dash-grid" style="margin-bottom: 0;">
+    <x-card-modern title="{{ __('Quick Actions') }}" icon="lightning">
+        <div style="display: grid; gap: var(--space-2);">
+            <a href="{{ route('posts.create') }}" class="action-btn"><i class="bi bi-pencil-square"></i> {{ __('Create Post') }}</a>
+            <a href="{{ route('tickets.create') }}" class="action-btn"><i class="bi bi-plus-circle"></i> {{ __('Create Ticket') }}</a>
+            <a href="{{ route('audience-segments.create') }}" class="action-btn"><i class="bi bi-diagram-3"></i> {{ __('Create Audience') }}</a>
+            <a href="{{ route('organizations.settings', $organization) }}" class="action-btn"><i class="bi bi-people-fill"></i> {{ __('Manage Team') }}</a>
         </div>
-    </div>
+    </x-card-modern>
 
-    <!-- Main Content -->
-    <div class="row g-4 mb-4">
-        <!-- Recent Posts -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-file-text"></i> Recent Posts</h5>
-                    <a href="{{ route('posts.index') }}" class="btn btn-sm btn-outline-primary">View All →</a>
-                </div>
-                <div class="card-body p-0">
-                    @forelse($organization->posts()->latest()->take(5)->get() as $post)
-                        <div class="recent-item">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <a href="{{ route('posts.show', $post) }}" class="text-decoration-none fw-500">
-                                    {{ Str::limit($post->title, 45) }}
-                                </a>
-                                <span class="badge ms-2 bg-{{ match($post->status) {
-                                    'draft' => 'secondary',
-                                    'published' => 'success',
-                                    'pending_approval' => 'warning',
-                                    default => 'info'
-                                } }}">
-                                    {{ str_replace('_', ' ', ucfirst($post->status)) }}
-                                </span>
-                            </div>
-                            <small class="text-muted">{{ $post->created_at->format('M d, Y · h:i A') }}</small>
-                        </div>
-                    @empty
-                        <div class="text-center py-4 text-muted">
-                            <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
-                            <p class="mt-2">No posts yet</p>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
+    <x-card-modern class="list-card" title="{{ __('Organization Info') }}" icon="info-circle">
+        <div class="info-grid">
+            <div class="info-grid-item"><p>{{ __('Brands') }}</p><p>{{ $organization->brands()->count() }}</p></div>
+            <div class="info-grid-item"><p>{{ __('Channels') }}</p><p>{{ $organization->channels()->count() }}</p></div>
+            <div class="info-grid-item"><p>{{ __('Audience Segments') }}</p><p>{{ $organization->audienceSegments()->count() }}</p></div>
+            <div class="info-grid-item"><p>{{ __('All Tickets') }}</p><p>{{ $organization->tickets()->count() }}</p></div>
         </div>
-
-        <!-- Open Tickets -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-ticket"></i> Open Tickets</h5>
-                    <a href="{{ route('tickets.index') }}" class="btn btn-sm btn-outline-primary">View All →</a>
-                </div>
-                <div class="card-body p-0">
-                    @forelse($organization->tickets()->where('status', '!=', 'closed')->latest()->take(5)->get() as $ticket)
-                        <div class="recent-item">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <div class="fw-500">
-                                        <code>{{ $ticket->ticket_number }}</code>
-                                        <a href="{{ route('tickets.show', $ticket) }}" class="text-decoration-none ms-2">
-                                            {{ Str::limit($ticket->title, 30) }}
-                                        </a>
-                                    </div>
-                                </div>
-                                <span class="badge ms-2 bg-{{ match($ticket->priority) {
-                                    'urgent' => 'danger',
-                                    'high' => 'warning',
-                                    'medium' => 'info',
-                                    'low' => 'secondary',
-                                    default => 'secondary'
-                                } }}">
-                                    {{ ucfirst($ticket->priority) }}
-                                </span>
-                            </div>
-                            <small class="text-muted">{{ $ticket->opened_at?->format('M d, Y') ?? 'Recently' }}</small>
-                        </div>
-                    @empty
-                        <div class="text-center py-4 text-muted">
-                            <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
-                            <p class="mt-2">No open tickets</p>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Section -->
-    <div class="row g-4">
-        <!-- Quick Actions -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('posts.create') }}" class="action-btn">
-                            <i class="bi bi-pencil-square"></i> Create Post
-                        </a>
-                        <a href="{{ route('tickets.create') }}" class="action-btn">
-                            <i class="bi bi-plus-circle"></i> Create Ticket
-                        </a>
-                        <a href="{{ route('audience-segments.create') }}" class="action-btn">
-                            <i class="bi bi-diagram-3"></i> Create Audience
-                        </a>
-                        <a href="{{ route('organizations.settings', $organization) }}" class="action-btn">
-                            <i class="bi bi-people-fill"></i> Manage Team
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Organization Info -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Organization Info</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-sm-6">
-                            <p class="text-muted small">Brands</p>
-                            <p class="h5 mb-0">{{ $organization->brands()->count() }}</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small">Channels</p>
-                            <p class="h5 mb-0">{{ $organization->channels()->count() }}</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small">Audience Segments</p>
-                            <p class="h5 mb-0">{{ $organization->audienceSegments()->count() }}</p>
-                        </div>
-                        <div class="col-sm-6">
-                            <p class="text-muted small">All Tickets</p>
-                            <p class="h5 mb-0">{{ $organization->tickets()->count() }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </x-card-modern>
 </div>
 @endsection

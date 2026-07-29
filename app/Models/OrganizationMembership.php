@@ -25,10 +25,13 @@ class OrganizationMembership extends Model
         'status',
         'joined_date',
         'invited_by',
+        'business_verified_at',
+        'business_verified_by',
     ];
 
     protected $casts = [
         'joined_date' => 'datetime',
+        'business_verified_at' => 'datetime',
     ];
 
     public function organization(): BelongsTo
@@ -61,6 +64,11 @@ class OrganizationMembership extends Model
         return $this->belongsTo(User::class, 'invited_by');
     }
 
+    public function businessVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'business_verified_by');
+    }
+
     // Helper methods
     public function isActive(): bool
     {
@@ -70,6 +78,16 @@ class OrganizationMembership extends Model
     public function isInvited(): bool
     {
         return $this->status === 'invited';
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isBusinessVerified(): bool
+    {
+        return $this->business_verified_at !== null;
     }
 
     public function activate(): void

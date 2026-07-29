@@ -276,7 +276,7 @@
     <!-- Header -->
     <div class="sidebar-header">
         <div class="sidebar-logo">
-            <i class="bi bi-globe"></i>
+            <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
         <div>
             <h3 class="sidebar-title">IPAGE</h3>

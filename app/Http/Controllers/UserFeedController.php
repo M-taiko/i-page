@@ -144,8 +144,10 @@ class UserFeedController extends Controller
         $this->resolveCurrentOrganization();
 
         $organizations = Organization::where('is_active', true)
+            ->when(request('q'), fn ($q) => $q->where('name', 'like', '%' . request('q') . '%'))
             ->withCount('users', 'channels', 'posts')
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
         return view('feed.explore-organizations', compact('organizations'));
     }
@@ -171,6 +173,47 @@ class UserFeedController extends Controller
                 'users_count' => $org->users_count,
                 'channels_count' => $org->channels_count,
                 'posts_count' => $org->posts_count,
+            ])->toArray(),
+        ]);
+    }
+
+    /**
+     * Discovery: search-only directory of people (by name or @username) —
+     * foundation for future user-to-user chat. No "browse all" grid, since
+     * listing every user isn't a meaningful default view.
+     */
+    public function explorePeople(): View
+    {
+        $this->resolveCurrentOrganization();
+
+        return view('feed.explore-people');
+    }
+
+    public function searchPeople(): \Illuminate\Http\JsonResponse
+    {
+        $query = request()->input('q', '');
+
+        if (strlen($query) < 1) {
+            return response()->json(['users' => []]);
+        }
+
+        $users = \App\Models\User::where('id', '!=', auth()->id())
+            ->where(function ($q) use ($query) {
+                $q->where('first_name', 'like', '%' . $query . '%')
+                    ->orWhere('last_name', 'like', '%' . $query . '%')
+                    ->orWhere('username', 'like', '%' . $query . '%');
+            })
+            ->limit(15)
+            ->get();
+
+        return response()->json([
+            'users' => $users->map(fn ($u) => [
+                'id' => $u->id,
+                'full_name' => $u->full_name,
+                'username' => $u->username,
+                'initials' => $u->initials,
+                'avatar_path' => $u->avatar_path ? \Illuminate\Support\Facades\Storage::url($u->avatar_path) : null,
+                'profile_level' => $u->profile_level,
             ])->toArray(),
         ]);
     }

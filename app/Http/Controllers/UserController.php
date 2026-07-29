@@ -19,9 +19,21 @@ class UserController extends Controller
 
     public function index($organization): View
     {
-        $filters = array_merge(request()->all(), ['organization_id' => $organization]);
+        $org = \App\Models\Organization::findOrFail($organization);
+
+        $filters = array_merge(request()->all(), ['organization_id' => $organization, 'membership_status' => 'active']);
         $users = $this->userRepository->paginate($filters);
-        return view('users.index-modern', compact('users', 'organization'));
+
+        // Attach each user's membership row for this org so the view can
+        // show role/business info without an extra query per card.
+        $users->getCollection()->each(function ($user) use ($org) {
+            $user->membership = $user->membershipFor($org);
+        });
+
+        $pendingInvites = $org->memberships()->where('status', 'invited')->with('user', 'invitedBy')->get();
+        $joinRequests = $org->memberships()->where('status', 'pending')->with('user')->get();
+
+        return view('users.index-modern', compact('users', 'organization', 'org', 'pendingInvites', 'joinRequests'));
     }
 
     public function create($organization): View

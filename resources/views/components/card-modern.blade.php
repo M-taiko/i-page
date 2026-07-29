@@ -10,7 +10,7 @@
     $cardClasses = 'card' . ($elevated ? ' card-elevated' : '');
 @endphp
 
-<div @class([$cardClasses]) {{ $attributes }}>
+<div {{ $attributes->class([$cardClasses]) }}>
     @if ($title || $icon || $headerAction)
         <div class="card-header">
             <div style="display: flex; align-items: center; gap: var(--space-3); flex: 1;">

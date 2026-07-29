@@ -53,14 +53,15 @@
             width: 60px;
             height: 60px;
             margin: 0 auto var(--space-4);
-            background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
-            border-radius: var(--radius-xl);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: var(--text-3xl);
-            font-weight: var(--font-weight-bold);
+        }
+
+        .auth-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .auth-title {
@@ -273,7 +274,7 @@
             <!-- Header -->
             <div class="auth-header">
                 <div class="auth-logo">
-                    <i class="bi bi-person-plus"></i>
+                    <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page">
                 </div>
                 <h1 class="auth-title">{{ __('Create Account') }}</h1>
                 <p class="auth-subtitle">{{ __('Join i-Page and connect your organization') }}</p>

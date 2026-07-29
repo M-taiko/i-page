@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="i-Page">
+    <defs>
+        <linearGradient id="ipageMarkGrad" x1="40" y1="185" x2="205" y2="45" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1e3a8a"/>
+            <stop offset="45%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#2dd4bf"/>
+        </linearGradient>
+    </defs>
+
+    <path d="M60,170 C60,125 100,125 100,150 C100,175 140,175 140,150 C140,120 175,100 195,55"
+          fill="none" stroke="url(#ipageMarkGrad)" stroke-width="26"
+          stroke-linecap="round" stroke-linejoin="round"/>
+
+    <polygon points="200,48 200.6,81.1 175,69.7" fill="url(#ipageMarkGrad)"/>
+</svg>

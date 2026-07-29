@@ -38,6 +38,12 @@
     .org-card-actions .btn-collect { background-color: var(--surface-hover); color: var(--primary-600); }
 
     .empty-state { text-align: center; padding: var(--space-10) var(--space-4); color: var(--text-secondary); grid-column: 1 / -1; }
+
+    .orgs-search { padding: var(--space-4) var(--space-4) 0; }
+    .orgs-search-input {
+        width: 100%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-full);
+        border: 1px solid var(--surface-border); background-color: var(--surface-bg); color: var(--text-primary); font-size: var(--text-sm);
+    }
 @endsection
 
 @section('content')
@@ -49,7 +55,12 @@
     <nav class="discover-tabs">
         <span class="discover-tab active"><i class="bi bi-building"></i> {{ __('Organizations') }}</span>
         <a href="{{ route('user.explore-channels') }}" class="discover-tab"><i class="bi bi-chat-dots"></i> {{ __('Channels') }}</a>
+        <a href="{{ route('user.explore-people') }}" class="discover-tab"><i class="bi bi-people"></i> {{ __('People') }}</a>
     </nav>
+
+    <form action="{{ route('user.explore-organizations') }}" method="GET" class="orgs-search">
+        <input type="text" name="q" class="orgs-search-input" placeholder="{{ __('Search organizations…') }}" value="{{ request('q') }}">
+    </form>
 
     <div class="orgs-content">
         @if($organizations->count() > 0)

@@ -6,7 +6,10 @@
     <button type="button" class="app-bar-icon-btn" onclick="toggleDrawer(true)" aria-label="{{ __('Menu') }}">
         <i class="bi bi-list"></i>
     </button>
-    <div class="app-bar-title">{{ __('Home') }}</div>
+    <div class="app-bar-title" style="display: flex; align-items: center; gap: var(--space-2);">
+        <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="" style="width: 24px; height: 24px;">
+        {{ __('Home') }}
+    </div>
     <div class="app-bar-actions">
         @if(auth()->user()->hasRole('super_admin'))
             <a href="{{ route('admin.dashboard') }}" class="app-bar-icon-btn" aria-label="{{ __('Dashboard') }}" title="{{ __('Dashboard') }}">
@@ -17,6 +20,9 @@
                 <i class="bi bi-speedometer2"></i>
             </a>
         @endif
+        <button type="button" class="app-bar-icon-btn" onclick="openQrModal()" aria-label="{{ __('Scan QR code') }}">
+            <i class="bi bi-qr-code-scan"></i>
+        </button>
         <a href="{{ route('user.explore-organizations') }}" class="app-bar-icon-btn" aria-label="{{ __('Search') }}">
             <i class="bi bi-search"></i>
         </a>
@@ -741,6 +747,8 @@
 @endsection
 
 @section('modals')
+    @include('partials.qr-scan-modal')
+
     <!-- Slide-in Drawer -->
     <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
     <div class="drawer" id="drawer">

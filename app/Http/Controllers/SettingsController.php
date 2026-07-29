@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,7 +22,37 @@ class SettingsController extends Controller
     {
         $user = auth()->user();
         $preferences = $user->preferences;
-        return view('settings.profile', compact('user', 'preferences'));
+        $colleagues = $this->colleaguesFor($user);
+
+        return view('settings.profile', compact('user', 'preferences', 'colleagues'));
+    }
+
+    /**
+     * "Friends" are fully automatic: anyone sharing an active membership in
+     * any of the current user's active organizations — no request/accept
+     * step, matching the intent of an internal-colleague directory.
+     */
+    private function colleaguesFor(User $user)
+    {
+        $activeOrgIds = $user->organizationMemberships()->where('status', 'active')->pluck('organization_id');
+
+        if ($activeOrgIds->isEmpty()) {
+            return collect();
+        }
+
+        $colleagues = User::whereHas('organizationMemberships', fn ($q) => $q->where('status', 'active')->whereIn('organization_id', $activeOrgIds))
+            ->where('id', '!=', $user->id)
+            ->with(['organizationMemberships' => fn ($q) => $q->where('status', 'active')->whereIn('organization_id', $activeOrgIds)->with('organization')])
+            ->distinct()
+            ->get();
+
+        return $colleagues->each(function ($colleague) {
+            $colleague->sharedOrganizationNames = $colleague->organizationMemberships
+                ->pluck('organization.name')
+                ->filter()
+                ->unique()
+                ->join(', ');
+        });
     }
 
     public function updateProfileOnly(Request $request): RedirectResponse
@@ -32,9 +63,18 @@ class SettingsController extends Controller
             'mobile' => 'nullable|string|max:24',
             'gender' => 'nullable|in:male,female,other',
             'nationality' => 'nullable|string|max:80',
+            'dob' => 'nullable|date|before:today',
+            'city' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'username' => [
+                'nullable', 'string', 'max:30', 'regex:/^[a-z0-9_.]+$/i',
+                'unique:users,username,' . auth()->id(),
+            ],
         ]);
 
-        $this->userRepository->update(auth()->user(), $validated);
+        $user = auth()->user();
+        $this->userRepository->update($user, $validated);
+        $user->refreshProfileLevel();
 
         return redirect()->route('profile.settings')
             ->with('success', 'Profile updated successfully');
@@ -127,6 +167,43 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', 'Cover photo removed');
+    }
+
+    /**
+     * Self-service account deletion. Business/organization data is never
+     * destroyed — if the user is a member of any organization, their
+     * membership rows (job_title, employee_id, department, etc.) are kept
+     * exactly as-is, just deactivated, so a support/admin action can later
+     * re-link that history to a new account if the person signs up again.
+     * The account itself is soft-deleted (User already uses SoftDeletes),
+     * and its unique fields (email/mobile/username) are anonymized so
+     * those values become available again for a fresh registration.
+     */
+    public function deleteAccount(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('deleteAccount', [
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = auth()->user();
+
+        $user->organizationMemberships()
+            ->where('status', 'active')
+            ->update(['status' => 'inactive']);
+
+        $user->update([
+            'email' => 'deleted+' . $user->id . '+' . time() . '@deleted.ipage.local',
+            'mobile' => null,
+            'username' => null,
+        ]);
+
+        auth()->logout();
+        $this->userRepository->delete($user);
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('guest.home')->with('success', __('Your account has been deleted.'));
     }
 
     public function show($organization): View

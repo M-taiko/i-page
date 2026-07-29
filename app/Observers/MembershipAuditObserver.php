@@ -18,6 +18,10 @@ class MembershipAuditObserver
             'performed_by' => auth()->id() ?? 'system',
             'timestamp' => now(),
         ]);
+
+        // Holding any org membership means the identity carries staff/business
+        // data now — promote to Business tier automatically.
+        $membership->user?->refreshProfileLevel();
     }
 
     public function updated(OrganizationMembership $membership): void
@@ -33,6 +37,12 @@ class MembershipAuditObserver
                 'performed_by' => auth()->id() ?? 'system',
                 'timestamp' => now(),
             ]);
+        }
+
+        // A pending request being approved (status -> active) also needs to
+        // (re)promote the tier — created() already handled the create-as-pending case.
+        if (isset($changes['status'])) {
+            $membership->user?->refreshProfileLevel();
         }
     }
 

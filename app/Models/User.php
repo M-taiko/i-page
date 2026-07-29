@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -13,8 +14,13 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
+    public const PROFILE_LEVEL_BASIC = 'basic';
+    public const PROFILE_LEVEL_PRIVATE = 'private';
+    public const PROFILE_LEVEL_BUSINESS = 'business';
+
     protected $fillable = [
         'ipage_id',
+        'username',
         'first_name',
         'last_name',
         'email',
@@ -23,6 +29,9 @@ class User extends Authenticatable
         'dob',
         'gender',
         'nationality',
+        'city',
+        'country',
+        'profile_level',
         'job_title',
         'department',
         'location_id',
@@ -60,6 +69,27 @@ class User extends Authenticatable
         return $this->first_name . ' ' . $this->last_name;
     }
 
+    /**
+     * A user-editable, unique handle (distinct from the system-generated
+     * ipage_id) — the basis for future user-to-user search/discovery.
+     * Collision-safe: appends a numeric suffix until unique, capped at 30 chars.
+     */
+    public static function generateUniqueUsername(string $firstName, string $lastName): string
+    {
+        $base = Str::slug($firstName . '.' . $lastName, '.');
+        $base = $base !== '' ? Str::limit($base, 24, '') : 'user';
+
+        $candidate = $base;
+        $suffix = 0;
+
+        while (static::where('username', $candidate)->exists()) {
+            $suffix++;
+            $candidate = Str::limit($base, 24, '') . $suffix;
+        }
+
+        return $candidate;
+    }
+
     public function getInitialsAttribute(): string
     {
         return strtoupper(substr($this->first_name, 0, 1) . substr($this->last_name, 0, 1));
@@ -85,7 +115,7 @@ class User extends Authenticatable
         return $roleName ? $this->formatRoleLabel($roleName) : 'Member';
     }
 
-    protected function formatRoleLabel(string $roleName): string
+    public function formatRoleLabel(string $roleName): string
     {
         return match ($roleName) {
             'super_admin' => 'Super Admin',
@@ -96,6 +126,43 @@ class User extends Authenticatable
             'member' => 'Member',
             'guest' => 'Guest',
             default => ucfirst(str_replace('_', ' ', $roleName)),
+        };
+    }
+
+    /**
+     * Business tier is earned by holding any organization membership
+     * (business/staff data itself lives on organization_memberships, not
+     * here). Private tier requires the full personal-detail set. Otherwise
+     * Basic — name/phone/email is all that's on file.
+     */
+    public function computeProfileLevel(): string
+    {
+        if ($this->organizationMemberships()->where('status', 'active')->exists()) {
+            return self::PROFILE_LEVEL_BUSINESS;
+        }
+
+        if ($this->dob && $this->gender && $this->nationality && ($this->city || $this->country)) {
+            return self::PROFILE_LEVEL_PRIVATE;
+        }
+
+        return self::PROFILE_LEVEL_BASIC;
+    }
+
+    public function refreshProfileLevel(): void
+    {
+        $level = $this->computeProfileLevel();
+
+        if ($level !== $this->profile_level) {
+            $this->update(['profile_level' => $level]);
+        }
+    }
+
+    public function getProfileLevelLabelAttribute(): string
+    {
+        return match ($this->profile_level) {
+            self::PROFILE_LEVEL_PRIVATE => 'Private Profile',
+            self::PROFILE_LEVEL_BUSINESS => 'Business Profile',
+            default => 'Basic Profile',
         };
     }
 

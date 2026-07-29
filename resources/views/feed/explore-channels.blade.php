@@ -49,6 +49,7 @@
     <nav class="discover-tabs">
         <a href="{{ route('user.explore-organizations') }}" class="discover-tab"><i class="bi bi-building"></i> {{ __('Organizations') }}</a>
         <span class="discover-tab active"><i class="bi bi-chat-dots"></i> {{ __('Channels') }}</span>
+        <a href="{{ route('user.explore-people') }}" class="discover-tab"><i class="bi bi-people"></i> {{ __('People') }}</a>
     </nav>
 
     <div class="channels-content">

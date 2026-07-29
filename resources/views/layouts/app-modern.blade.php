@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ auth()->check() && auth()->user()->language === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/logo-mark.svg') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -64,6 +65,25 @@
 
         .app-top-nav-spacer {
             flex: 1;
+        }
+
+        .app-top-nav-brand {
+            display: none;
+            align-items: center;
+            gap: var(--space-2);
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: var(--font-weight-bold);
+            font-size: var(--text-base);
+        }
+
+        .app-top-nav-brand img {
+            width: 28px;
+            height: 28px;
+        }
+
+        @media (max-width: 768px) {
+            .app-top-nav-brand { display: flex; }
         }
 
         .app-top-nav-items {
@@ -310,6 +330,10 @@
         <div class="app-main">
             <!-- Top Navigation -->
             <header class="app-top-nav">
+                <a href="{{ url('/') }}" class="app-top-nav-brand">
+                    <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page">
+                    <span>i-Page</span>
+                </a>
                 <div class="app-top-nav-spacer"></div>
 
                 <div class="app-top-nav-items">

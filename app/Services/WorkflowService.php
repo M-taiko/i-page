@@ -132,6 +132,7 @@ class WorkflowService
                         'target' => $label,
                     ]),
                     'link' => $link,
+                    'workflow_instance_id' => $instance->id,
                 ],
             ]);
         }
@@ -166,6 +167,10 @@ class WorkflowService
             return route('tenant.channels.show', $workflowable->id);
         }
 
+        if ($workflowable instanceof Organization) {
+            return route('organizations.settings') . '#members';
+        }
+
         return null;
     }
 
@@ -173,6 +178,10 @@ class WorkflowService
     {
         if ($workflowable instanceof Channel) {
             return route('dashboard.channels.show', [$workflowable->organization_id, $workflowable->id]);
+        }
+
+        if ($workflowable instanceof Organization) {
+            return route('profile.settings') . '#business';
         }
 
         return null;

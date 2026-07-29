@@ -34,6 +34,7 @@ class RegisteredUserController extends Controller
 
         $user = User::create([
             'ipage_id' => 'IP' . str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT),
+            'username' => User::generateUniqueUsername($request->first_name, $request->last_name),
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
@@ -44,6 +45,7 @@ class RegisteredUserController extends Controller
 
         // New sign-ups are Layer 3 end users
         $user->assignRole('member');
+        $user->refreshProfileLevel();
 
         event(new Registered($user));
 

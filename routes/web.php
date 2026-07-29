@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/feed', [\App\Http\Controllers\UserFeedController::class, 'index'])->name('user.feed');
     Route::get('/feed/channels', [\App\Http\Controllers\UserFeedController::class, 'exploreChannels'])->name('user.explore-channels');
     Route::get('/feed/organizations', [\App\Http\Controllers\UserFeedController::class, 'exploreOrganizations'])->name('user.explore-organizations');
+    Route::get('/feed/people', [\App\Http\Controllers\UserFeedController::class, 'explorePeople'])->name('user.explore-people');
 
     // User Profile Settings
     Route::get('/profile/settings', [SettingsController::class, 'showProfile'])->name('profile.settings');
@@ -96,6 +97,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/settings/avatar', [SettingsController::class, 'removeAvatar'])->name('profile.removeAvatar');
     Route::post('/profile/settings/cover', [SettingsController::class, 'updateCover'])->name('profile.updateCover');
     Route::delete('/profile/settings/cover', [SettingsController::class, 'removeCover'])->name('profile.removeCover');
+    Route::delete('/profile/settings/account', [SettingsController::class, 'deleteAccount'])->name('profile.deleteAccount');
 
     // Notifications
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('user.notifications');
@@ -106,6 +108,7 @@ Route::middleware('auth')->group(function () {
 // API Routes (for search, etc.) - Public search for browsing
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('/organizations/search', [\App\Http\Controllers\UserFeedController::class, 'searchOrganizations'])->name('organizations.search');
+    Route::middleware('auth')->get('/people/search', [\App\Http\Controllers\UserFeedController::class, 'searchPeople'])->name('people.search');
 });
 
 // Comment Routes
@@ -143,6 +146,23 @@ Route::middleware('auth')->prefix('collections')->name('collections.')->group(fu
     Route::post('{collection}/organizations/{organization}', [\App\Http\Controllers\CollectionController::class, 'addOrganization'])->name('organizations.add');
     Route::post('{collection}/brands/{brand}', [\App\Http\Controllers\CollectionController::class, 'addBrand'])->name('brands.add');
     Route::post('favorite/{channel}', [\App\Http\Controllers\CollectionController::class, 'toggleFavorite'])->name('favorite');
+});
+
+// Organization membership requests (self-service "join as staff" + business profile)
+Route::middleware('auth')->prefix('organizations/{organization}/membership')->name('organizations.membership.')->group(function () {
+    Route::post('request', [\App\Http\Controllers\OrganizationJoinController::class, 'requestJoin'])->name('request');
+    Route::delete('cancel', [\App\Http\Controllers\OrganizationJoinController::class, 'cancelRequest'])->name('cancel');
+    Route::post('{user}/approve', [\App\Http\Controllers\OrganizationJoinController::class, 'approve'])->name('approve');
+    Route::post('{user}/reject', [\App\Http\Controllers\OrganizationJoinController::class, 'reject'])->name('reject');
+    Route::put('business-details', [\App\Http\Controllers\OrganizationJoinController::class, 'updateBusinessDetails'])->name('business-details.update');
+    Route::post('{user}/verify', [\App\Http\Controllers\OrganizationJoinController::class, 'verifyBusinessDetails'])->name('verify');
+
+    // Admin-initiated invites (search an existing user, send them a request to join)
+    Route::post('invite', [\App\Http\Controllers\OrganizationJoinController::class, 'inviteUser'])->name('invite-user');
+    Route::delete('invite/{user}', [\App\Http\Controllers\OrganizationJoinController::class, 'cancelInvite'])->name('invite-user.cancel');
+    Route::post('accept-invite', [\App\Http\Controllers\OrganizationJoinController::class, 'acceptInvite'])->name('accept-invite');
+    Route::post('decline-invite', [\App\Http\Controllers\OrganizationJoinController::class, 'declineInvite'])->name('decline-invite');
+    Route::put('{user}/business-details', [\App\Http\Controllers\OrganizationJoinController::class, 'updateMemberBusinessDetails'])->name('business-details.update-for');
 });
 
 // ============================================================

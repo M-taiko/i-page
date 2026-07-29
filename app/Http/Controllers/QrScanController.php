@@ -153,7 +153,10 @@ class QrScanController extends Controller
             'mobile' => $validated['mobile'],
             'password' => bcrypt(Str::random(32)),
             'ipage_id' => 'GUEST-' . Str::random(8),
+            'username' => User::generateUniqueUsername($validated['first_name'], $validated['last_name']),
         ]);
+
+        $guest->refreshProfileLevel();
 
         $otpChannel = $validated['mobile'] ? 'sms' : 'email';
         $destination = $validated['mobile'] ?: $validated['email'];

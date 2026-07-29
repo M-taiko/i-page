@@ -11,7 +11,10 @@ class UserRepository implements UserRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return User::query()
-            ->when($filters['organization_id'] ?? null, fn($q, $v) => $q->whereHas('organizations', fn($sq) => $sq->where('organizations.id', $v)))
+            ->when($filters['organization_id'] ?? null, fn($q, $v) => $q->whereHas('organizations', fn($sq) => $sq
+                ->where('organizations.id', $v)
+                ->when($filters['membership_status'] ?? null, fn($ssq, $status) => $ssq->where('organization_memberships.status', $status))
+            ))
             ->when($filters['q'] ?? null, fn($q, $v) => $q->where('email', 'like', "%$v%")
                 ->orWhere('first_name', 'like', "%$v%")
                 ->orWhere('last_name', 'like', "%$v%"))

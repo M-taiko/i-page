@@ -6,7 +6,10 @@
     <button type="button" class="app-bar-icon-btn" onclick="toggleDrawer(true)" aria-label="{{ __('Menu') }}">
         <i class="bi bi-list"></i>
     </button>
-    <div class="app-bar-title">i-Page</div>
+    <div class="app-bar-title" style="display: flex; align-items: center; gap: var(--space-2);">
+        <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="" style="width: 24px; height: 24px;">
+        i-Page
+    </div>
     <div class="app-bar-actions">
         <button type="button" class="app-bar-icon-btn" onclick="openQrModal()" aria-label="{{ __('Scan QR code') }}">
             <i class="bi bi-qr-code-scan"></i>
@@ -521,7 +524,7 @@
     <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
     <div class="drawer" id="drawer">
         <div class="drawer-brand">
-            <div class="drawer-brand-icon"><i class="bi bi-globe"></i></div>
+            <div class="drawer-brand-icon"><img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page" style="width: 100%; height: 100%; object-fit: contain;"></div>
             <div>
                 <div style="font-weight: var(--font-weight-bold); font-size: var(--text-base);">i-Page</div>
                 <div style="font-size: var(--text-xs); color: var(--text-tertiary);">{{ __('The Digital Front Door') }}</div>
@@ -541,33 +544,7 @@
         </a>
     </div>
 
-    <!-- QR scan / manual entry modal -->
-    <div class="signin-modal-overlay" id="qrModal" onclick="if(event.target===this) closeQrModal()">
-        <div class="signin-modal" style="max-width: 340px;">
-            <i class="bi bi-qr-code-scan lock-icon"></i>
-            <h3>{{ __('Join a Channel') }}</h3>
-            <p>{{ __('Scan a QR code or type the code / link printed on it.') }}</p>
-
-            <video id="qrVideo" playsinline muted style="display: none; width: 100%; border-radius: var(--radius-md); margin-bottom: var(--space-3);"></video>
-            <button type="button" id="qrCameraBtn" class="btn-signin" style="width: 100%; margin-bottom: var(--space-3); display: none;" onclick="startQrCamera()">
-                <i class="bi bi-camera"></i>&nbsp; {{ __('Use Camera') }}
-            </button>
-            <p id="qrCameraStatus" style="display: none; font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--space-3);"></p>
-
-            @if(session('error'))
-                <p style="color: var(--danger-600); font-size: var(--text-sm); margin-bottom: var(--space-3);">{{ session('error') }}</p>
-            @endif
-
-            <form action="{{ route('qr.lookup') }}" method="GET">
-                <input type="text" name="code" placeholder="{{ __('Channel code or link') }}" required
-                       style="width: 100%; padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--surface-border); margin-bottom: var(--space-3); font-size: var(--text-sm);">
-                <div class="signin-modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeQrModal()">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn-signin">{{ __('Go') }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    @include('partials.qr-scan-modal')
 
     <!-- Sign-in required modal -->
     <div class="signin-modal-overlay" id="signinModal" onclick="if(event.target===this) closeSignInModal()">
@@ -593,73 +570,6 @@
     function requireSignIn() {
         document.getElementById('signinModal').classList.add('show');
     }
-
-    let qrStream = null;
-    let qrDetectTimer = null;
-
-    function openQrModal() {
-        document.getElementById('qrModal').classList.add('show');
-
-        if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
-            startQrCamera();
-        } else {
-            const status = document.getElementById('qrCameraStatus');
-            status.style.display = 'block';
-            status.textContent = '{{ __('Your browser doesn\'t support in-app scanning — type the code below instead.') }}';
-        }
-    }
-
-    function closeQrModal() {
-        document.getElementById('qrModal').classList.remove('show');
-        stopQrCamera();
-        document.getElementById('qrVideo').style.display = 'none';
-        document.getElementById('qrCameraBtn').style.display = 'none';
-        document.getElementById('qrCameraStatus').style.display = 'none';
-    }
-
-    async function startQrCamera() {
-        const video = document.getElementById('qrVideo');
-        const status = document.getElementById('qrCameraStatus');
-        const btn = document.getElementById('qrCameraBtn');
-
-        try {
-            qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            video.srcObject = qrStream;
-            video.style.display = 'block';
-            btn.style.display = 'none';
-            await video.play();
-
-            const detector = new BarcodeDetector({ formats: ['qr_code'] });
-            status.style.display = 'block';
-            status.textContent = '{{ __('Point your camera at a QR code…') }}';
-
-            qrDetectTimer = setInterval(async () => {
-                try {
-                    const codes = await detector.detect(video);
-                    if (codes.length > 0) {
-                        stopQrCamera();
-                        window.location.href = '{{ route('qr.lookup') }}?code=' + encodeURIComponent(codes[0].rawValue);
-                    }
-                } catch (e) { /* keep scanning */ }
-            }, 400);
-        } catch (e) {
-            video.style.display = 'none';
-            status.style.display = 'block';
-            status.textContent = '{{ __('Camera unavailable — type the code below, or try again.') }}';
-            btn.textContent = '';
-            btn.innerHTML = '<i class="bi bi-camera"></i>&nbsp; {{ __('Retry Camera') }}';
-            btn.style.display = 'block';
-        }
-    }
-
-    function stopQrCamera() {
-        if (qrDetectTimer) { clearInterval(qrDetectTimer); qrDetectTimer = null; }
-        if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
-    }
-
-    @if(session('error'))
-        openQrModal();
-    @endif
 
     function toggleFeedComments(button) {
         const card = button.closest('.post-card');

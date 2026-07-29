@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/logo-mark.svg') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'i-Page')</title>
 
     <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
@@ -328,7 +330,39 @@
         </div>
     </div>
 
+    <!-- Page-transition loader -->
+    <div id="pageLoaderOverlay" style="display: none; position: fixed; inset: 0; background-color: var(--surface-bg); z-index: 999; align-items: center; justify-content: center;">
+        <x-app-loader :size="72"/>
+    </div>
+
     @yield('modals')
+
+    <script>
+        (function () {
+            const overlay = document.getElementById('pageLoaderOverlay');
+
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+
+                const url = new URL(link.href, window.location.href);
+                const isSamePageAnchor = url.pathname === window.location.pathname && url.hash;
+                if (url.origin !== window.location.origin || isSamePageAnchor || event.ctrlKey || event.metaKey) return;
+
+                overlay.style.display = 'flex';
+            });
+
+            document.addEventListener('submit', function (event) {
+                if (event.target.tagName === 'FORM') {
+                    overlay.style.display = 'flex';
+                }
+            });
+
+            window.addEventListener('pageshow', function () {
+                overlay.style.display = 'none';
+            });
+        })();
+    </script>
 
     <script>
         const storedTheme = localStorage.getItem('theme') || 'light';
