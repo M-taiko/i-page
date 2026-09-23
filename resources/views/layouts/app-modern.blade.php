@@ -13,6 +13,14 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'IPAGE') - Organization Communication Hub</title>
 
+    <!-- Bootstrap (grid, cards, tables, badges, modals) — loaded first so the
+         Design System & Components stylesheets below can override specific
+         classes (.btn, .card, .badge) while everything Bootstrap alone
+         defines (.row/.col-*, .table, subtle badges, .modal) still works.
+         Bootstrap 5.3's CSS uses logical properties, so this single file
+         auto-flips for dir="rtl" — no separate .rtl.min.css needed. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
     <!-- Design System & Components -->
     <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components.css') }}">
@@ -425,6 +433,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Bootstrap JS bundle (modals, dropdowns, etc. used by admin-panel pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Theme Toggle Script -->
     <script>
