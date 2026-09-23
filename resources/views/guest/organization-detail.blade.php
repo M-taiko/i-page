@@ -139,6 +139,8 @@
         gap: var(--space-3);
     }
 
+    .channel-card-wrap { position: relative; }
+
     .channel-card {
         background-color: var(--surface-bg);
         border: 1px solid var(--surface-border);
@@ -151,9 +153,12 @@
         align-items: center;
         text-align: center;
         gap: var(--space-2);
+        position: relative;
+        width: 100%;
     }
 
     .channel-card:active { background-color: var(--surface-hover); }
+    .channel-card.popup-open { border-color: var(--primary-500); background-color: var(--primary-50); }
 
     .channel-icon {
         width: 44px;
@@ -169,6 +174,82 @@
 
     .channel-card-name { font-weight: var(--font-weight-semibold); font-size: var(--text-xs); color: var(--text-primary); }
     .channel-card-meta { font-size: 10px; color: var(--text-tertiary); }
+
+    .channel-subbadge {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background-color: var(--primary-600);
+        color: white;
+        font-size: 9px;
+        font-weight: var(--font-weight-bold);
+        min-width: 16px;
+        height: 16px;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        gap: 2px;
+    }
+
+    /* Sub-channels popup — appears above/below the parent channel card */
+    .channel-subpopup {
+        display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 15;
+        width: max-content;
+        min-width: 180px;
+        max-width: 240px;
+        background-color: var(--surface-bg);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+        overflow: hidden;
+    }
+
+    .channel-subpopup.show { display: block; }
+
+    .channel-subpopup::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: 50%;
+        transform: translateX(-50%) rotate(45deg);
+        width: 12px;
+        height: 12px;
+        background-color: var(--surface-bg);
+        border-left: 1px solid var(--surface-border);
+        border-top: 1px solid var(--surface-border);
+    }
+
+    .subpopup-tooltip {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        text-align: center;
+        padding: var(--space-2) var(--space-3);
+        border-bottom: 1px solid var(--surface-border);
+        background-color: var(--surface-bg-secondary);
+    }
+
+    .subpopup-list { display: flex; flex-direction: column; padding: var(--space-1) 0; }
+
+    .subpopup-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        text-decoration: none;
+        color: var(--text-primary);
+        font-size: var(--text-xs);
+        font-weight: var(--font-weight-medium);
+    }
+
+    .subpopup-item:active { background-color: var(--surface-hover); }
+    .subpopup-item i { color: var(--primary-600); font-size: var(--text-sm); }
 
     .empty-state {
         text-align: center;
@@ -316,11 +397,7 @@
                     </div>
                     <div class="channels-grid">
                         @foreach($brand->channels as $channel)
-                            <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="channel-card">
-                                <div class="channel-icon"><i class="bi bi-chat-dots"></i></div>
-                                <div class="channel-card-name">{{ $channel->name }}</div>
-                                <div class="channel-card-meta">{{ $channel->users_count }} {{ __('members') }} · {{ $channel->posts_count }} {{ __('posts') }}</div>
-                            </a>
+                            @include('guest._channel-card', ['organization' => $organization, 'channel' => $channel])
                         @endforeach
                     </div>
                 </div>
@@ -336,11 +413,7 @@
                 </div>
                 <div class="channels-grid">
                     @foreach($unbrandedChannels as $channel)
-                        <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="channel-card">
-                            <div class="channel-icon"><i class="bi bi-chat-dots"></i></div>
-                            <div class="channel-card-name">{{ $channel->name }}</div>
-                            <div class="channel-card-meta">{{ $channel->users_count }} {{ __('members') }} · {{ $channel->posts_count }} {{ __('posts') }}</div>
-                        </a>
+                        @include('guest._channel-card', ['organization' => $organization, 'channel' => $channel])
                     @endforeach
                 </div>
             </div>
@@ -487,5 +560,34 @@
     function closeSignInModal() {
         document.getElementById('signinModal').classList.remove('show');
     }
+
+    /* Sub-channels popup: first tap on a channel that has sub-channels
+       previews them in a popup instead of navigating; a second tap on the
+       same (now-open) channel lets the click through to open it. */
+    function handleChannelCardClick(event, el) {
+        const popup = document.getElementById('subpopup-' + el.dataset.channelId);
+
+        if (el.classList.contains('popup-open')) {
+            closeAllChannelPopups();
+            return true;
+        }
+
+        event.preventDefault();
+        closeAllChannelPopups();
+        el.classList.add('popup-open');
+        popup.classList.add('show');
+        return false;
+    }
+
+    function closeAllChannelPopups() {
+        document.querySelectorAll('.channel-card.popup-open').forEach(c => c.classList.remove('popup-open'));
+        document.querySelectorAll('.channel-subpopup.show').forEach(p => p.classList.remove('show'));
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.channel-card-wrap')) {
+            closeAllChannelPopups();
+        }
+    });
 </script>
 @endsection

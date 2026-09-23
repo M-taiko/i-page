@@ -163,6 +163,18 @@
                     <p class="form-text">The name that will appear for all members of this channel</p>
                     @error('name')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
                 </div>
+
+                <div class="form-group">
+                    <label for="parent_channel_id" class="form-label">Parent Channel (optional)</label>
+                    <select class="form-control @error('parent_channel_id') is-invalid @enderror" id="parent_channel_id" name="parent_channel_id">
+                        <option value="">None — this is a top-level channel</option>
+                        @foreach($parentOptions as $option)
+                            <option value="{{ $option->id }}" {{ old('parent_channel_id', $currentParentId) == $option->id ? 'selected' : '' }}>{{ $option->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="form-text">Make this a sub-channel nested under another channel. Visitors will see it inside a popup when they tap the parent channel.</p>
+                    @error('parent_channel_id')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                </div>
             </div>
 
             <!-- Channel Type Section -->

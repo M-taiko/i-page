@@ -52,6 +52,20 @@
                            value="{{ old('name', $channel->name ?? '') }}" required>
                 </div>
 
+                <div class="mb-3">
+                    <label for="parent_channel_id" class="form-label">{{ __('Parent Channel (optional)') }}</label>
+                    <select name="parent_channel_id" id="parent_channel_id" class="form-select">
+                        <option value="">{{ __('None — this is a top-level channel') }}</option>
+                        @foreach ($parentOptions ?? [] as $option)
+                            <option value="{{ $option->id }}"
+                                @selected(old('parent_channel_id', $currentParentId ?? null) == $option->id)>
+                                {{ $option->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">{{ __('Nest this channel under another one — visitors will see it in a popup when they tap the parent channel.') }}</small>
+                </div>
+
                 <div class="mb-4">
                     <label for="type" class="form-label">{{ __('Visibility') }}</label>
                     <select name="type" id="type" class="form-select" required>

@@ -16,15 +16,16 @@ class AdminChannelController extends Controller
     public function create(Organization $organization)
     {
         $brands = $organization->brands()->where('is_active', true)->get();
+        $parentOptions = Channel::where('organization_id', $organization->id)->orderBy('name')->get();
 
-        return view('admin.channels.form', compact('organization', 'brands'));
+        return view('admin.channels.form', compact('organization', 'brands', 'parentOptions'));
     }
 
     public function store(Request $request, Organization $organization)
     {
         $validated = $this->validateChannel($request, $organization);
 
-        $organization->channels()->create([
+        $channel = $organization->channels()->create([
             'brand_id' => $validated['brand_id'],
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']) . '-' . Str::random(6),
@@ -32,6 +33,10 @@ class AdminChannelController extends Controller
             'status' => 'active',
             'admin_user_id' => auth()->id(),
         ]);
+
+        if (!empty($validated['parent_channel_id'])) {
+            $channel->parentChannels()->sync([$validated['parent_channel_id']]);
+        }
 
         return redirect()->route('admin.organizations.show', $organization)
             ->with('success', 'Channel created successfully.');
@@ -42,21 +47,30 @@ class AdminChannelController extends Controller
         abort_unless($channel->organization_id === $organization->id, 404);
 
         $brands = $organization->brands()->where('is_active', true)->get();
+        $parentOptions = Channel::where('organization_id', $organization->id)
+            ->where('id', '!=', $channel->id)
+            ->orderBy('name')
+            ->get();
+        $currentParentId = $channel->parentChannels()->first()?->id;
 
-        return view('admin.channels.form', compact('organization', 'channel', 'brands'));
+        return view('admin.channels.form', compact('organization', 'channel', 'brands', 'parentOptions', 'currentParentId'));
     }
 
     public function update(Request $request, Organization $organization, Channel $channel)
     {
         abort_unless($channel->organization_id === $organization->id, 404);
 
-        $validated = $this->validateChannel($request, $organization);
+        $validated = $this->validateChannel($request, $organization, $channel);
 
         $channel->update([
             'brand_id' => $validated['brand_id'],
             'name' => $validated['name'],
             'type' => $validated['type'],
         ]);
+
+        $channel->parentChannels()->sync(
+            !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
+        );
 
         return redirect()->route('admin.organizations.show', $organization)
             ->with('success', 'Channel updated successfully.');
@@ -72,7 +86,7 @@ class AdminChannelController extends Controller
             ->with('success', 'Channel deleted successfully.');
     }
 
-    private function validateChannel(Request $request, Organization $organization): array
+    private function validateChannel(Request $request, Organization $organization, ?Channel $channel = null): array
     {
         return $request->validate([
             'brand_id' => [
@@ -82,6 +96,12 @@ class AdminChannelController extends Controller
             ],
             'name' => 'required|string|max:255',
             'type' => 'required|in:public,private',
+            'parent_channel_id' => [
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
+                \Illuminate\Validation\Rule::notIn($channel ? [$channel->id] : []),
+            ],
         ]);
     }
 }

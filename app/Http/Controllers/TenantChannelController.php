@@ -63,8 +63,9 @@ class TenantChannelController extends Controller
         }
 
         $brands = $organization->brands()->where('is_active', true)->get();
+        $parentOptions = Channel::where('organization_id', $organization->id)->orderBy('name')->get();
 
-        return view('tenant.channels.create', compact('organization', 'brands'));
+        return view('tenant.channels.create', compact('organization', 'brands', 'parentOptions'));
     }
 
     public function store(Request $request)
@@ -88,6 +89,11 @@ class TenantChannelController extends Controller
                 'integer',
                 \Illuminate\Validation\Rule::exists('brands', 'id')->where('organization_id', $organization->id),
             ],
+            'parent_channel_id' => [
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
+            ],
         ]);
 
         $channel = Channel::create([
@@ -99,6 +105,10 @@ class TenantChannelController extends Controller
             'status' => 'active',
             'admin_user_id' => auth()->id(),
         ]);
+
+        if (!empty($validated['parent_channel_id'])) {
+            $channel->parentChannels()->sync([$validated['parent_channel_id']]);
+        }
 
         // Generate QR code for this channel. No explicit $url here — generate()
         // builds it from its own freshly-generated $code, which is what keeps
@@ -146,8 +156,13 @@ class TenantChannelController extends Controller
         }
 
         $brands = $organization->brands()->where('is_active', true)->get();
+        $parentOptions = Channel::where('organization_id', $organization->id)
+            ->where('id', '!=', $channel->id)
+            ->orderBy('name')
+            ->get();
+        $currentParentId = $channel->parentChannels()->first()?->id;
 
-        return view('tenant.channels.edit', compact('channel', 'organization', 'brands'));
+        return view('tenant.channels.edit', compact('channel', 'organization', 'brands', 'parentOptions', 'currentParentId'));
     }
 
     public function update(Request $request, Channel $channel)
@@ -165,6 +180,12 @@ class TenantChannelController extends Controller
                 'integer',
                 \Illuminate\Validation\Rule::exists('brands', 'id')->where('organization_id', $organization->id),
             ],
+            'parent_channel_id' => [
+                'nullable',
+                'integer',
+                \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
+                \Illuminate\Validation\Rule::notIn([$channel->id]),
+            ],
         ]);
 
         $channel->update([
@@ -172,6 +193,10 @@ class TenantChannelController extends Controller
             'type' => $validated['type'],
             'brand_id' => $validated['brand_id'],
         ]);
+
+        $channel->parentChannels()->sync(
+            !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
+        );
 
         return redirect()->route('tenant.channels.show', $channel->id)
             ->with('success', __('Channel updated successfully'));

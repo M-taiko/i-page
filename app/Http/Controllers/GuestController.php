@@ -68,17 +68,25 @@ class GuestController extends Controller
     {
         $organization->loadCount(['users', 'channels', 'posts']);
 
-        // Brands with their public channels (Organization → Brand → Channels)
+        // Brands with their public, top-level channels (Organization → Brand → Channels).
+        // Sub-channels (channels with a parent) are hidden from the grid here —
+        // they surface in their parent's "sub-channels" popup instead.
         $brands = $organization->brands()
             ->where('is_active', true)
-            ->with(['channels' => fn ($q) => $q->where('type', 'public')->withCount('users', 'posts')])
+            ->with(['channels' => fn ($q) => $q->where('type', 'public')
+                ->whereDoesntHave('parentChannels')
+                ->withCount('users', 'posts')
+                ->with(['childChannels' => fn ($cq) => $cq->withCount('users', 'posts')])
+            ])
             ->get();
 
-        // Public channels not grouped under any brand
+        // Public, top-level channels not grouped under any brand
         $unbrandedChannels = $organization->channels()
             ->where('type', 'public')
             ->whereNull('brand_id')
+            ->whereDoesntHave('parentChannels')
             ->withCount('users', 'posts')
+            ->with(['childChannels' => fn ($cq) => $cq->withCount('users', 'posts')])
             ->get();
 
         // Recent posts from this organization's public channels
@@ -119,11 +127,14 @@ class GuestController extends Controller
             ->whereHas('channels', fn ($q) => $q->where('channels.id', $channel->id))
             ->exists();
 
-        // All public channels of this organization, for the Instagram-style
-        // "stories" strip — lets a visitor jump between sibling channels
-        // without going back to the organization page.
+        // All public, top-level channels of this organization, for the
+        // Instagram-style "stories" strip — lets a visitor jump between
+        // sibling channels without going back to the organization page.
+        // Sub-channels are excluded here too; they live under their parent's
+        // popup on the organization page.
         $orgChannels = $organization->channels()
             ->where('type', 'public')
+            ->whereDoesntHave('parentChannels')
             ->withCount('posts')
             ->orderBy('name')
             ->get();
