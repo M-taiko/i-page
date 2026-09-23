@@ -4,341 +4,447 @@
 
 @section('content')
     <style>
-        .form-section {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        .wizard-shell { max-width: 880px; margin: 0 auto; }
+
+        .back-button { margin-bottom: 1.5rem; }
+
+        .wizard-header { text-align: center; margin-bottom: 2rem; }
+        .wizard-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .wizard-header p { color: var(--text-tertiary); margin: 0; }
+
+        /* Stepper */
+        .stepper { display: flex; align-items: center; justify-content: center; margin-bottom: 2rem; }
+        .stepper-step { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; width: 160px; }
+        .stepper-circle {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #e5e7eb; color: var(--text-secondary);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem;
+            transition: all 0.25s ease;
         }
-        .form-section-title {
-            font-size: 1.15rem;
+        .stepper-label { font-size: 0.8rem; font-weight: 600; color: var(--text-tertiary); text-align: center; }
+        .stepper-step.active .stepper-circle { background: var(--primary-600); color: white; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15); }
+        .stepper-step.active .stepper-label { color: var(--primary-600); }
+        .stepper-step.done .stepper-circle { background: var(--success-600, #059669); color: white; }
+        .stepper-step.done .stepper-circle::before { content: "\f26e"; font-family: "bootstrap-icons"; }
+        .stepper-line { flex: 1; height: 2px; background: #e5e7eb; max-width: 100px; margin-top: -22px; transition: background 0.25s ease; }
+        .stepper-line.done { background: var(--success-600, #059669); }
+
+        /* Cards */
+        .wizard-card {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+        .wizard-step-panel { display: none; padding: 2rem; }
+        .wizard-step-panel.active { display: block; }
+
+        .panel-title {
+            font-size: 1.1rem;
             font-weight: 700;
-            color: var(--primary-600);
+            color: var(--text-primary);
             margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #f3f4f6;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.6rem;
         }
-        .form-section-title i {
-            font-size: 1.5rem;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        .form-group label {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        .form-label-required::after {
-            content: " *";
-            color: #ef4444;
-        }
-        .form-control {
+        .panel-title i { color: var(--primary-600); font-size: 1.3rem; }
+
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; display: block; font-size: 0.9rem; }
+        .form-label-required::after { content: " *"; color: #ef4444; }
+        .form-control, .form-select {
             border-radius: 8px;
             border: 1px solid #e5e7eb;
-            padding: 0.75rem;
+            padding: 0.65rem 0.85rem;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             border-color: var(--primary-600);
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-            background-color: #f8faff;
         }
-        .form-control.is-invalid:focus {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
-        }
-        .form-text {
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            margin-top: 0.5rem;
-        }
-        .back-button {
+        .form-control.is-invalid { border-color: #ef4444; }
+        .form-text { font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.35rem; }
+        .field-error { color: #ef4444; font-size: 0.8rem; margin-top: 0.35rem; display: flex; align-items: center; gap: 4px; }
+
+        /* Org preview card (live) */
+        .org-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            background: var(--surface-bg-secondary);
+            border: 1px dashed #d1d5db;
+            border-radius: 10px;
+            padding: 0.9rem 1.1rem;
             margin-bottom: 1.5rem;
         }
-        .progress-steps {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            justify-content: center;
+        .org-preview-avatar {
+            width: 46px; height: 46px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary-600), var(--secondary-600, #7c3aed));
+            color: white; font-weight: 700; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-        .step-number {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #e5e7eb;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-        .step.active .step-number {
-            background: var(--primary-600);
-            color: white;
-        }
-        .separator {
-            flex: 1;
-            height: 2px;
-            background: #e5e7eb;
-            margin: 0 -0.5rem;
-            margin-top: 1rem;
-        }
-        .row > .col-md-6:not(:last-child) {
-            padding-right: 0.75rem;
-        }
-        .row > .col-md-6:not(:first-child) {
-            padding-left: 0.75rem;
-        }
-        .input-group-text {
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
-        }
-        .form-footer {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 2px solid #f3f4f6;
-        }
-        .btn-primary {
-            flex: 1;
-            padding: 0.75rem;
-            font-weight: 600;
-        }
-        .btn-outline-secondary {
-            flex: 1;
-            padding: 0.75rem;
-            font-weight: 600;
-        }
+        .org-preview-name { font-weight: 700; color: var(--text-primary); font-size: 0.95rem; }
+        .org-preview-meta { font-size: 0.78rem; color: var(--text-tertiary); }
+
+        /* Password strength */
+        .pw-checks { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.5rem; }
+        .pw-check { font-size: 0.78rem; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; }
+        .pw-check.ok { color: var(--success-600, #059669); }
+        .pw-check i { font-size: 0.85rem; }
+        #pwMatchHint { font-size: 0.8rem; margin-top: 0.35rem; display: none; align-items: center; gap: 4px; }
+        #pwMatchHint.ok { color: var(--success-600, #059669); display: flex; }
+        #pwMatchHint.bad { color: #ef4444; display: flex; }
+
+        /* Review (step 2) */
+        .review-box { background: var(--surface-bg-secondary); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+        .review-row { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.85rem; border-bottom: 1px solid #eceef1; }
+        .review-row:last-child { border-bottom: none; }
+        .review-row span:first-child { color: var(--text-tertiary); }
+        .review-row span:last-child { font-weight: 600; color: var(--text-primary); }
+
         .info-box {
             background: linear-gradient(135deg, #e0e7ff, #ede9fe);
-            border-left: 4px solid var(--primary-600);
+            border-inline-start: 4px solid var(--primary-600);
             border-radius: 8px;
             padding: 1rem;
-            margin-top: 1.5rem;
             color: var(--primary-700);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            display: flex;
+            gap: 0.6rem;
         }
-        .info-box strong {
-            display: block;
-            margin-bottom: 0.5rem;
+
+        .wizard-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.25rem 2rem;
+            border-top: 1px solid #f3f4f6;
+            background: var(--surface-bg-secondary);
+        }
+        .wizard-footer .btn { padding: 0.6rem 1.5rem; font-weight: 600; }
+
+        @media (max-width: 576px) {
+            .stepper-step { width: auto; }
+            .stepper-label { display: none; }
         }
     </style>
 
-    <div class="back-button">
-        <a href="{{ route('admin.organizations.index') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back to List
-        </a>
-    </div>
+    <div class="wizard-shell">
+        <div class="back-button">
+            <a href="{{ route('admin.organizations.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
 
-    <div class="page-header mb-3">
-        <div class="page-header-info">
+        <div class="wizard-header">
             <h1>✨ Create New Organization</h1>
-            <p>Create a new organization and assign an administrator to it</p>
+            <p>Set up a new organization and its administrator in two quick steps</p>
         </div>
+
+        @if($errors->any())
+            <x-alert-modern type="danger" dismissible>
+                <strong>⚠️ Error in input data:</strong>
+                <ul class="mb-0" style="padding-left: 1.5rem; margin-top: 0.5rem;">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </x-alert-modern>
+        @endif
+
+        <!-- Stepper -->
+        <div class="stepper">
+            <div class="stepper-step active" id="stepper-1">
+                <div class="stepper-circle">1</div>
+                <div class="stepper-label">Organization</div>
+            </div>
+            <div class="stepper-line" id="stepper-line"></div>
+            <div class="stepper-step" id="stepper-2">
+                <div class="stepper-circle">2</div>
+                <div class="stepper-label">Administrator</div>
+            </div>
+        </div>
+
+        <form action="{{ route('admin.organizations.store') }}" method="POST" id="createOrgForm" novalidate>
+            @csrf
+
+            <div class="wizard-card">
+                <!-- Step 1: Organization Information -->
+                <div class="wizard-step-panel active" id="panel-1">
+                    <div class="panel-title"><i class="bi bi-building"></i> Organization Information</div>
+
+                    <div class="org-preview">
+                        <div class="org-preview-avatar" id="orgPreviewAvatar">?</div>
+                        <div>
+                            <div class="org-preview-name" id="orgPreviewName">{{ __('New Organization') }}</div>
+                            <div class="org-preview-meta" id="orgPreviewMeta">{{ __('This is how it will appear across the platform') }}</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="name" class="form-label-required">Organization Name</label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror"
+                               id="name" name="name" value="{{ old('name') }}"
+                               placeholder="Example: Golden Hotel, Nile Hospital, Cairo University"
+                               required autocomplete="off">
+                        <p class="form-text">The official name of the organization — appears on all system pages</p>
+                        @error('name')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control @error('description') is-invalid @enderror"
+                                  id="description" name="description" rows="3" maxlength="1000"
+                                  placeholder="Detailed description of the organization, type of business, services provided">{{ old('description') }}</textarea>
+                        <p class="form-text"><span id="descCount">0</span>/1000 characters</p>
+                        @error('description')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="city">City</label>
+                                <input type="text" class="form-control @error('city') is-invalid @enderror"
+                                       id="city" name="city" value="{{ old('city') }}" placeholder="Cairo">
+                                @error('city')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="country">Country</label>
+                                <input type="text" class="form-control @error('country') is-invalid @enderror"
+                                       id="country" name="country" value="{{ old('country') }}" placeholder="Egypt">
+                                @error('country')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="organization_template_id">Organization Template</label>
+                        <select class="form-select @error('organization_template_id') is-invalid @enderror"
+                                id="organization_template_id" name="organization_template_id">
+                            <option value="">No template — start blank</option>
+                            @foreach($templates as $template)
+                                <option value="{{ $template->id }}" @selected(old('organization_template_id') == $template->id)>
+                                    {{ $template->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="form-text">Seeds default departments and channels for this industry. You can customize everything afterwards.</p>
+                        @error('organization_template_id')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label for="max_channels" class="form-label-required">Allowed Number of Channels</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control @error('max_channels') is-invalid @enderror"
+                                   id="max_channels" name="max_channels" value="{{ old('max_channels', 4) }}"
+                                   min="1" max="1000" required>
+                            <span class="input-group-text">channels</span>
+                        </div>
+                        <p class="form-text">The maximum number of channels the organization can create (can be modified later)</p>
+                        @error('max_channels')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+                <!-- Step 2: Administrator Information -->
+                <div class="wizard-step-panel" id="panel-2">
+                    <div class="panel-title"><i class="bi bi-person-badge"></i> Organization Administrator</div>
+
+                    <div class="review-box" id="reviewBox">
+                        <div class="review-row"><span>Organization</span><span id="reviewName">—</span></div>
+                        <div class="review-row"><span>Location</span><span id="reviewLocation">—</span></div>
+                        <div class="review-row"><span>Max Channels</span><span id="reviewChannels">—</span></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="owner_first_name" class="form-label-required">First Name</label>
+                                <input type="text" class="form-control @error('owner_first_name') is-invalid @enderror"
+                                       id="owner_first_name" name="owner_first_name" value="{{ old('owner_first_name') }}"
+                                       placeholder="Ahmed" required autocomplete="given-name">
+                                @error('owner_first_name')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="owner_last_name" class="form-label-required">Last Name</label>
+                                <input type="text" class="form-control @error('owner_last_name') is-invalid @enderror"
+                                       id="owner_last_name" name="owner_last_name" value="{{ old('owner_last_name') }}"
+                                       placeholder="Muhammad" required autocomplete="family-name">
+                                @error('owner_last_name')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="owner_email" class="form-label-required">Email</label>
+                        <input type="email" class="form-control @error('owner_email') is-invalid @enderror"
+                               id="owner_email" name="owner_email" value="{{ old('owner_email') }}"
+                               placeholder="admin@organization.com" required autocomplete="email">
+                        <p class="form-text">This email will be used to log in to the system</p>
+                        @error('owner_email')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="owner_password" class="form-label-required">Password</label>
+                                <input type="password" class="form-control @error('owner_password') is-invalid @enderror"
+                                       id="owner_password" name="owner_password" placeholder="••••••••"
+                                       required minlength="8" autocomplete="new-password">
+                                <div class="pw-checks">
+                                    <span class="pw-check" id="pwCheckLen"><i class="bi bi-circle"></i> 8+ characters</span>
+                                </div>
+                                @error('owner_password')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="owner_password_confirmation" class="form-label-required">Confirm Password</label>
+                                <input type="password" class="form-control @error('owner_password_confirmation') is-invalid @enderror"
+                                       id="owner_password_confirmation" name="owner_password_confirmation" placeholder="••••••••"
+                                       required minlength="8" autocomplete="new-password">
+                                <div id="pwMatchHint"><i class="bi bi-check-circle"></i> <span>Passwords match</span></div>
+                                @error('owner_password_confirmation')<div class="field-error"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i class="bi bi-lightbulb"></i>
+                        <div>After creating the organization, this administrator can log in immediately and manage everything for it.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-card" style="margin-top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
+                <div class="wizard-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="btnBack" style="visibility: hidden;">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </button>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('admin.organizations.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="button" class="btn btn-primary" id="btnNext">
+                            Continue <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btnSubmit" style="display: none;">
+                            <i class="bi bi-check-circle"></i> Create Organization
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
 
-    @if($errors->any())
-        <x-alert-modern type="danger" dismissible>
-            <strong>⚠️ Error in input data:</strong>
-            <ul class="mb-0" style="padding-left: 1.5rem; margin-top: 0.5rem;">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </x-alert-modern>
-    @endif
+<script>
+    (function () {
+        const panels = { 1: document.getElementById('panel-1'), 2: document.getElementById('panel-2') };
+        const steppers = { 1: document.getElementById('stepper-1'), 2: document.getElementById('stepper-2') };
+        const stepperLine = document.getElementById('stepper-line');
+        const btnBack = document.getElementById('btnBack');
+        const btnNext = document.getElementById('btnNext');
+        const btnSubmit = document.getElementById('btnSubmit');
+        let currentStep = {{ $errors->hasAny(['owner_first_name', 'owner_last_name', 'owner_email', 'owner_password']) ? 2 : 1 }};
 
-    <!-- Progress Steps -->
-    <div class="progress-steps">
-        <div class="step active">
-            <div class="step-number">1</div>
-            <span>Organization Information</span>
-        </div>
-        <div class="step">
-            <div class="step-number">2</div>
-            <span>Administrator Information</span>
-        </div>
-    </div>
+        function showStep(step) {
+            currentStep = step;
+            Object.keys(panels).forEach(k => panels[k].classList.toggle('active', Number(k) === step));
+            Object.keys(steppers).forEach(k => {
+                steppers[k].classList.toggle('active', Number(k) === step);
+                steppers[k].classList.toggle('done', Number(k) < step);
+            });
+            stepperLine.classList.toggle('done', step > 1);
+            btnBack.style.visibility = step === 1 ? 'hidden' : 'visible';
+            btnNext.style.display = step === 1 ? 'inline-flex' : 'none';
+            btnSubmit.style.display = step === 2 ? 'inline-flex' : 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-    <form action="{{ route('admin.organizations.store') }}" method="POST" id="createOrgForm">
-        @csrf
+        function validateStep1() {
+            const name = document.getElementById('name');
+            const maxChannels = document.getElementById('max_channels');
+            if (!name.value.trim()) { name.focus(); return false; }
+            if (!maxChannels.value || maxChannels.value < 1) { maxChannels.focus(); return false; }
+            return true;
+        }
 
-        <div style="max-width: 800px;">
-            <!-- Organization Information Section -->
-            <div class="form-section">
-                <div class="form-section-title">
-                    <i class="bi bi-building"></i>
-                    Organization Information
-                </div>
+        btnNext.addEventListener('click', function () {
+            if (!validateStep1()) return;
+            updateReview();
+            showStep(2);
+        });
 
-                <div class="form-group">
-                    <label for="name" class="form-label form-label-required">Organization Name</label>
-                    <input type="text" class="form-control @error('name') is-invalid @enderror"
-                           id="name" name="name" value="{{ old('name') }}"
-                           placeholder="Example: Golden Hotel, Nile Hospital, Cairo University"
-                           required autocomplete="off">
-                    <p class="form-text">The official name of the organization - appears on all system pages</p>
-                    @error('name')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                </div>
+        btnBack.addEventListener('click', function () {
+            showStep(1);
+        });
 
-                <div class="form-group">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control @error('description') is-invalid @enderror"
-                              id="description" name="description" rows="4"
-                              placeholder="Detailed description of the organization, type of business, services provided">{{ old('description') }}</textarea>
-                    <p class="form-text">A short description to help identify the organization and its nature of work</p>
-                    @error('description')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                </div>
+        if (currentStep === 2) showStep(2);
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="city" class="form-label">City</label>
-                            <input type="text" class="form-control @error('city') is-invalid @enderror"
-                                   id="city" name="city" value="{{ old('city') }}"
-                                   placeholder="Cairo">
-                            @error('city')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="country" class="form-label">Country</label>
-                            <input type="text" class="form-control @error('country') is-invalid @enderror"
-                                   id="country" name="country" value="{{ old('country') }}"
-                                   placeholder="Egypt">
-                            @error('country')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                </div>
+        // Live org preview
+        const nameInput = document.getElementById('name');
+        const cityInput = document.getElementById('city');
+        const countryInput = document.getElementById('country');
+        const previewAvatar = document.getElementById('orgPreviewAvatar');
+        const previewName = document.getElementById('orgPreviewName');
+        const previewMeta = document.getElementById('orgPreviewMeta');
 
-                <div class="form-group">
-                    <label for="organization_template_id" class="form-label">Organization Template</label>
-                    <select class="form-control @error('organization_template_id') is-invalid @enderror"
-                            id="organization_template_id" name="organization_template_id">
-                        <option value="">No template — start blank</option>
-                        @foreach($templates as $template)
-                            <option value="{{ $template->id }}" @selected(old('organization_template_id') == $template->id)>
-                                {{ $template->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="form-text">Seeds default departments and channels for this industry. You can customize everything afterwards.</p>
-                    @error('organization_template_id')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                </div>
+        function updatePreview() {
+            const name = nameInput.value.trim();
+            previewAvatar.textContent = name ? name.charAt(0).toUpperCase() : '?';
+            previewName.textContent = name || 'New Organization';
+            const parts = [cityInput.value.trim(), countryInput.value.trim()].filter(Boolean);
+            previewMeta.textContent = parts.length ? parts.join(', ') : 'This is how it will appear across the platform';
+        }
+        [nameInput, cityInput, countryInput].forEach(el => el.addEventListener('input', updatePreview));
+        updatePreview();
 
-                <div class="form-group">
-                    <label for="max_channels" class="form-label form-label-required">Allowed Number of Channels</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control @error('max_channels') is-invalid @enderror"
-                               id="max_channels" name="max_channels" value="{{ old('max_channels', 4) }}"
-                               min="1" max="1000" required>
-                        <span class="input-group-text">channels</span>
-                    </div>
-                    <p class="form-text">The maximum number of channels the organization can create (can be modified later)</p>
-                    @error('max_channels')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                </div>
-            </div>
+        // Description character counter
+        const descInput = document.getElementById('description');
+        const descCount = document.getElementById('descCount');
+        function updateDescCount() { descCount.textContent = descInput.value.length; }
+        descInput.addEventListener('input', updateDescCount);
+        updateDescCount();
 
-            <!-- Owner/Admin Information Section -->
-            <div class="form-section">
-                <div class="form-section-title">
-                    <i class="bi bi-person-badge"></i>
-                    Organization Administrator Information
-                </div>
+        // Review summary
+        function updateReview() {
+            document.getElementById('reviewName').textContent = nameInput.value.trim() || '—';
+            const parts = [cityInput.value.trim(), countryInput.value.trim()].filter(Boolean);
+            document.getElementById('reviewLocation').textContent = parts.length ? parts.join(', ') : '—';
+            document.getElementById('reviewChannels').textContent = document.getElementById('max_channels').value || '—';
+        }
+        updateReview();
 
-                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
-                    <i class="bi bi-info-circle"></i> An administrator account will be created with this information and can manage the organization
-                </p>
+        // Password strength + match
+        const pwInput = document.getElementById('owner_password');
+        const pwConfirm = document.getElementById('owner_password_confirmation');
+        const pwCheckLen = document.getElementById('pwCheckLen');
+        const pwMatchHint = document.getElementById('pwMatchHint');
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="owner_first_name" class="form-label form-label-required">First Name</label>
-                            <input type="text" class="form-control @error('owner_first_name') is-invalid @enderror"
-                                   id="owner_first_name" name="owner_first_name" value="{{ old('owner_first_name') }}"
-                                   placeholder="Ahmed" required autocomplete="given-name">
-                            @error('owner_first_name')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="owner_last_name" class="form-label form-label-required">Last Name</label>
-                            <input type="text" class="form-control @error('owner_last_name') is-invalid @enderror"
-                                   id="owner_last_name" name="owner_last_name" value="{{ old('owner_last_name') }}"
-                                   placeholder="Muhammad" required autocomplete="family-name">
-                            @error('owner_last_name')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                </div>
+        function updatePasswordChecks() {
+            const ok = pwInput.value.length >= 8;
+            pwCheckLen.classList.toggle('ok', ok);
+            pwCheckLen.innerHTML = (ok ? '<i class="bi bi-check-circle-fill"></i>' : '<i class="bi bi-circle"></i>') + ' 8+ characters';
+        }
 
-                <div class="form-group">
-                    <label for="owner_email" class="form-label form-label-required">Email</label>
-                    <input type="email" class="form-control @error('owner_email') is-invalid @enderror"
-                           id="owner_email" name="owner_email" value="{{ old('owner_email') }}"
-                           placeholder="admin@organization.com" required autocomplete="email">
-                    <p class="form-text">This email will be used to log in to the system</p>
-                    @error('owner_email')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                </div>
+        function updatePasswordMatch() {
+            if (!pwConfirm.value) { pwMatchHint.className = ''; return; }
+            const match = pwInput.value === pwConfirm.value;
+            pwMatchHint.className = match ? 'ok' : 'bad';
+            pwMatchHint.innerHTML = match
+                ? '<i class="bi bi-check-circle"></i> <span>Passwords match</span>'
+                : '<i class="bi bi-x-circle"></i> <span>Passwords do not match</span>';
+        }
 
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="owner_password" class="form-label form-label-required">Password</label>
-                            <input type="password" class="form-control @error('owner_password') is-invalid @enderror"
-                                   id="owner_password" name="owner_password" placeholder="••••••••"
-                                   required minlength="8" autocomplete="new-password">
-                            <p class="form-text">
-                                <i class="bi bi-shield-check"></i>
-                                Must be at least 8 characters
-                            </p>
-                            @error('owner_password')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="owner_password_confirmation" class="form-label form-label-required">Confirm Password</label>
-                            <input type="password" class="form-control @error('owner_password_confirmation') is-invalid @enderror"
-                                   id="owner_password_confirmation" name="owner_password_confirmation" placeholder="••••••••"
-                                   required minlength="8" autocomplete="new-password">
-                            <p class="form-text">Re-enter the same password</p>
-                            @error('owner_password_confirmation')<div class="text-danger small mt-2"><i class="bi bi-exclamation-circle"></i> {{ $message }}</div>@enderror
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Info Box -->
-            <div class="info-box">
-                <strong><i class="bi bi-lightbulb"></i> Important Note</strong>
-                After creating the organization, the organization administrator will be able to log in and use all administrative system features.
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="form-footer">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="bi bi-check-circle"></i> Create Organization
-                </button>
-                <a href="{{ route('admin.organizations.index') }}" class="btn btn-outline-secondary btn-lg">
-                    <i class="bi bi-x-circle"></i> Cancel
-                </a>
-            </div>
-        </div>
-    </form>
+        pwInput.addEventListener('input', function () { updatePasswordChecks(); updatePasswordMatch(); });
+        pwConfirm.addEventListener('input', updatePasswordMatch);
+        updatePasswordChecks();
+    })();
+</script>
 @endsection
