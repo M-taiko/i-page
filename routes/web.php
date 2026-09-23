@@ -171,6 +171,9 @@ Route::middleware('auth')->prefix('organizations/{organization}/membership')->na
 Route::middleware(['auth', 'verified', 'CheckRole:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('organizations', OrganizationController::class);
 
+    // Add a member (admin/manager/moderator/staff) to any organization
+    Route::post('organizations/{organization}/members', [OrganizationController::class, 'addMember'])->name('organizations.members.store');
+
     // Manage an org member's role + individual permission overrides
     Route::put('organizations/{organization}/members/{user}/permissions', [OrganizationController::class, 'updateMemberPermissions'])->name('organizations.members.permissions');
 

@@ -26,6 +26,18 @@
     </div>
 </div>
 
+@if(session('success'))
+    <div style="background-color: var(--success-50); border: 1px solid var(--success-200); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-6); color: var(--success-700); font-size: var(--text-sm); display: flex; align-items: center; gap: var(--space-2);">
+        <i class="bi bi-check-circle"></i> {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div style="background-color: var(--danger-50); border: 1px solid var(--danger-200); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-6); color: var(--danger-700); font-size: var(--text-sm); display: flex; align-items: center; gap: var(--space-2);">
+        <i class="bi bi-exclamation-circle"></i> {{ session('error') }}
+    </div>
+@endif
+
 <!-- Error Messages -->
 @if($errors->any())
     <div style="background-color: var(--danger-50); border: 1px solid var(--danger-200); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-6);">
@@ -215,16 +227,56 @@
 
 <!-- Team & Permissions -->
 <x-card-modern style="margin-top: var(--space-6);">
-    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border);">
-        <i class="bi bi-person-badge" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-        <div>
-            <h2 style="margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                {{ __('Admin & Permissions') }}
-            </h2>
-            <p style="margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-tertiary);">
-                {{ __('Set each member\'s role and what they\'re allowed to do beyond it.') }}
-            </p>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border); flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <i class="bi bi-person-badge" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
+            <div>
+                <h2 style="margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
+                    {{ __('Admin & Permissions') }}
+                </h2>
+                <p style="margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-tertiary);">
+                    {{ __('Set each member\'s role and what they\'re allowed to do beyond it.') }}
+                </p>
+            </div>
         </div>
+        <button type="button" onclick="var f=document.getElementById('addMemberForm'); f.style.display = f.style.display === 'none' ? 'block' : 'none';" class="btn" style="background-color: var(--primary-600); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); border: none; cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-2);">
+            <i class="bi bi-plus-lg"></i> {{ __('Add Member') }}
+        </button>
+    </div>
+
+    <!-- Add Member Form (hidden until toggled) -->
+    <div id="addMemberForm" style="display: {{ $members->isEmpty() ? 'block' : 'none' }}; border: 1px solid var(--primary-200); background-color: var(--primary-50); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-5);">
+        <form action="{{ route('admin.organizations.members.store', $organization->id) }}" method="POST">
+            @csrf
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3);">
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ __('First Name') }} *</label>
+                    <input type="text" name="first_name" required style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--surface-border); border-radius: var(--radius-md); font-size: var(--text-sm);">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ __('Last Name') }} *</label>
+                    <input type="text" name="last_name" required style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--surface-border); border-radius: var(--radius-md); font-size: var(--text-sm);">
+                </div>
+                <div style="grid-column: span 1;">
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ __('Email') }} *</label>
+                    <input type="email" name="email" required placeholder="admin@example.com" style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--surface-border); border-radius: var(--radius-md); font-size: var(--text-sm);">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-primary);">{{ __('Role') }} *</label>
+                    <select name="role" required style="width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--surface-border); border-radius: var(--radius-md); font-size: var(--text-sm);">
+                        @foreach($assignableRoles as $roleOption)
+                            <option value="{{ $roleOption }}">{{ ucfirst(str_replace('_', ' ', $roleOption)) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <p style="font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--space-3);">
+                <i class="bi bi-info-circle"></i> {{ __('If this email doesn\'t exist yet, a new account is created automatically. If it does, they\'re just added to this organization.') }}
+            </p>
+            <button type="submit" class="btn" style="background-color: var(--primary-600); color: white; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); border: none; cursor: pointer;">
+                <i class="bi bi-check-lg"></i> {{ __('Add to Organization') }}
+            </button>
+        </form>
     </div>
 
     @forelse($members as $member)

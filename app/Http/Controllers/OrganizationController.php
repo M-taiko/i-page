@@ -115,6 +115,51 @@ class OrganizationController extends Controller
     }
 
     /**
+     * Add a member (admin/manager/moderator/staff) to this organization.
+     * If the email doesn't belong to an existing user, an account is
+     * created for them — same pattern as the org-scoped team invite flow,
+     * just reachable from the super admin's org edit page too.
+     */
+    public function addMember(Request $request, Organization $organization)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:80',
+            'last_name' => 'required|string|max:80',
+            'email' => 'required|email|max:180',
+            'role' => 'required|in:organization_admin,manager,moderator,staff',
+        ]);
+
+        $user = User::firstOrCreate(
+            ['email' => $validated['email']],
+            [
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'ipage_id' => 'IP' . str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT),
+                'password' => bcrypt(Str::random(16)),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        if ($organization->users()->where('users.id', $user->id)->exists()) {
+            return back()->with('error', __(':name is already a member of this organization.', ['name' => $user->full_name]));
+        }
+
+        OrganizationMembership::create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+            'role' => $validated['role'],
+            'status' => 'active',
+            'joined_date' => now(),
+            'invited_by' => auth()->id(),
+        ]);
+
+        $user->syncRoles([$validated['role']]);
+
+        return redirect()->route('admin.organizations.edit', $organization->id)
+            ->with('success', __(':name was added as :role.', ['name' => $user->full_name, 'role' => str_replace('_', ' ', $validated['role'])]));
+    }
+
+    /**
      * Change an org member's role and/or grant them extra individual
      * permissions beyond what their role already includes. Role sets the
      * permission baseline (RolesSeeder); the "permissions" here are only
