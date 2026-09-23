@@ -171,7 +171,7 @@
                     <select class="form-control @error('parent_channel_id') is-invalid @enderror" id="parent_channel_id" name="parent_channel_id">
                         <option value="">None — this is a top-level channel</option>
                         @foreach($parentOptions as $option)
-                            <option value="{{ $option->id }}" {{ old('parent_channel_id') == $option->id ? 'selected' : '' }}>{{ $option->name }}</option>
+                            <option value="{{ $option->id }}" {{ old('parent_channel_id', $preselectedParentId ?? null) == $option->id ? 'selected' : '' }}>{{ $option->name }}</option>
                         @endforeach
                     </select>
                     <p class="form-text">Make this a sub-channel nested under another channel. Visitors will see it inside a popup when they tap the parent channel.</p>

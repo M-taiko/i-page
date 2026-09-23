@@ -29,7 +29,7 @@ class TenantChannelController extends Controller
         }
 
         $channels = Channel::where('organization_id', $organization->id)
-            ->with('brand')
+            ->with('brand', 'childChannels')
             ->withCount('users', 'posts')
             ->paginate(10);
 
@@ -49,7 +49,7 @@ class TenantChannelController extends Controller
         return view('tenant.channels.index', compact('organization', 'channels'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $organization = auth()->user()->currentOrganization;
         if (!$organization) {
@@ -65,7 +65,13 @@ class TenantChannelController extends Controller
         $brands = $organization->brands()->where('is_active', true)->get();
         $parentOptions = Channel::where('organization_id', $organization->id)->orderBy('name')->get();
 
-        return view('tenant.channels.create', compact('organization', 'brands', 'parentOptions'));
+        // Deep-link from the channels index "Add Sub-Channel" button —
+        // pre-selects the parent so the admin doesn't have to find it again.
+        $preselectedParentId = $parentOptions->contains('id', (int) $request->query('parent'))
+            ? (int) $request->query('parent')
+            : null;
+
+        return view('tenant.channels.create', compact('organization', 'brands', 'parentOptions', 'preselectedParentId'));
     }
 
     public function store(Request $request)

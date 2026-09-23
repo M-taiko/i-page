@@ -110,11 +110,40 @@
         .channel-actions {
             display: flex;
             gap: 0.5rem;
+            flex-wrap: wrap;
             justify-content: flex-end;
             padding-top: 1rem;
             border-top: 1px solid #f3f4f6;
             margin-top: 1rem;
         }
+        .sub-channels-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
+        }
+        .sub-channels-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .sub-channel-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.85rem;
+            margin: 0 0.4rem 0.4rem 0;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .sub-channel-chip:hover { border-color: var(--primary-600); color: var(--primary-600); }
         .stats-header {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -252,7 +281,21 @@
                 </div>
             </div>
 
+            @if($channel->childChannels->count() > 0)
+                <div class="sub-channels-box">
+                    <div class="sub-channels-title"><i class="bi bi-diagram-3"></i> {{ __('Sub-Channels') }} ({{ $channel->childChannels->count() }})</div>
+                    @foreach($channel->childChannels as $sub)
+                        <a href="{{ route('tenant.channels.show', $sub->id) }}" class="sub-channel-chip">
+                            <i class="bi bi-chat-dots"></i> {{ $sub->name }}
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
             <div class="channel-actions">
+                <a href="{{ route('tenant.channels.create', ['parent' => $channel->id]) }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-diagram-3"></i> Add Sub-Channel
+                </a>
                 <a href="{{ route('tenant.channels.show', $channel->id) }}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-eye"></i> View
                 </a>
