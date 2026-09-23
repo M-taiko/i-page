@@ -119,7 +119,16 @@ class GuestController extends Controller
             ->whereHas('channels', fn ($q) => $q->where('channels.id', $channel->id))
             ->exists();
 
-        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited'));
+        // All public channels of this organization, for the Instagram-style
+        // "stories" strip — lets a visitor jump between sibling channels
+        // without going back to the organization page.
+        $orgChannels = $organization->channels()
+            ->where('type', 'public')
+            ->withCount('posts')
+            ->orderBy('name')
+            ->get();
+
+        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited', 'orgChannels'));
     }
 
     /**

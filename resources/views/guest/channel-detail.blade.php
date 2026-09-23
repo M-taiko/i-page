@@ -55,6 +55,75 @@
     .channel-hero-subscribe.subscribe { background-color: white; color: var(--primary-700); }
     .channel-hero-subscribe.subscribed { background-color: rgba(255,255,255,0.2); color: white; }
 
+    /* Instagram-style "stories" strip — all sibling channels of this org */
+    .stories-strip {
+        display: flex;
+        gap: var(--space-4);
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: var(--space-4);
+        background-color: var(--surface-bg);
+        border-bottom: 8px solid var(--surface-bg-secondary);
+    }
+
+    .stories-strip::-webkit-scrollbar { display: none; }
+
+    .story-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        flex-shrink: 0;
+        width: 68px;
+    }
+
+    .story-ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        padding: 3px;
+        background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: transform 0.15s ease;
+    }
+
+    .story-item:active .story-ring { transform: scale(0.94); }
+
+    .story-item.current .story-ring {
+        background: var(--surface-border);
+    }
+
+    .story-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: var(--surface-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: var(--font-weight-bold);
+        color: white;
+        border: 2.5px solid var(--surface-bg);
+    }
+
+    .story-name {
+        font-size: 11px;
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-primary);
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 68px;
+    }
+
+    .story-item.current .story-name { color: var(--primary-600); }
+
     /* Post cards (shared) */
     .feed-list { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
     .post-card { background-color: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); overflow: hidden; }
@@ -127,6 +196,22 @@
             </button>
         @endauth
     </div>
+
+    @if($orgChannels->count() > 1)
+        <div class="stories-strip">
+            @foreach($orgChannels as $orgChannel)
+                <a href="{{ route('guest.channel-detail', [$organization, $orgChannel->slug]) }}"
+                   class="story-item {{ $orgChannel->id === $channel->id ? 'current' : '' }}">
+                    <div class="story-ring">
+                        <div class="story-avatar" style="background-color: {{ $colorFor($orgChannel->name) }};">
+                            {{ substr($orgChannel->name, 0, 1) }}
+                        </div>
+                    </div>
+                    <div class="story-name">{{ $orgChannel->name }}</div>
+                </a>
+            @endforeach
+        </div>
+    @endif
 
     <div class="feed-list">
         @forelse($posts as $post)
