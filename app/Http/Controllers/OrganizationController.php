@@ -115,34 +115,30 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Add a member (admin/manager/moderator/staff) to this organization.
-     * If the email doesn't belong to an existing user, an account is
-     * created for them — same pattern as the org-scoped team invite flow,
-     * just reachable from the super admin's org edit page too.
+     * Create a brand-new user and add them to this organization with a
+     * role. Unlike the org-scoped team invite flow, this always creates a
+     * new account — the email must not already exist, since the super
+     * admin is setting its password here and can't do that for an
+     * existing account.
      */
     public function addMember(Request $request, Organization $organization)
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:80',
             'last_name' => 'required|string|max:80',
-            'email' => 'required|email|max:180',
+            'email' => 'required|email|max:180|unique:users,email',
+            'password' => 'required|string|min:8',
             'role' => 'required|in:organization_admin,manager,moderator,staff',
         ]);
 
-        $user = User::firstOrCreate(
-            ['email' => $validated['email']],
-            [
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'ipage_id' => 'IP' . str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT),
-                'password' => bcrypt(Str::random(16)),
-                'email_verified_at' => now(),
-            ]
-        );
-
-        if ($organization->users()->where('users.id', $user->id)->exists()) {
-            return back()->with('error', __(':name is already a member of this organization.', ['name' => $user->full_name]));
-        }
+        $user = User::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'ipage_id' => 'IP' . str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT),
+            'password' => bcrypt($validated['password']),
+            'email_verified_at' => now(),
+        ]);
 
         OrganizationMembership::create([
             'organization_id' => $organization->id,
@@ -156,7 +152,7 @@ class OrganizationController extends Controller
         $user->syncRoles([$validated['role']]);
 
         return redirect()->route('admin.organizations.edit', $organization->id)
-            ->with('success', __(':name was added as :role.', ['name' => $user->full_name, 'role' => str_replace('_', ' ', $validated['role'])]));
+            ->with('success', __(':name was created and added as :role.', ['name' => $user->full_name, 'role' => str_replace('_', ' ', $validated['role'])]));
     }
 
     /**
