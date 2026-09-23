@@ -98,7 +98,49 @@ class OrganizationController extends Controller
 
     public function edit(Organization $organization)
     {
-        return view('admin.organizations.edit', compact('organization'));
+        $members = $organization->users()->orderBy('organization_memberships.role')->get();
+        $allPermissions = \Spatie\Permission\Models\Permission::orderBy('name')->pluck('name');
+        $assignableRoles = ['organization_admin', 'manager', 'moderator', 'staff'];
+
+        // Permissions each assignable role grants by default (RolesSeeder) —
+        // used client-side to lock in role-included permissions per member,
+        // since Spatie roles are additive (a role's permission can't be
+        // individually revoked below the role's own baseline here).
+        $rolePermissions = \Spatie\Permission\Models\Role::whereIn('name', $assignableRoles)
+            ->with('permissions')
+            ->get()
+            ->mapWithKeys(fn ($role) => [$role->name => $role->permissions->pluck('name')]);
+
+        return view('admin.organizations.edit', compact('organization', 'members', 'allPermissions', 'assignableRoles', 'rolePermissions'));
+    }
+
+    /**
+     * Change an org member's role and/or grant them extra individual
+     * permissions beyond what their role already includes. Role sets the
+     * permission baseline (RolesSeeder); the "permissions" here are only
+     * ever additive on top of it — role-included permissions are excluded
+     * from the submitted list client-side (locked checkboxes), so they're
+     * never accidentally wiped by the sync below.
+     */
+    public function updateMemberPermissions(Request $request, Organization $organization, User $user)
+    {
+        abort_unless($organization->users()->where('users.id', $user->id)->exists(), 404);
+
+        $validated = $request->validate([
+            'role' => 'required|in:organization_admin,manager,moderator,staff',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string|exists:permissions,name',
+        ]);
+
+        OrganizationMembership::where('organization_id', $organization->id)
+            ->where('user_id', $user->id)
+            ->update(['role' => $validated['role']]);
+
+        $user->syncRoles([$validated['role']]);
+        $user->syncPermissions($validated['permissions'] ?? []);
+
+        return redirect()->route('admin.organizations.edit', $organization->id)
+            ->with('success', __(':name\'s role and permissions were updated.', ['name' => $user->full_name]));
     }
 
     public function update(Request $request, Organization $organization)

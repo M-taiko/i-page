@@ -213,4 +213,112 @@
     </div>
 </form>
 
+<!-- Team & Permissions -->
+<x-card-modern style="margin-top: var(--space-6);">
+    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border);">
+        <i class="bi bi-person-badge" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
+        <div>
+            <h2 style="margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
+                {{ __('Admin & Permissions') }}
+            </h2>
+            <p style="margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-tertiary);">
+                {{ __('Set each member\'s role and what they\'re allowed to do beyond it.') }}
+            </p>
+        </div>
+    </div>
+
+    @forelse($members as $member)
+        @php
+            $memberRole = $member->pivot->role;
+            $memberDirectPermissions = $member->getDirectPermissions()->pluck('name');
+        @endphp
+        <div class="member-permission-block" data-member-id="{{ $member->id }}" style="border: 1px solid var(--surface-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-4);">
+            <form action="{{ route('admin.organizations.members.permissions', [$organization->id, $member->id]) }}" method="POST">
+                @csrf
+                @method('PUT')
+
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <div style="width: 40px; height: 40px; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--primary-600), var(--secondary-600)); color: white; display: flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); flex-shrink: 0;">
+                            {{ $member->initials ?? substr($member->full_name, 0, 1) }}
+                        </div>
+                        <div>
+                            <div style="font-weight: var(--font-weight-semibold); color: var(--text-primary); font-size: var(--text-sm);">{{ $member->full_name }}</div>
+                            <div style="font-size: var(--text-xs); color: var(--text-tertiary);">{{ $member->email }}</div>
+                        </div>
+                    </div>
+
+                    <select name="role" class="form-control member-role-select" style="width: auto; padding: var(--space-2) var(--space-3); border: 1px solid var(--surface-border); border-radius: var(--radius-md); font-size: var(--text-sm);">
+                        @foreach($assignableRoles as $roleOption)
+                            <option value="{{ $roleOption }}" @selected($memberRole === $roleOption)>
+                                {{ ucfirst(str_replace('_', ' ', $roleOption)) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div style="font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-tertiary); text-transform: uppercase; margin-bottom: var(--space-2);">
+                    {{ __('What they can do') }}
+                </div>
+                <div class="permissions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-2) var(--space-4); margin-bottom: var(--space-4);">
+                    @foreach($allPermissions as $permission)
+                        @php
+                            $isDirect = $memberDirectPermissions->contains($permission);
+                        @endphp
+                        <label class="permission-checkbox" data-permission="{{ $permission }}" style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="permission-input"
+                                   value="{{ $permission }}"
+                                   {{ $isDirect ? 'checked' : '' }}
+                                   style="width: 16px; height: 16px; accent-color: var(--primary-600); flex-shrink: 0;">
+                            <span class="permission-name">{{ ucfirst(str_replace('.', ' — ', $permission)) }}</span>
+                            <span class="permission-role-tag" style="display: none; font-size: 10px; color: var(--text-tertiary); background: var(--surface-hover); padding: 1px 6px; border-radius: var(--radius-full);">{{ __('included in role') }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+                <button type="submit" class="btn" style="background-color: var(--primary-50); color: var(--primary-700); border: 1px solid var(--primary-200); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); cursor: pointer;">
+                    <i class="bi bi-check-lg"></i> {{ __('Save role & permissions') }}
+                </button>
+            </form>
+        </div>
+    @empty
+        <p style="color: var(--text-tertiary); font-size: var(--text-sm); text-align: center; padding: var(--space-6) 0;">
+            {{ __('No members yet.') }}
+        </p>
+    @endforelse
+</x-card-modern>
+
+<script>
+    const ROLE_PERMISSIONS = {!! $rolePermissions->toJson() !!};
+
+    function applyRoleLock(block) {
+        const select = block.querySelector('.member-role-select');
+        const role = select.value;
+        const rolePerms = ROLE_PERMISSIONS[role] || [];
+
+        block.querySelectorAll('.permission-checkbox').forEach((label) => {
+            const permission = label.dataset.permission;
+            const input = label.querySelector('.permission-input');
+            const tag = label.querySelector('.permission-role-tag');
+            const includedInRole = rolePerms.includes(permission);
+
+            if (includedInRole) {
+                input.checked = true;
+                input.disabled = true;
+                input.dataset.locked = '1';
+                tag.style.display = 'inline-block';
+            } else {
+                input.disabled = false;
+                delete input.dataset.locked;
+                tag.style.display = 'none';
+            }
+        });
+    }
+
+    document.querySelectorAll('.member-permission-block').forEach((block) => {
+        applyRoleLock(block);
+        block.querySelector('.member-role-select').addEventListener('change', () => applyRoleLock(block));
+    });
+</script>
+
 @endsection

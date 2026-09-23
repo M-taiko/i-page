@@ -171,6 +171,9 @@ Route::middleware('auth')->prefix('organizations/{organization}/membership')->na
 Route::middleware(['auth', 'verified', 'CheckRole:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('organizations', OrganizationController::class);
 
+    // Manage an org member's role + individual permission overrides
+    Route::put('organizations/{organization}/members/{user}/permissions', [OrganizationController::class, 'updateMemberPermissions'])->name('organizations.members.permissions');
+
     // Subscription lifecycle
     Route::post('organizations/{organization}/suspend', [OrganizationController::class, 'suspend'])->name('organizations.suspend');
     Route::post('organizations/{organization}/activate', [OrganizationController::class, 'activate'])->name('organizations.activate');
