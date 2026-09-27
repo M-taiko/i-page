@@ -156,6 +156,29 @@ class OrganizationController extends Controller
     }
 
     /**
+     * Remove a member from this organization. Only detaches the
+     * organization_membership — the user's account itself, and any
+     * membership they have in OTHER organizations, is untouched. Their
+     * global Spatie role/permissions are only cleared if this was their
+     * last remaining organization (otherwise another org's role still
+     * needs them).
+     */
+    public function removeMember(Organization $organization, User $user)
+    {
+        abort_unless($organization->users()->where('users.id', $user->id)->exists(), 404);
+
+        $organization->users()->detach($user->id);
+
+        if (!$user->organizations()->exists()) {
+            $user->syncRoles([]);
+            $user->syncPermissions([]);
+        }
+
+        return redirect()->route('admin.organizations.edit', $organization->id)
+            ->with('success', __(':name was removed from this organization.', ['name' => $user->full_name]));
+    }
+
+    /**
      * Change an org member's role and/or grant them extra individual
      * permissions beyond what their role already includes. Role sets the
      * permission baseline (RolesSeeder); the "permissions" here are only

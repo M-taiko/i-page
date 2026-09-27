@@ -343,6 +343,14 @@
                     <i class="bi bi-check-lg"></i> {{ __('Save role & permissions') }}
                 </button>
             </form>
+
+            <form action="{{ route('admin.organizations.members.destroy', [$organization->id, $member->id]) }}" method="POST" style="display: inline-block; margin-top: var(--space-2);" onsubmit="return confirm('{{ __('Remove this member from the organization? Their account is kept but they lose access here.') }}');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn" style="background-color: var(--danger-50); color: var(--danger-700); border: 1px solid var(--danger-200); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); cursor: pointer;">
+                    <i class="bi bi-trash"></i> {{ __('Remove from Organization') }}
+                </button>
+            </form>
         </div>
     @empty
         <p style="color: var(--text-tertiary); font-size: var(--text-sm); text-align: center; padding: var(--space-6) 0;">
