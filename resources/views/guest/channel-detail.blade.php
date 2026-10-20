@@ -197,7 +197,31 @@
         @endauth
     </div>
 
-    @if($orgChannels->count() > 1)
+    @if($subChannels->isNotEmpty())
+        <div class="stories-strip">
+            @if($parentChannel)
+                <a href="{{ route('guest.channel-detail', [$organization, $parentChannel->slug]) }}" class="story-item">
+                    <div class="story-ring">
+                        <div class="story-avatar" style="background-color: {{ $colorFor($parentChannel->name) }};">
+                            <i class="bi bi-arrow-up-left" style="font-size: 20px;"></i>
+                        </div>
+                    </div>
+                    <div class="story-name">{{ $parentChannel->name }}</div>
+                </a>
+            @endif
+            @foreach($subChannels as $sub)
+                <a href="{{ route('guest.channel-detail', [$organization, $sub->slug]) }}"
+                   class="story-item {{ $sub->id === $channel->id ? 'current' : '' }}">
+                    <div class="story-ring">
+                        <div class="story-avatar" style="background-color: {{ $colorFor($sub->name) }};">
+                            {{ mb_substr($sub->name, 0, 1) }}
+                        </div>
+                    </div>
+                    <div class="story-name">{{ $sub->name }}</div>
+                </a>
+            @endforeach
+        </div>
+    @elseif($orgChannels->count() > 1)
         <div class="stories-strip">
             @foreach($orgChannels as $orgChannel)
                 <a href="{{ route('guest.channel-detail', [$organization, $orgChannel->slug]) }}"

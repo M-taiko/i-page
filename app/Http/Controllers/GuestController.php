@@ -139,7 +139,15 @@ class GuestController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited', 'orgChannels'));
+        // Sub-channel strip: a parent shows its own children; a sub-channel
+        // shows its parent plus its siblings so the visitor can move around.
+        $parentChannel = $channel->parentChannels()->where('type', 'public')->first();
+        $subChannels = ($parentChannel ?? $channel)->childChannels()
+            ->where('type', 'public')
+            ->orderBy('name')
+            ->get();
+
+        return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited', 'orgChannels', 'parentChannel', 'subChannels'));
     }
 
     /**
