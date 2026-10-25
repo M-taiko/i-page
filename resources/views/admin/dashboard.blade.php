@@ -1,405 +1,185 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
+
+@section('title', __('Super Admin Dashboard'))
+
+@section('page-header')
+    <x-valex.page-header
+        :title="__('Super Admin Dashboard')"
+        :subtitle="__('Welcome back,') . ' ' . auth()->user()->full_name . ' — ' . __('platform-wide overview')">
+        <x-slot:actions>
+            <x-valex.range-switch :days="$days" />
+            <a href="{{ route('admin.organizations.create') }}" class="btn btn-primary mx-2"><i class="fe fe-plus"></i> {{ __('New Organization') }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
 
 @section('content')
-<style>
-    .stat-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    .stat-card-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-    }
-
-    .stat-card-icon.primary { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .stat-card-icon.success { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-    .stat-card-icon.warning { background: rgba(247, 144, 9, 0.1); color: #f79009; }
-    .stat-card-icon.danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-    .stat-card-icon.info { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-
-    .header-section {
-        background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
-        color: white;
-        padding: 3rem 1.5rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-    }
-
-    .header-section h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .header-section p { opacity: 0.9; margin-bottom: 0; }
-
-    .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        text-decoration: none;
-        color: var(--text-primary);
-        background: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
-
-    .action-btn:hover {
-        background: var(--primary-50);
-        border-color: var(--primary-600);
-        color: var(--primary-600);
-    }
-
-    .recent-item { padding: 1rem; border-bottom: 1px solid var(--surface-border); transition: background 0.3s ease; }
-    .recent-item:hover { background: var(--surface-bg-secondary); }
-    .recent-item:last-child { border-bottom: none; }
-
-    .stat-value { font-size: 2rem; font-weight: 700; color: var(--text-primary); }
-    .stat-label { font-size: 0.875rem; color: var(--text-tertiary); font-weight: 500; }
-
-    .org-avatar {
-        width: 40px; height: 40px; border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        color: white; font-weight: 700; flex-shrink: 0;
-    }
-
-    /* Status distribution bar (pure CSS, sits inside a regular Bootstrap card) */
-    .status-bar {
-        display: flex;
-        height: 10px;
-        border-radius: 999px;
-        overflow: hidden;
-        background: var(--surface-bg-secondary);
-        margin-bottom: 1rem;
-    }
-    .status-bar-segment { height: 100%; }
-
-    .timeline-dot {
-        width: 32px; height: 32px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.8rem; flex-shrink: 0;
-    }
-</style>
-
-@php
-    $avatarPalette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777'];
-    $colorFor = fn($seed) => $avatarPalette[crc32($seed) % count($avatarPalette)];
-
-    $totalOrganizations = \App\Models\Organization::count();
-    $activeOrganizations = \App\Models\Organization::where('status', 'active')->count();
-    $suspendedOrganizations = \App\Models\Organization::where('status', 'suspended')->count();
-    $cancelledOrganizations = \App\Models\Organization::where('status', 'cancelled')->count();
-    $totalUsers = \App\Models\User::count();
-    $totalPosts = \App\Models\Post::count();
-    $publishedPosts = \App\Models\Post::where('status', 'published')->count();
-    $openTickets = \App\Models\Ticket::where('status', '!=', 'closed')->count();
-    $totalChannels = \App\Models\Channel::count();
-
-    $statusSegments = [
-        ['label' => __('Active'), 'count' => $activeOrganizations, 'color' => '#22c55e', 'badge' => 'success'],
-        ['label' => __('Suspended'), 'count' => $suspendedOrganizations, 'color' => '#f59e0b', 'badge' => 'warning'],
-        ['label' => __('Cancelled'), 'count' => $cancelledOrganizations, 'color' => '#ef4444', 'badge' => 'danger'],
-    ];
-
-    $recentOrganizations = \App\Models\Organization::withCount('users', 'posts', 'channels')->latest()->take(8)->get();
-
-    $activity = collect()
-        ->concat(
-            \App\Models\Organization::latest()->take(5)->get()->map(fn ($o) => [
-                'icon' => 'bi-building', 'color' => 'primary',
-                'title' => __(':name was added to the platform', ['name' => $o->name]),
-                'time' => $o->created_at,
-            ])
-        )
-        ->concat(
-            \App\Models\Ticket::with('organization')->latest('opened_at')->take(5)->get()->map(fn ($t) => [
-                'icon' => 'bi-ticket', 'color' => 'warning',
-                'title' => __('Ticket :num opened by :org', ['num' => $t->ticket_number, 'org' => $t->organization->name ?? __('Unknown org')]),
-                'time' => $t->opened_at ?? $t->created_at,
-            ])
-        )
-        ->sortByDesc('time')
-        ->take(6);
-@endphp
-
-<div class="container-lg py-4">
-    <!-- Header -->
-    <div class="header-section">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-            <div>
-                <h1>{{ __('Super Admin Dashboard') }}</h1>
-                <p>{{ __('Welcome back,') }} {{ auth()->user()->full_name }} — {{ __('platform-wide overview') }}</p>
-            </div>
-            <a href="{{ route('admin.organizations.create') }}" class="btn btn-light">
-                <i class="bi bi-plus-circle"></i> {{ __('New Organization') }}
-            </a>
+{{-- KPIs --}}
+<div class="row row-sm">
+    @foreach ($stats['kpis'] as $kpi)
+        <div class="col-sm-6 col-xl-4 col-xxl-2">
+            <x-valex.kpi-card :kpi="$kpi" :days="$days" />
         </div>
+    @endforeach
+</div>
+
+{{-- Growth + org status --}}
+<div class="row row-sm">
+    <div class="col-xl-8">
+        <x-valex.card :title="__('Platform Growth')" :subtitle="__('Posts, new users and new organizations per day')">
+            <div style="height: 300px;"><canvas id="growthChart"></canvas></div>
+        </x-valex.card>
+    </div>
+    <div class="col-xl-4">
+        <x-valex.card :title="__('Organizations by Status')" :subtitle="$stats['totalChannelsActive'] . ' ' . __('active channels')">
+            <div style="height: 300px;"><canvas id="orgStatusChart"></canvas></div>
+        </x-valex.card>
+    </div>
+</div>
+
+{{-- Top orgs + QR --}}
+<div class="row row-sm">
+    <div class="col-xl-6">
+        <x-valex.card :title="__('Top Organizations')" :subtitle="__('By number of posts')">
+            <div style="height: 280px;"><canvas id="topOrgsChart"></canvas></div>
+        </x-valex.card>
+    </div>
+    <div class="col-xl-4 col-md-7">
+        <x-valex.card :title="__('QR Scans')" :subtitle="__('Scans per day')">
+            <div style="height: 280px;"><canvas id="scansChart"></canvas></div>
+        </x-valex.card>
+    </div>
+    <div class="col-xl-2 col-md-5">
+        <x-valex.card :title="__('Devices')">
+            <div style="height: 280px;"><canvas id="devicesChart"></canvas></div>
+        </x-valex.card>
+    </div>
+</div>
+
+{{-- Content mix + engagement + tickets --}}
+<div class="row row-sm">
+    <div class="col-xl-4 col-md-6">
+        <x-valex.card :title="__('Content Mix')" :subtitle="__('Posts by type')">
+            <div style="height: 240px;"><canvas id="postTypesChart"></canvas></div>
+        </x-valex.card>
+    </div>
+    <div class="col-xl-4 col-md-6"><x-valex.engagement :engagement="$stats['engagement']" /></div>
+    <div class="col-xl-4">
+        <x-valex.card :title="__('Tickets by Status')">
+            @php $ts = $stats['ticketsByStatus']; $tsTotal = array_sum($ts); @endphp
+            @if ($tsTotal === 0)
+                <p class="text-muted text-center my-4">{{ __('No tickets yet') }}</p>
+            @else
+                @foreach ($ts as $status => $count)
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1"><span class="text-muted">{{ ucfirst(str_replace('_', ' ', $status)) }}</span><strong>{{ $count }}</strong></div>
+                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-{{ ['open' => 'primary', 'in_progress' => 'info', 'waiting' => 'warning', 'resolved' => 'success', 'closed' => 'secondary'][$status] ?? 'secondary' }}" style="width: {{ round($count / $tsTotal * 100) }}%"></div></div>
+                    </div>
+                @endforeach
+            @endif
+        </x-valex.card>
+    </div>
+</div>
+
+{{-- Tables --}}
+<div class="row row-sm">
+    <div class="col-xl-7">
+        <x-valex.card :title="__('Newest Organizations')">
+            <x-slot:actions><a href="{{ route('admin.organizations.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }}</a></x-slot:actions>
+            @if ($stats['newestOrganizations']->isEmpty())
+                <p class="text-muted text-center mb-0">{{ __('No organizations yet') }}</p>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover text-md-nowrap mb-0">
+                        <thead><tr><th>{{ __('Organization') }}</th><th>{{ __('Status') }}</th><th>{{ __('Users') }}</th><th>{{ __('Channels') }}</th><th>{{ __('Posts') }}</th><th>{{ __('Created') }}</th></tr></thead>
+                        <tbody>
+                            @foreach ($stats['newestOrganizations'] as $org)
+                                <tr>
+                                    <td><a href="{{ route('admin.organizations.show', $org) }}" class="font-weight-bold">{{ $org->name }}</a><div class="small text-muted">{{ $org->city ?? __('No city set') }}</div></td>
+                                    <td><x-valex.badge :variant="match($org->status) { 'active' => 'success', 'suspended' => 'warning', 'cancelled' => 'danger', default => 'secondary' }">{{ ucfirst($org->status) }}</x-valex.badge></td>
+                                    <td>{{ $org->users_count }}</td>
+                                    <td>{{ $org->channels_count }}</td>
+                                    <td>{{ $org->posts_count }}</td>
+                                    <td class="text-muted">{{ $org->created_at->diffForHumans() }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-valex.card>
+
+        <x-valex.card :title="__('Open Tickets')">
+            <x-slot:actions><a href="{{ route('tickets.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }}</a></x-slot:actions>
+            @if ($stats['openTickets']->isEmpty())
+                <p class="text-muted text-center mb-0">{{ __('No open tickets') }}</p>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover text-md-nowrap mb-0">
+                        <thead><tr><th>{{ __('Ticket') }}</th><th>{{ __('Organization') }}</th><th>{{ __('Priority') }}</th><th>{{ __('Opened') }}</th></tr></thead>
+                        <tbody>
+                            @foreach ($stats['openTickets'] as $ticket)
+                                <tr>
+                                    <td><code>{{ $ticket->ticket_number }}</code> <a href="{{ route('tickets.show', $ticket) }}">{{ Str::limit($ticket->title, 40) }}</a></td>
+                                    <td class="text-muted">{{ $ticket->organization->name ?? __('Unknown org') }}</td>
+                                    <td><x-valex.badge :variant="match($ticket->priority) { 'urgent' => 'danger', 'high' => 'warning', 'medium' => 'info', default => 'secondary' }">{{ ucfirst($ticket->priority) }}</x-valex.badge></td>
+                                    <td class="text-muted">{{ $ticket->opened_at?->format('M d, Y') ?? __('Recently') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </x-valex.card>
     </div>
 
-    <!-- Key Statistics -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon primary"><i class="bi bi-building"></i></div>
+    <div class="col-xl-5">
+        <x-valex.card :title="__('Recent Activity')">
+            @forelse ($stats['recentActivity'] as $log)
+                <div class="d-flex align-items-start {{ ! $loop->last ? 'mb-3 pb-3 border-bottom' : '' }}">
+                    <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-activity"></i></span>
                     <div>
-                        <p class="stat-label mb-1">{{ __('Organizations') }}</p>
-                        <p class="stat-value mb-0">{{ $totalOrganizations }}</p>
+                        <div class="small font-weight-bold">{{ $log->description ?: ucfirst(str_replace('_', ' ', $log->event)) }}</div>
+                        <div class="small text-muted">{{ $log->user?->full_name ?? __('System') }} · {{ $log->created_at->diffForHumans() }}</div>
                     </div>
                 </div>
-            </div>
-        </div>
+            @empty
+                <p class="text-muted text-center mb-0">{{ __('Nothing yet') }}</p>
+            @endforelse
+        </x-valex.card>
 
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon success"><i class="bi bi-people-fill"></i></div>
-                    <div>
-                        <p class="stat-label mb-1">{{ __('Total Users') }}</p>
-                        <p class="stat-value mb-0">{{ $totalUsers }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon info"><i class="bi bi-file-text"></i></div>
-                    <div>
-                        <p class="stat-label mb-1">{{ __('Total Posts') }}</p>
-                        <p class="stat-value mb-0">{{ $totalPosts }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-sm-6">
-            <div class="card stat-card">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="stat-card-icon warning"><i class="bi bi-ticket"></i></div>
-                    <div>
-                        <p class="stat-label mb-1">{{ __('Open Tickets') }}</p>
-                        <p class="stat-value mb-0">{{ $openTickets }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Organizations by Status -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-pie-chart"></i> {{ __('Organizations by Status') }}</h5>
-            <small class="text-muted">{{ $totalChannels }} {{ __('channels total') }}</small>
-        </div>
-        <div class="card-body">
-            <div class="status-bar">
-                @foreach($statusSegments as $segment)
-                    @if($totalOrganizations > 0 && $segment['count'] > 0)
-                        <div class="status-bar-segment" style="width: {{ ($segment['count'] / $totalOrganizations) * 100 }}%; background-color: {{ $segment['color'] }};"></div>
-                    @endif
+        <x-valex.card :title="__('Quick Actions')">
+            <div class="row row-xs">
+                @foreach ([
+                    ['admin.organizations.create', 'plus-circle', __('New Org')],
+                    ['admin.organizations.index', 'briefcase', __('Organizations')],
+                ] as [$routeName, $icon, $label])
+                    <div class="col-6 mb-2"><a href="{{ route($routeName) }}" class="btn btn-outline-primary btn-block"><i class="fe fe-{{ $icon }}"></i> {{ $label }}</a></div>
                 @endforeach
             </div>
-            <div class="d-flex flex-wrap gap-3">
-                @foreach($statusSegments as $segment)
-                    <span class="badge bg-{{ $segment['badge'] }}-subtle text-{{ $segment['badge'] }}-emphasis border border-{{ $segment['badge'] }}-subtle">
-                        {{ $segment['label'] }} — {{ $segment['count'] }}
-                    </span>
-                @endforeach
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="row g-4 mb-4">
-        <!-- Organizations -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-building"></i> {{ __('Organizations') }}</h5>
-                    <a href="{{ route('admin.organizations.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }} →</a>
-                </div>
-                @if($recentOrganizations->isEmpty())
-                    <div class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i>
-                        <p class="mt-2">{{ __('No organizations yet') }}</p>
-                    </div>
-                @else
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>{{ __('Organization') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th>{{ __('Users') }}</th>
-                                    <th>{{ __('Channels') }}</th>
-                                    <th>{{ __('Posts') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentOrganizations as $org)
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="org-avatar" style="background-color: {{ $colorFor($org->name) }};">
-                                                    {{ substr($org->name, 0, 1) }}
-                                                </div>
-                                                <div>
-                                                    <a href="{{ route('admin.organizations.show', $org) }}" class="text-decoration-none fw-500">{{ $org->name }}</a>
-                                                    <div class="small text-muted">{{ $org->city ?? __('No city set') }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-{{ match($org->status) { 'active' => 'success', 'suspended' => 'warning', 'cancelled' => 'danger', default => 'secondary' } }}">
-                                                {{ ucfirst($org->status) }}
-                                            </span>
-                                        </td>
-                                        <td>{{ $org->users_count }}</td>
-                                        <td>{{ $org->channels_count }}</td>
-                                        <td>{{ $org->posts_count }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- Quick Actions + Activity -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="bi bi-lightning"></i> {{ __('Quick Actions') }}</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <a href="{{ route('admin.organizations.create') }}" class="action-btn">
-                                <i class="bi bi-plus-circle"></i> {{ __('New Org') }}
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ route('admin.organizations.index') }}" class="action-btn">
-                                <i class="bi bi-building"></i> {{ __('Organizations') }}
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ route('posts.index') }}" class="action-btn">
-                                <i class="bi bi-file-text"></i> {{ __('Posts') }}
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ route('tickets.index') }}" class="action-btn">
-                                <i class="bi bi-ticket"></i> {{ __('Tickets') }}
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ route('audience-segments.index') }}" class="action-btn">
-                                <i class="bi bi-people"></i> {{ __('Audiences') }}
-                            </a>
-                        </div>
-                        <div class="col-6">
-                            <a href="{{ route('tenant.channels.index') }}" class="action-btn">
-                                <i class="bi bi-chat-dots"></i> {{ __('Channels') }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> {{ __('Recent Activity') }}</h5>
-                </div>
-                <div class="card-body">
-                    @if($activity->isEmpty())
-                        <div class="text-center py-4 text-muted">
-                            <i class="bi bi-clock" style="font-size: 2rem; opacity: 0.5;"></i>
-                            <p class="mt-2 mb-0">{{ __('Nothing yet') }}</p>
-                        </div>
-                    @else
-                        @foreach($activity as $item)
-                            <div class="d-flex gap-3 {{ !$loop->last ? 'mb-3' : '' }}">
-                                <div class="timeline-dot bg-{{ $item['color'] }}-subtle text-{{ $item['color'] }}-emphasis">
-                                    <i class="bi {{ $item['icon'] }}"></i>
-                                </div>
-                                <div>
-                                    <div class="small fw-500">{{ $item['title'] }}</div>
-                                    <div class="small text-muted">{{ $item['time']?->diffForHumans() }}</div>
-                                </div>
-                            </div>
-                        @endforeach
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Open Tickets -->
-    <div class="row g-4">
-        <div class="col-lg-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-ticket"></i> {{ __('Recent Open Tickets') }}</h5>
-                    <a href="{{ route('tickets.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }} →</a>
-                </div>
-                @php
-                    $recentTickets = \App\Models\Ticket::where('status', '!=', 'closed')->with('organization')->latest()->take(6)->get();
-                @endphp
-                @if($recentTickets->isEmpty())
-                    <div class="text-center py-4 text-muted">
-                        <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
-                        <p class="mt-2 mb-0">{{ __('No open tickets') }}</p>
-                    </div>
-                @else
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>{{ __('Ticket') }}</th>
-                                    <th>{{ __('Organization') }}</th>
-                                    <th>{{ __('Priority') }}</th>
-                                    <th>{{ __('Opened') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentTickets as $ticket)
-                                    <tr>
-                                        <td>
-                                            <code>{{ $ticket->ticket_number }}</code>
-                                            <a href="{{ route('tickets.show', $ticket) }}" class="text-decoration-none ms-2">
-                                                {{ Str::limit($ticket->title, 40) }}
-                                            </a>
-                                        </td>
-                                        <td class="text-muted">{{ $ticket->organization->name ?? __('Unknown org') }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ match($ticket->priority) { 'urgent' => 'danger', 'high' => 'warning', 'medium' => 'info', 'low' => 'secondary', default => 'secondary' } }}">
-                                                {{ ucfirst($ticket->priority) }}
-                                            </span>
-                                        </td>
-                                        <td class="text-muted">{{ $ticket->opened_at?->format('M d, Y') ?? __('Recently') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-        </div>
+        </x-valex.card>
     </div>
 </div>
 @endsection
+
+@php $chartData = Arr::only($stats, ['growth', 'scans', 'orgStatus', 'topOrgs', 'devices', 'postTypes']); @endphp
+@push('scripts')
+<script src="{{ asset('assets/valex/plugins/chart.js/Chart.bundle.min.js') }}"></script>
+<script src="{{ asset('assets/valex/js/ipage-charts.js') }}"></script>
+<script>
+    (function () {
+        var s = @json($chartData);
+        var none = @json(__('No data for this period'));
+        IPChart.line('growthChart', s.growth, none);
+        IPChart.doughnut('orgStatusChart', s.orgStatus.labels, s.orgStatus.data, none, ['#22c55e', '#f59e0b', '#ef4444']);
+        IPChart.bar('topOrgsChart', s.topOrgs.labels, [
+            { label: @json(__('Posts')), data: s.topOrgs.posts },
+            { label: @json(__('Users')), data: s.topOrgs.users },
+            { label: @json(__('Channels')), data: s.topOrgs.channels }
+        ], none);
+        IPChart.line('scansChart', s.scans, none);
+        IPChart.doughnut('devicesChart', s.devices.labels, s.devices.data, none);
+        IPChart.doughnut('postTypesChart', s.postTypes.labels, s.postTypes.data, none);
+    })();
+</script>
+@endpush

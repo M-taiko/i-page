@@ -1,162 +1,156 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
+
+@section('title', $organization->name)
+
+@section('page-header')
+    <x-valex.page-header :title="$organization->name" :subtitle="__('Dashboard')">
+        <x-slot:actions>
+            <x-valex.range-switch :days="$days" />
+            <a href="{{ route('organizations.settings', $organization) }}" class="btn btn-primary mx-2"><i class="fe fe-settings"></i> {{ __('Settings') }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
 
 @section('content')
-<style>
-    .org-hero {
-        background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
-        color: white;
-        padding: var(--space-8) var(--space-6);
-        border-radius: var(--radius-xl);
-        margin-bottom: var(--space-6);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--space-4);
-        flex-wrap: wrap;
-    }
-    .org-hero h1 { margin: 0 0 4px; font-size: var(--text-2xl); }
-    .org-hero p { margin: 0; opacity: 0.9; font-size: var(--text-sm); }
-    .org-hero-settings-btn {
-        display: inline-flex; align-items: center; gap: var(--space-2);
-        background-color: rgba(255,255,255,0.18); color: white; text-decoration: none;
-        padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-medium);
-    }
-    .org-hero-settings-btn:hover { background-color: rgba(255,255,255,0.28); }
+@php
+    $postVariant = fn ($s) => match ($s) { 'draft' => 'secondary', 'published' => 'success', 'pending_approval' => 'warning', 'rejected' => 'danger', default => 'info' };
+    $priorityVariant = fn ($p) => match ($p) { 'urgent' => 'danger', 'high' => 'warning', 'medium' => 'info', default => 'secondary' };
+@endphp
 
-    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); }
-    @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+<div class="row row-sm">
+    @foreach ($stats['kpis'] as $kpi)
+        <div class="col-sm-6 col-xl-4 col-xxl-2">
+            <x-valex.kpi-card :kpi="$kpi" :days="($kpi['current'] || $kpi['previous']) ? $days : null" />
+        </div>
+    @endforeach
+</div>
 
-    .list-card .card-body { padding: 0; }
-    .list-card-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: var(--space-4); border-bottom: 1px solid var(--surface-border);
-    }
-    .list-card-header h5 { margin: 0; font-size: var(--text-base); font-weight: var(--font-weight-bold); color: var(--text-primary); display: flex; align-items: center; gap: var(--space-2); }
-    .list-card-header a { font-size: var(--text-xs); color: var(--primary-600); text-decoration: none; font-weight: var(--font-weight-medium); }
-
-    .list-row { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--surface-border); }
-    .list-row:last-child { border-bottom: none; }
-    .list-row:hover { background-color: var(--surface-hover); }
-    .list-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); margin-bottom: 4px; }
-    .list-row-title { font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--text-primary); text-decoration: none; }
-    .list-row-title:hover { color: var(--primary-600); }
-    .list-row-meta { font-size: var(--text-xs); color: var(--text-tertiary); }
-
-    .pill { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--radius-full); font-size: 10px; font-weight: var(--font-weight-bold); white-space: nowrap; }
-    .pill-secondary { background-color: var(--surface-hover); color: var(--text-tertiary); }
-    .pill-success { background-color: var(--success-50); color: var(--success-700); }
-    .pill-warning { background-color: var(--warning-50, #fffbeb); color: var(--warning-700, #b45309); }
-    .pill-danger { background-color: var(--danger-50); color: var(--danger-700); }
-    .pill-info { background-color: var(--info-50, #eff6ff); color: var(--info-700, #1d4ed8); }
-
-    .empty-row { text-align: center; padding: var(--space-8) var(--space-4); color: var(--text-tertiary); font-size: var(--text-sm); }
-    .empty-row i { font-size: 1.75rem; display: block; margin-bottom: var(--space-2); opacity: 0.5; }
-
-    .action-btn {
-        display: flex; align-items: center; gap: var(--space-3);
-        padding: var(--space-3) var(--space-4);
-        text-decoration: none; color: var(--text-primary);
-        background-color: var(--surface-bg); border: 1px solid var(--surface-border);
-        border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-medium);
-        transition: all var(--transition-fast);
-    }
-    .action-btn:hover { background-color: var(--primary-50); border-color: var(--primary-600); color: var(--primary-600); }
-    .action-btn i { font-size: var(--text-lg); }
-
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); padding: var(--space-4); }
-    .info-grid-item p:first-child { margin: 0 0 4px; font-size: var(--text-xs); color: var(--text-tertiary); }
-    .info-grid-item p:last-child { margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
-</style>
-
-<!-- Header -->
-<div class="org-hero">
-    <div>
-        <h1>{{ $organization->name }}</h1>
-        <p>{{ $organization->email ?? __('No email set') }}</p>
+<div class="row row-sm">
+    <div class="col-xl-8">
+        <x-valex.card :title="__('Activity Trend')" :subtitle="__('Posts and tickets per day')">
+            <div style="height: 300px;"><canvas id="growthChart"></canvas></div>
+        </x-valex.card>
     </div>
-    <a href="{{ route('organizations.settings', $organization) }}" class="org-hero-settings-btn">
-        <i class="bi bi-gear"></i> {{ __('Settings') }}
-    </a>
+    <div class="col-xl-4">
+        <x-valex.card :title="__('Content Mix')" :subtitle="__('Posts by type')">
+            <div style="height: 300px;"><canvas id="postTypesChart"></canvas></div>
+        </x-valex.card>
+    </div>
 </div>
 
-<!-- Key Statistics -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
-    <x-stat-card title="{{ __('Posts') }}" value="{{ $organization->posts()->count() }}" icon="file-text" />
-    <x-stat-card title="{{ __('Open Tickets') }}" value="{{ $organization->tickets()->where('status', '!=', 'closed')->count() }}" icon="ticket-perforated" />
-    <x-stat-card title="{{ __('Team Members') }}" value="{{ $organization->users()->count() }}" icon="people" />
-    <x-stat-card title="{{ __('Locations') }}" value="{{ $organization->locations()->count() }}" icon="geo-alt" />
+<div class="row row-sm">
+    <div class="col-xl-4 col-md-6"><x-valex.engagement :engagement="$stats['engagement']" /></div>
+    <div class="col-xl-5 col-md-6">
+        <x-valex.card :title="__('QR Scans')" :subtitle="__('Scans per day')">
+            <div style="height: 240px;"><canvas id="scansChart"></canvas></div>
+        </x-valex.card>
+    </div>
+    <div class="col-xl-3">
+        <x-valex.card :title="__('Devices')">
+            <div style="height: 240px;"><canvas id="devicesChart"></canvas></div>
+        </x-valex.card>
+    </div>
 </div>
 
-<!-- Recent Posts / Open Tickets -->
-<div class="dash-grid">
-    <x-card-modern class="list-card">
-        <div class="list-card-header">
-            <h5><i class="bi bi-file-text"></i> {{ __('Recent Posts') }}</h5>
-            <a href="{{ route('posts.index') }}">{{ __('View All') }} →</a>
-        </div>
-        @forelse($organization->posts()->latest()->take(5)->get() as $post)
-            <div class="list-row">
-                <div class="list-row-top">
-                    <a href="{{ route('posts.show', $post) }}" class="list-row-title">{{ Str::limit($post->title, 45) }}</a>
-                    <span class="pill {{ match($post->status) {
-                        'draft' => 'pill-secondary',
-                        'published' => 'pill-success',
-                        'pending_approval' => 'pill-warning',
-                        default => 'pill-info',
-                    } }}">{{ str_replace('_', ' ', ucfirst($post->status)) }}</span>
+<div class="row row-sm">
+    <div class="col-xl-4 col-md-6">
+        <x-valex.card :title="__('Top Channels')">
+            <x-slot:actions><a href="{{ route('tenant.channels.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }}</a></x-slot:actions>
+            <ul class="list-group list-group-flush">
+                @forelse ($stats['topChannels'] as $channel)
+                    <li class="list-group-item d-flex align-items-center px-0">
+                        <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-message-circle"></i></span>
+                        <div class="flex-grow-1">
+                            <a href="{{ route('tenant.channels.show', $channel) }}" class="font-weight-bold">{{ $channel->name }}</a>
+                            <div class="small text-muted">{{ $channel->users_count }} {{ __('members') }}</div>
+                        </div>
+                        <x-valex.badge variant="primary">{{ $channel->posts_count }} {{ __('posts') }}</x-valex.badge>
+                    </li>
+                @empty
+                    <li class="list-group-item text-center text-muted">{{ __('No channels yet') }}</li>
+                @endforelse
+            </ul>
+        </x-valex.card>
+    </div>
+
+    <div class="col-xl-4 col-md-6">
+        <x-valex.card :title="__('Recent Posts')">
+            <x-slot:actions><a href="{{ route('posts.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }}</a></x-slot:actions>
+            <ul class="list-group list-group-flush">
+                @forelse ($stats['recentPosts'] as $post)
+                    <li class="list-group-item px-0">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ route('posts.show', $post) }}">{{ Str::limit($post->title ?? $post->body, 36) }}</a>
+                            <x-valex.badge :variant="$postVariant($post->status)">{{ str_replace('_', ' ', ucfirst($post->status)) }}</x-valex.badge>
+                        </div>
+                        <small class="text-muted">{{ $post->author?->full_name }} · {{ $post->created_at->diffForHumans() }}</small>
+                    </li>
+                @empty
+                    <li class="list-group-item text-center text-muted">{{ __('No posts yet') }}</li>
+                @endforelse
+            </ul>
+        </x-valex.card>
+    </div>
+
+    <div class="col-xl-4">
+        <x-valex.card :title="__('Open Tickets')">
+            <x-slot:actions><a href="{{ route('tickets.index') }}" class="btn btn-sm btn-outline-primary">{{ __('View All') }}</a></x-slot:actions>
+            <ul class="list-group list-group-flush">
+                @forelse ($stats['openTickets'] as $ticket)
+                    <li class="list-group-item px-0">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ route('tickets.show', $ticket) }}"><code>{{ $ticket->ticket_number }}</code> {{ Str::limit($ticket->title, 26) }}</a>
+                            <x-valex.badge :variant="$priorityVariant($ticket->priority)">{{ ucfirst($ticket->priority) }}</x-valex.badge>
+                        </div>
+                        <small class="text-muted">{{ $ticket->opened_at?->format('M d, Y') ?? __('Recently') }}</small>
+                    </li>
+                @empty
+                    <li class="list-group-item text-center text-muted">{{ __('No open tickets') }}</li>
+                @endforelse
+            </ul>
+        </x-valex.card>
+    </div>
+</div>
+
+<div class="row row-sm">
+    <div class="col-lg-7">
+        <x-valex.card :title="__('Recent Activity')">
+            @forelse ($stats['recentActivity'] as $log)
+                <div class="d-flex align-items-start {{ ! $loop->last ? 'mb-3 pb-3 border-bottom' : '' }}">
+                    <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-activity"></i></span>
+                    <div>
+                        <div class="small font-weight-bold">{{ $log->description ?: ucfirst(str_replace('_', ' ', $log->event)) }}</div>
+                        <div class="small text-muted">{{ $log->user?->full_name ?? __('System') }} · {{ $log->created_at->diffForHumans() }}</div>
+                    </div>
                 </div>
-                <div class="list-row-meta">{{ $post->created_at->format('M d, Y · h:i A') }}</div>
-            </div>
-        @empty
-            <div class="empty-row"><i class="bi bi-inbox"></i>{{ __('No posts yet') }}</div>
-        @endforelse
-    </x-card-modern>
-
-    <x-card-modern class="list-card">
-        <div class="list-card-header">
-            <h5><i class="bi bi-ticket-perforated"></i> {{ __('Open Tickets') }}</h5>
-            <a href="{{ route('tickets.index') }}">{{ __('View All') }} →</a>
-        </div>
-        @forelse($organization->tickets()->where('status', '!=', 'closed')->latest()->take(5)->get() as $ticket)
-            <div class="list-row">
-                <div class="list-row-top">
-                    <a href="{{ route('tickets.show', $ticket) }}" class="list-row-title">
-                        <code style="font-size: var(--text-xs);">{{ $ticket->ticket_number }}</code>
-                        {{ Str::limit($ticket->title, 30) }}
-                    </a>
-                    <span class="pill {{ match($ticket->priority) {
-                        'urgent' => 'pill-danger',
-                        'high' => 'pill-warning',
-                        'medium' => 'pill-info',
-                        default => 'pill-secondary',
-                    } }}">{{ ucfirst($ticket->priority) }}</span>
-                </div>
-                <div class="list-row-meta">{{ $ticket->opened_at?->format('M d, Y') ?? __('Recently') }}</div>
-            </div>
-        @empty
-            <div class="empty-row"><i class="bi bi-check-circle"></i>{{ __('No open tickets') }}</div>
-        @endforelse
-    </x-card-modern>
-</div>
-
-<!-- Quick Actions / Organization Info -->
-<div class="dash-grid" style="margin-bottom: 0;">
-    <x-card-modern title="{{ __('Quick Actions') }}" icon="lightning">
-        <div style="display: grid; gap: var(--space-2);">
-            <a href="{{ route('posts.create') }}" class="action-btn"><i class="bi bi-pencil-square"></i> {{ __('Create Post') }}</a>
-            <a href="{{ route('tickets.create') }}" class="action-btn"><i class="bi bi-plus-circle"></i> {{ __('Create Ticket') }}</a>
-            <a href="{{ route('audience-segments.create') }}" class="action-btn"><i class="bi bi-diagram-3"></i> {{ __('Create Audience') }}</a>
-            <a href="{{ route('organizations.settings', $organization) }}" class="action-btn"><i class="bi bi-people-fill"></i> {{ __('Manage Team') }}</a>
-        </div>
-    </x-card-modern>
-
-    <x-card-modern class="list-card" title="{{ __('Organization Info') }}" icon="info-circle">
-        <div class="info-grid">
-            <div class="info-grid-item"><p>{{ __('Brands') }}</p><p>{{ $organization->brands()->count() }}</p></div>
-            <div class="info-grid-item"><p>{{ __('Channels') }}</p><p>{{ $organization->channels()->count() }}</p></div>
-            <div class="info-grid-item"><p>{{ __('Audience Segments') }}</p><p>{{ $organization->audienceSegments()->count() }}</p></div>
-            <div class="info-grid-item"><p>{{ __('All Tickets') }}</p><p>{{ $organization->tickets()->count() }}</p></div>
-        </div>
-    </x-card-modern>
+            @empty
+                <p class="text-muted text-center mb-0">{{ __('Nothing yet') }}</p>
+            @endforelse
+        </x-valex.card>
+    </div>
+    <div class="col-lg-5">
+        <x-valex.card :title="__('Quick Actions')">
+            <a href="{{ route('posts.create') }}" class="btn btn-outline-primary btn-block text-left mb-2"><i class="fe fe-edit-3"></i> {{ __('Create Post') }}</a>
+            <a href="{{ route('tickets.create') }}" class="btn btn-outline-primary btn-block text-left mb-2"><i class="fe fe-plus-circle"></i> {{ __('Create Ticket') }}</a>
+            <a href="{{ route('audience-segments.create') }}" class="btn btn-outline-primary btn-block text-left mb-2"><i class="fe fe-share-2"></i> {{ __('Create Audience') }}</a>
+            <a href="{{ route('organizations.settings', $organization) }}" class="btn btn-outline-primary btn-block text-left"><i class="fe fe-users"></i> {{ __('Manage Team') }}</a>
+        </x-valex.card>
+    </div>
 </div>
 @endsection
+
+@php $chartData = Arr::only($stats, ['growth', 'scans', 'orgStatus', 'topOrgs', 'devices', 'postTypes']); @endphp
+@push('scripts')
+<script src="{{ asset('assets/valex/plugins/chart.js/Chart.bundle.min.js') }}"></script>
+<script src="{{ asset('assets/valex/js/ipage-charts.js') }}"></script>
+<script>
+    (function () {
+        var s = @json($chartData);
+        var none = @json(__('No data for this period'));
+        IPChart.line('growthChart', s.growth, none);
+        IPChart.doughnut('postTypesChart', s.postTypes.labels, s.postTypes.data, none);
+        IPChart.line('scansChart', s.scans, none);
+        IPChart.doughnut('devicesChart', s.devices.labels, s.devices.data, none);
+    })();
+</script>
+@endpush

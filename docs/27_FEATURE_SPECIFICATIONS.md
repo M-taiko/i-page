@@ -466,6 +466,162 @@ Define complete specifications for each feature **before** implementation. This 
 
 ---
 
+### Feature: Valex Dashboard Theme Migration
+
+**Status**: In Development (see ADR-011)
+
+**Purpose**: Give every authenticated page one premium, consistent Valex-based shell, without touching the public guest experience.
+
+**Scope**:
+- In: `/admin/*`, `/tenant/*`, `/organizations/*`, settings, users, groups, posts, tickets, audience segments, organization dashboards.
+- Out (for now): `/browse*`, `/qr/*`, `/otp/*`, welcome, login/register. Feed/collections/notifications (mobile-shell) pending owner decision.
+
+**Business Rules**:
+- Sidebar items remain permission-based and organization-aware (no change in who sees what).
+- Generic terminology only (Organization, Branch, Department, Channel, Visitor, Member).
+- RTL and LTR both work; Arabic users get the RTL build.
+- Light and dark mode both work and persist per user.
+- Mobile first: sidebar collapses, tables scroll or stack on small screens.
+
+**Delivery Phases**:
+1. Assets + `layouts/valex` + sidebar/header + component wrappers (first working page).
+2. Admin and organizations pages.
+3. Tenant, channels, posts.
+4. Settings, users, groups, dashboards (real charts replace CSS-only ones).
+5. Tickets, audience segments, QR admin, profile.
+6. Cleanup of dead layouts and duplicate CSS.
+
+**Acceptance Criteria**:
+- [ ] Every in-scope route renders with `layouts.valex` and no 500s
+- [ ] LTR + RTL verified per route group
+- [ ] Light + dark verified per route group
+- [ ] Sidebar permissions verified for super_admin, organization admin, member
+- [ ] No Bootstrap 5 markup remains in migrated views
+- [ ] Guest pages unchanged
+
+---
+
+### Feature: Analytics Dashboards (Super Admin + Organization)
+
+**Status**: In Development
+
+**Purpose**: Data-rich dashboards with KPIs, trends and charts so admins see platform and organization health at a glance.
+
+**Business Rules**:
+- Super Admin dashboard (`/admin-dashboard`, super_admin only) is platform-wide; reachable from a dedicated sidebar entry under "Admin".
+- Organization dashboard (`/organizations/dashboard`) is scoped to the current organization only (multi-tenant isolation).
+- Statistics are computed in `App\Services\DashboardStatsService` (never in Blade) and cached for 5 minutes per scope.
+- Range selector: 7 / 30 / 90 days (default 30).
+
+**Data / Charts**:
+- KPIs with period-over-period change: organizations, users, posts, channels, QR scans, open tickets.
+- Line: posts per day vs. users joined per day. Doughnut: organizations by status. Bar: top organizations by posts. Bar: QR scans per day and device split. Progress: post engagement funnel (delivered / viewed / read / acknowledged). Tables: recent activity log, newest organizations, open tickets.
+
+**Acceptance Criteria**:
+- [ ] Sidebar shows "Super Admin Dashboard" only for super_admin
+- [ ] Every chart renders in light and dark mode and RTL
+- [ ] Empty data shows an empty state instead of a broken chart
+- [ ] Organization dashboard never shows data from another organization
+- [ ] Page loads with a bounded number of queries (cached)
+
+---
+
+### Feature: CRM (Platform CRM + Organization CRM)
+
+**Status**: In Development
+
+**Purpose**: One place to understand everything that happens, in detail and at a glance. Two scopes of the same capability:
+- **Platform CRM** (super admin only, `/admin/crm`): oversight of the whole platform. The super admin is responsible for the platform, not for any single organization, so this is read-only monitoring (no content authoring).
+- **Organization CRM** (`/organizations/crm`): everything about the organization's relationships, scoped strictly to the current organization.
+
+**Platform CRM screens**:
+1. **Organizations 360** (`/admin/crm`): searchable/filterable table (status, health) with users, channels, posts (30d), open tickets, QR scans, last activity and a health score. Row opens **Organization 360** with tabs: Overview, Members, Channels, Posts, Tickets, QR Codes, Activity.
+2. **People** (`/admin/crm/people`): every account (staff, visitors, super admins) with organizations, channels, last seen. Row opens **Person 360**: memberships, subscribed channels, followed organizations, tickets, authored posts, QR scans, activity.
+3. **Activity Log** (`/admin/crm/activity`): audit trail of every create/update/delete/restore with filters (organization, user, event, date range) and pagination.
+
+**Organization CRM screens**:
+1. **Contacts** (`/organizations/crm`): everyone related to the organization — members (any membership status), followers and channel subscribers — with relationship type, role, channels, engagement and last seen. Filters: relationship, search.
+2. **Contact 360**: profile, membership/role/status, channels, post engagement (delivered/viewed/read/acknowledged), tickets, QR scans, activity timeline.
+3. **Activity** (`/organizations/crm/activity`): audit trail restricted to the organization.
+(Tickets, Posts, Audiences, QR remain their own modules and are linked from each 360.)
+
+**Business Rules**:
+- Health score (0–100): +30 if posts in last 30 days, +20 if ≥2 active members, +20 if ≥1 channel, +30 if activity in last 14 days. Labels: ≥70 Healthy, 40–69 Attention, <40 At risk.
+- Organization CRM never exposes another organization's data (every query is constrained by `organization_id`); organization admins only (`update` policy on the organization).
+- Platform CRM is guarded by `CheckRole:super_admin`.
+- Statistics logic lives in `App\Services\CrmService`, not in Blade.
+
+**Acceptance Criteria**:
+- [ ] Super admin sees CRM section in sidebar; organization users see only their CRM
+- [ ] Organization 360 and Person 360 open for every record without errors
+- [ ] Filters and pagination keep their query string
+- [ ] Organization CRM returns 403/404 for records of other organizations
+- [ ] Works in light/dark mode, RTL/LTR, and on mobile
+
+### Feature: Organization Design Templates
+
+**Status**: In Development (ADR-012)
+
+**Purpose**: After choosing an Organization Template, the admin chooses a Design Template that controls how the organization's public page (`/browse/org/{id}`) looks to visitors and subscribers. Different industries get different designs.
+
+**Business Rules**:
+- Designs belong to an industry (`industry_key` of the organization template): hospitality, education, healthcare, retail, corporate — 3 designs each.
+- Chosen by the super admin at creation; the organization admin (`update` policy) can change it later from organization settings (design, colors, cover image, toggles) with a preview.
+- A design is an ordered list of blocks: hero (figure / profile), channels (cards / accordion / carousel / list), posts (timeline / blog / list), about, stats.
+- No design selected (null) = the classic page, unchanged.
+- A design must match the organization's industry (validated server-side).
+
+**Cover carousel**: an organization can upload several cover images (up to 8). With 2+ images the cover block renders a carousel; the organization admin controls: autoplay on/off, interval (2-15 s), transition (slide/fade), arrows, indicators, cover height (compact/standard/tall) and image order. One image renders as a static cover. Stored in `design_options` (`cover_paths`, `cover_autoplay`, `cover_interval`, `cover_effect`, `cover_arrows`, `cover_indicators`, `cover_height`); legacy `cover_path` is still read.
+
+**Channel designs**: any channel or sub-channel can pick a design when created/edited (organization admins and super admin). "Inherit" (default) uses the parent channel's design, else the classic channel page. Designs: Spotlight, Notice Board, Directory, Magazine. A parent channel shows its sub-channels with the design's channel block; a sub-channel shows its parent and siblings. Preview via `?preview_design=` for organization admins.
+
+**Database**: `organizations.design_key` (nullable string), `organizations.design_options` (json: `primary_color`, `secondary_color`, `cover_path`, `show_posts`, `show_stats`).
+
+**Acceptance Criteria**:
+- [ ] Create form shows only the designs of the selected template's industry
+- [ ] Designs from another industry are rejected
+- [ ] All 15 designs render with data and with empty data (RTL/LTR, light/dark, mobile)
+- [ ] Organizations without a design render exactly as before
+- [ ] Only organization admins can change the design; visitors cannot use preview
+
+### Feature: Post Formats, Card Styles, Badges and Interactions
+
+**Status**: In Development (ADR-013)
+
+**Purpose**: Let admins publish different kinds of posts and let visitors interact beyond like and comment.
+
+**Create form** (`/tenant/channels/{id}/posts/create`): choose format, card style, priority, badge and the reactions people may use.
+
+**Formats**:
+- Standard: title, text, optional single image.
+- Gallery: several images (max 8); 2+ images render as a carousel.
+- Poll: question + 2-8 options, single or multiple choice, optional end date, results shown always or after voting.
+- Event: start/end date, location, optional capacity; RSVP going / maybe / not going with counts.
+- Rating: 1-5 stars, average and count.
+
+**Card styles**: classic, image (large cover), gradient (text on colored background), spotlight (highlighted card).
+
+**Badges** (list): New, Featured, Important, Urgent, Update, Offer, Event, Reminder, Tip; optional custom text; each has a fixed color.
+
+**Priority**: low, medium, high, critical (existing column); high/critical show a marker on the card.
+
+**Reactions**: per post, the admin picks which of like, love, haha, wow, sad, celebrate are available; a user has one reaction per post and can change or remove it.
+
+**Business Rules**:
+- All interactions require sign-in; guests get the sign-in prompt.
+- Poll: one vote per user for single choice; multiple choice allows several options but never the same option twice; no voting after the end date.
+- Event: RSVP can be changed; when capacity is reached, new "going" answers are refused.
+- Rating: one rating per user, editable.
+- Existing posts behave as standard / classic.
+
+**Acceptance Criteria**:
+- [ ] Each format validates its own fields and saves correctly
+- [ ] Poll/RSVP/rating/reaction endpoints enforce the rules above
+- [ ] Posts render the same widgets on the post page and channel feeds
+- [ ] Works in light/dark, RTL/LTR and on mobile
+
+---
+
 ---
 
 ## FUTURE FEATURES (Planned, Beyond Initial Release)

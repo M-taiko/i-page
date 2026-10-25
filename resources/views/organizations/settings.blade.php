@@ -1,399 +1,254 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
+
+@section('title', __('Organization Settings'))
+
+@section('page-header')
+    <x-valex.page-header :title="$organization->name" :subtitle="__('Manage your organization settings, team, brands, and more')" />
+@endsection
 
 @section('content')
-<style>
-    .org-hero {
-        background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
-        color: white;
-        padding: var(--space-8) var(--space-6);
-        border-radius: var(--radius-xl);
-        margin-bottom: var(--space-6);
-        display: flex;
-        align-items: center;
-        gap: var(--space-4);
-    }
-    .org-hero-avatar {
-        width: 64px; height: 64px; border-radius: var(--radius-lg);
-        background: rgba(255,255,255,0.18);
-        display: flex; align-items: center; justify-content: center;
-        font-size: var(--text-2xl); font-weight: var(--font-weight-bold); flex-shrink: 0;
-    }
-    .org-hero h1 { margin: 0 0 4px; font-size: var(--text-2xl); }
-    .org-hero p { margin: 0; opacity: 0.9; font-size: var(--text-sm); }
-
-    .settings-tabs {
-        display: flex; gap: var(--space-1);
-        background-color: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-1);
-        margin-bottom: var(--space-6);
-        overflow-x: auto;
-    }
-    .settings-tab {
-        display: flex; align-items: center; gap: var(--space-2);
-        padding: var(--space-2) var(--space-4);
-        border: none; background: none; cursor: pointer;
-        border-radius: var(--radius-md);
-        color: var(--text-secondary); font-size: var(--text-sm); font-weight: var(--font-weight-medium);
-        white-space: nowrap; transition: all var(--transition-fast);
-    }
-    .settings-tab:hover { background-color: var(--surface-hover); color: var(--text-primary); }
-    .settings-tab.active { background-color: var(--primary-600); color: white; }
-    .settings-tab .count-pill {
-        background-color: rgba(255,255,255,0.25); border-radius: var(--radius-full);
-        padding: 0 6px; font-size: 10px; font-weight: var(--font-weight-bold);
-    }
-    .settings-tab:not(.active) .count-pill { background-color: var(--primary-50); color: var(--primary-700); }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    .list-card .card-body { padding: 0; }
-    .list-card-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: var(--space-4); border-bottom: 1px solid var(--surface-border);
-    }
-    .list-card-header h5 { margin: 0; font-size: var(--text-base); font-weight: var(--font-weight-bold); color: var(--text-primary); display: flex; align-items: center; gap: var(--space-2); }
-
-    .list-row {
-        display: flex; align-items: center; gap: var(--space-3);
-        padding: var(--space-3) var(--space-4);
-        border-bottom: 1px solid var(--surface-border);
-    }
-    .list-row:last-child { border-bottom: none; }
-    .list-row:hover { background-color: var(--surface-hover); }
-    .row-avatar {
-        width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
-        display: flex; align-items: center; justify-content: center; color: white; font-weight: var(--font-weight-bold); font-size: var(--text-xs);
-        background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
-    }
-    .row-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .row-icon {
-        width: 40px; height: 40px; border-radius: var(--radius-md); flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center; background-color: var(--primary-50); color: var(--primary-600); font-size: var(--text-lg);
-    }
-    .row-title { font-weight: var(--font-weight-semibold); font-size: var(--text-sm); color: var(--text-primary); }
-    .row-subtitle { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
-    .row-actions { display: flex; gap: var(--space-2); flex-shrink: 0; margin-inline-start: auto; }
-
-    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: var(--font-weight-semibold); }
-    .pill-primary { background-color: var(--primary-50); color: var(--primary-700); }
-    .pill-success { background-color: var(--success-50); color: var(--success-700); }
-    .pill-muted { background-color: var(--surface-hover); color: var(--text-tertiary); }
-
-    .empty-row { text-align: center; padding: var(--space-8) var(--space-4); color: var(--text-tertiary); font-size: var(--text-sm); }
-
-    .form-label { font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2); display: block; font-size: var(--text-sm); }
-    .form-control, .form-select {
-        border: 1px solid var(--surface-border); border-radius: var(--radius-md);
-        padding: var(--space-2) var(--space-3); font-size: var(--text-sm); background-color: var(--surface-bg); color: var(--text-primary);
-    }
-    .form-control:focus, .form-select:focus { border-color: var(--primary-600); box-shadow: 0 0 0 3px var(--primary-50); outline: none; }
-</style>
-
 @php
     $pendingRequests = $organization->memberships()->where('status', 'pending')->with('user')->get();
     $pendingInvites = $organization->memberships()->where('status', 'invited')->with('user', 'invitedBy')->get();
     $activeMemberships = $organization->memberships()->where('status', 'active')->with('user', 'department')->get();
+    $pendingCount = $pendingRequests->count() + $pendingInvites->count();
 @endphp
 
-<!-- Header -->
-<div class="org-hero">
-    <div class="org-hero-avatar">{{ substr($organization->name, 0, 1) }}</div>
-    <div>
-        <h1>{{ $organization->name }}</h1>
-        <p>{{ __('Manage your organization settings, team, brands, and more') }}</p>
+<div class="row row-sm">
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Members')" :value="$activeMemberships->count()" icon="users" variant="primary" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Pending')" :value="$pendingCount" icon="clock" variant="warning" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Brands')" :value="$organization->brands->count()" icon="package" variant="success" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Locations')" :value="$organization->locations->count()" icon="map-pin" variant="info" /></div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="tabs-menu">
+            <ul class="nav nav-tabs profile navtab-custom panel-tabs" id="settingsTabs">
+                <li><a href="#tab-general" data-toggle="tab" class="active"><i class="fe fe-settings"></i> {{ __('General') }}</a></li>
+                <li>
+                    <a href="#tab-members" data-toggle="tab"><i class="fe fe-users"></i> {{ __('Members') }}
+                        @if ($pendingCount > 0)<x-valex.badge variant="danger">{{ $pendingCount }}</x-valex.badge>@endif
+                    </a>
+                </li>
+                <li><a href="#tab-brands" data-toggle="tab"><i class="fe fe-package"></i> {{ __('Brands') }}</a></li>
+                <li><a href="#tab-locations" data-toggle="tab"><i class="fe fe-map-pin"></i> {{ __('Locations') }}</a></li>
+                <li><a href="#tab-sla" data-toggle="tab"><i class="fe fe-clock"></i> {{ __('SLA Rules') }}</a></li>
+                <li><a href="#tab-design" data-toggle="tab"><i class="fe fe-layout"></i> {{ __('Design') }}</a></li>
+            </ul>
+        </div>
+
+        <div class="tab-content border-left border-bottom border-right border-top-0 p-4">
+            {{-- General --}}
+            <div class="tab-pane active" id="tab-general">
+                <form action="{{ route('organizations.update', $organization) }}" method="POST" style="max-width: 560px;">
+                    @csrf
+                    @method('PUT')
+                    <x-valex.input name="name" :label="__('Organization Name')" :value="$organization->name" required />
+                    <x-valex.input name="email" type="email" :label="__('Email')" :value="$organization->email" />
+                    <x-valex.input name="phone" type="tel" :label="__('Phone')" :value="$organization->phone" />
+                    <x-valex.input name="address" :label="__('Address')" :value="$organization->address" />
+                    <div class="row">
+                        <div class="col-md-6"><x-valex.input name="city" :label="__('City')" :value="$organization->city" /></div>
+                        <div class="col-md-6"><x-valex.input name="country" :label="__('Country')" :value="$organization->country" /></div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">{{ __('Save Changes') }}</button>
+                </form>
+            </div>
+
+            {{-- Members --}}
+            <div class="tab-pane" id="tab-members">
+                @if ($pendingRequests->isNotEmpty())
+                    <h6 class="mb-3"><i class="fe fe-clock"></i> {{ __('Join Requests') }} ({{ $pendingRequests->count() }})</h6>
+                    <ul class="list-group mb-4">
+                        @foreach ($pendingRequests as $request)
+                            <li class="list-group-item d-flex align-items-center">
+                                <span class="avatar avatar-md brround bg-primary mx-2">{{ $request->user->initials }}</span>
+                                <div class="flex-grow-1">
+                                    <div class="font-weight-bold">{{ $request->user->full_name }}</div>
+                                    <small class="text-muted">{{ $request->user->email }}</small>
+                                </div>
+                                <form action="{{ route('organizations.membership.approve', [$organization, $request->user]) }}" method="POST" class="mx-1">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-success"><i class="fe fe-check"></i> {{ __('Approve') }}</button>
+                                </form>
+                                <form action="{{ route('organizations.membership.reject', [$organization, $request->user]) }}" method="POST" onsubmit="return confirm('{{ __('Reject this request?') }}')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-x"></i></button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                @if ($pendingInvites->isNotEmpty())
+                    <h6 class="mb-3"><i class="fe fe-mail"></i> {{ __('Pending Invites') }} ({{ $pendingInvites->count() }})</h6>
+                    <ul class="list-group mb-4">
+                        @foreach ($pendingInvites as $invite)
+                            <li class="list-group-item d-flex align-items-center">
+                                <span class="avatar avatar-md brround bg-primary mx-2">{{ $invite->user->initials }}</span>
+                                <div class="flex-grow-1">
+                                    <div class="font-weight-bold">{{ $invite->user->full_name }}</div>
+                                    <small class="text-muted">{{ __('Invited as :role by :name', ['role' => ucfirst(str_replace('_', ' ', $invite->role)), 'name' => $invite->invitedBy?->full_name ?? __('N/A')]) }}</small>
+                                </div>
+                                <x-valex.badge variant="secondary" class="mx-2"><i class="fe fe-clock"></i> {{ __('Awaiting response') }}</x-valex.badge>
+                                <form action="{{ route('organizations.membership.invite-user.cancel', [$organization, $invite->user]) }}" method="POST" onsubmit="return confirm('{{ __('Cancel this invitation?') }}')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-x"></i></button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fe fe-users"></i> {{ __('Team Members') }} ({{ $activeMemberships->count() }})</h6>
+                    <a href="{{ route('dashboard.users.create', $organization) }}" class="btn btn-primary btn-sm"><i class="fe fe-plus"></i> {{ __('Add Member') }}</a>
+                </div>
+                <ul class="list-group">
+                    @forelse ($activeMemberships as $membership)
+                        @php $user = $membership->user; @endphp
+                        <li class="list-group-item d-flex align-items-center flex-wrap">
+                            @if ($user->avatar_path)
+                                <img src="{{ \Illuminate\Support\Facades\Storage::url($user->avatar_path) }}" class="avatar avatar-md brround mx-2" alt="">
+                            @else
+                                <span class="avatar avatar-md brround bg-primary mx-2">{{ $user->initials }}</span>
+                            @endif
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold">{{ $user->full_name }}</div>
+                                <small class="text-muted d-block">{{ $user->email }}</small>
+                                @if ($membership->job_title || $membership->employee_id)
+                                    <small class="text-muted">{{ $membership->job_title }}@if ($membership->employee_id) &middot; {{ $membership->employee_id }}@endif</small>
+                                @endif
+                            </div>
+                            <x-valex.badge variant="primary" class="mx-1">{{ ucfirst(str_replace('_', ' ', $membership->role)) }}</x-valex.badge>
+                            @if ($membership->isBusinessVerified())
+                                <x-valex.badge variant="success" class="mx-1"><i class="fe fe-check-circle"></i> {{ __('Verified') }}</x-valex.badge>
+                            @elseif ($membership->job_title || $membership->employee_id)
+                                <form action="{{ route('organizations.membership.verify', [$organization, $user]) }}" method="POST" class="mx-1">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-success">{{ __('Verify') }}</button>
+                                </form>
+                            @endif
+                            <a href="{{ route('dashboard.users.edit', [$organization, $user]) }}" class="btn btn-sm btn-outline-warning mx-1"><i class="fe fe-edit"></i></a>
+                            @if ($user->id !== auth()->id())
+                                <form action="{{ route('dashboard.users.destroy', [$organization, $user]) }}" method="POST" onsubmit="return confirm('{{ __('Remove this member from the organization?') }}')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i></button>
+                                </form>
+                            @endif
+                        </li>
+                    @empty
+                        <li class="list-group-item text-center text-muted">{{ __('No members yet') }}</li>
+                    @endforelse
+                </ul>
+            </div>
+
+            {{-- Brands --}}
+            <div class="tab-pane" id="tab-brands">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fe fe-package"></i> {{ __('Brands') }}</h6>
+                    <a href="{{ route('organizations.brands.create', $organization) }}" class="btn btn-primary btn-sm"><i class="fe fe-plus"></i> {{ __('Add Brand') }}</a>
+                </div>
+                <ul class="list-group">
+                    @forelse ($organization->brands as $brand)
+                        <li class="list-group-item d-flex align-items-center">
+                            <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-package"></i></span>
+                            <div class="flex-grow-1 font-weight-bold">{{ $brand->name }}</div>
+                            <x-valex.badge :variant="$brand->is_active ? 'success' : 'secondary'" class="mx-1">{{ $brand->is_active ? __('Active') : __('Inactive') }}</x-valex.badge>
+                            <a href="{{ route('organizations.brands.edit', [$organization, $brand]) }}" class="btn btn-sm btn-outline-warning mx-1"><i class="fe fe-edit"></i></a>
+                            <form action="{{ route('organizations.brands.destroy', [$organization, $brand]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this brand? Its channels will be affected.') }}')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i></button>
+                            </form>
+                        </li>
+                    @empty
+                        <li class="list-group-item text-center text-muted">{{ __('No brands yet') }}</li>
+                    @endforelse
+                </ul>
+            </div>
+
+            {{-- Locations --}}
+            <div class="tab-pane" id="tab-locations">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fe fe-map-pin"></i> {{ __('Locations') }}</h6>
+                    <a href="{{ route('organizations.locations.create', $organization) }}" class="btn btn-primary btn-sm"><i class="fe fe-plus"></i> {{ __('Add Location') }}</a>
+                </div>
+                <ul class="list-group">
+                    @forelse ($organization->locations as $location)
+                        <li class="list-group-item d-flex align-items-center">
+                            <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-map-pin"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold">{{ $location->name }}</div>
+                                <small class="text-muted">{{ collect([$location->city, $location->country])->filter()->join(', ') ?: __('No address set') }}</small>
+                            </div>
+                            <a href="{{ route('organizations.locations.edit', [$organization, $location]) }}" class="btn btn-sm btn-outline-warning mx-1"><i class="fe fe-edit"></i></a>
+                            <form action="{{ route('organizations.locations.destroy', [$organization, $location]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this location?') }}')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i></button>
+                            </form>
+                        </li>
+                    @empty
+                        <li class="list-group-item text-center text-muted">{{ __('No locations yet') }}</li>
+                    @endforelse
+                </ul>
+            </div>
+
+            {{-- SLA rules --}}
+            <div class="tab-pane" id="tab-sla">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fe fe-clock"></i> {{ __('SLA Rules') }}</h6>
+                    <a href="{{ route('organizations.sla-rules.create', $organization) }}" class="btn btn-primary btn-sm"><i class="fe fe-plus"></i> {{ __('Add SLA Rule') }}</a>
+                </div>
+                <ul class="list-group">
+                    @forelse ($organization->slaRules as $rule)
+                        <li class="list-group-item d-flex align-items-center">
+                            <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-clock"></i></span>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold">{{ $rule->name }}</div>
+                                <small class="text-muted">
+                                    {{ __('First response') }}: {{ $rule->first_response_time ? $rule->first_response_time . ' ' . __('min') : '—' }}
+                                    &middot; {{ __('Resolution') }}: {{ $rule->resolution_time ? $rule->resolution_time . ' ' . __('min') : '—' }}
+                                </small>
+                            </div>
+                            <x-valex.badge :variant="$rule->is_active ? 'success' : 'secondary'" class="mx-1">{{ $rule->is_active ? __('Active') : __('Inactive') }}</x-valex.badge>
+                            <a href="{{ route('organizations.sla-rules.edit', [$organization, $rule]) }}" class="btn btn-sm btn-outline-warning mx-1"><i class="fe fe-edit"></i></a>
+                            <form action="{{ route('organizations.sla-rules.destroy', [$organization, $rule]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this SLA rule?') }}')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i></button>
+                            </form>
+                        </li>
+                    @empty
+                        <li class="list-group-item text-center text-muted">{{ __('No SLA rules yet') }}</li>
+                    @endforelse
+                </ul>
+            </div>
+
+            {{-- Design --}}
+            <div class="tab-pane" id="tab-design">
+                @include('organizations._design-form')
+            </div>
+        </div>
     </div>
 </div>
-
-<!-- Stats -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
-    <x-stat-card title="{{ __('Members') }}" value="{{ $activeMemberships->count() }}" icon="people" />
-    <x-stat-card title="{{ __('Pending') }}" value="{{ $pendingRequests->count() + $pendingInvites->count() }}" icon="hourglass-split" />
-    <x-stat-card title="{{ __('Brands') }}" value="{{ $organization->brands->count() }}" icon="box-seam" />
-    <x-stat-card title="{{ __('Locations') }}" value="{{ $organization->locations->count() }}" icon="geo-alt" />
-</div>
-
-<!-- Tabs -->
-<nav class="settings-tabs" id="settingsTabs">
-    <button type="button" class="settings-tab" data-tab="general"><i class="bi bi-gear"></i> {{ __('General') }}</button>
-    <button type="button" class="settings-tab" data-tab="members">
-        <i class="bi bi-people"></i> {{ __('Members') }}
-        @if($pendingRequests->count() + $pendingInvites->count() > 0)
-            <span class="count-pill">{{ $pendingRequests->count() + $pendingInvites->count() }}</span>
-        @endif
-    </button>
-    <button type="button" class="settings-tab" data-tab="brands"><i class="bi bi-box-seam"></i> {{ __('Brands') }}</button>
-    <button type="button" class="settings-tab" data-tab="locations"><i class="bi bi-geo-alt"></i> {{ __('Locations') }}</button>
-    <button type="button" class="settings-tab" data-tab="sla"><i class="bi bi-clock-history"></i> {{ __('SLA Rules') }}</button>
-</nav>
-
-<!-- General -->
-<div class="tab-panel" id="panel-general">
-    <x-card-modern style="max-width: 560px;">
-        <form action="{{ route('organizations.update', $organization) }}" method="POST">
-            @csrf
-            @method('PUT')
-
-            <div style="margin-bottom: var(--space-4);">
-                <label class="form-label">{{ __('Organization Name') }}</label>
-                <input type="text" class="form-control" style="width: 100%;" name="name" value="{{ $organization->name }}" required>
-            </div>
-            <div style="margin-bottom: var(--space-4);">
-                <label class="form-label">{{ __('Email') }}</label>
-                <input type="email" class="form-control" style="width: 100%;" name="email" value="{{ $organization->email }}">
-            </div>
-            <div style="margin-bottom: var(--space-4);">
-                <label class="form-label">{{ __('Phone') }}</label>
-                <input type="tel" class="form-control" style="width: 100%;" name="phone" value="{{ $organization->phone }}">
-            </div>
-            <div style="margin-bottom: var(--space-4);">
-                <label class="form-label">{{ __('Address') }}</label>
-                <input type="text" class="form-control" style="width: 100%;" name="address" value="{{ $organization->address }}">
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6);">
-                <div>
-                    <label class="form-label">{{ __('City') }}</label>
-                    <input type="text" class="form-control" style="width: 100%;" name="city" value="{{ $organization->city }}">
-                </div>
-                <div>
-                    <label class="form-label">{{ __('Country') }}</label>
-                    <input type="text" class="form-control" style="width: 100%;" name="country" value="{{ $organization->country }}">
-                </div>
-            </div>
-
-            <button class="btn btn-primary" type="submit" style="background-color: var(--primary-600); color: white; border: none; padding: var(--space-2) var(--space-6); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: var(--font-weight-medium); cursor: pointer;">
-                {{ __('Save Changes') }}
-            </button>
-        </form>
-    </x-card-modern>
-</div>
-
-<!-- Members -->
-<div class="tab-panel" id="panel-members">
-    @if($pendingRequests->count() > 0)
-        <x-card-modern class="list-card" style="margin-bottom: var(--space-4);">
-            <div class="list-card-header">
-                <h5><i class="bi bi-hourglass-split"></i> {{ __('Join Requests') }} ({{ $pendingRequests->count() }})</h5>
-            </div>
-            @foreach($pendingRequests as $request)
-                <div class="list-row">
-                    <div class="row-avatar">{{ $request->user->initials }}</div>
-                    <div>
-                        <div class="row-title">{{ $request->user->full_name }}</div>
-                        <div class="row-subtitle">{{ $request->user->email }}</div>
-                    </div>
-                    <div class="row-actions">
-                        <form action="{{ route('organizations.membership.approve', [$organization, $request->user]) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> {{ __('Approve') }}</button>
-                        </form>
-                        <form action="{{ route('organizations.membership.reject', [$organization, $request->user]) }}" method="POST" onsubmit="return confirm('{{ __('Reject this request?') }}')">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
-                        </form>
-                    </div>
-                </div>
-            @endforeach
-        </x-card-modern>
-    @endif
-
-    @if($pendingInvites->count() > 0)
-        <x-card-modern class="list-card" style="margin-bottom: var(--space-4);">
-            <div class="list-card-header">
-                <h5><i class="bi bi-envelope-paper"></i> {{ __('Pending Invites') }} ({{ $pendingInvites->count() }})</h5>
-            </div>
-            @foreach($pendingInvites as $invite)
-                <div class="list-row">
-                    <div class="row-avatar">{{ $invite->user->initials }}</div>
-                    <div>
-                        <div class="row-title">{{ $invite->user->full_name }}</div>
-                        <div class="row-subtitle">{{ __('Invited as :role by :name', ['role' => ucfirst(str_replace('_', ' ', $invite->role)), 'name' => $invite->invitedBy?->full_name ?? __('N/A')]) }}</div>
-                    </div>
-                    <div class="row-actions">
-                        <span class="pill pill-muted"><i class="bi bi-clock"></i> {{ __('Awaiting response') }}</span>
-                        <form action="{{ route('organizations.membership.invite-user.cancel', [$organization, $invite->user]) }}" method="POST" onsubmit="return confirm('{{ __('Cancel this invitation?') }}')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
-                        </form>
-                    </div>
-                </div>
-            @endforeach
-        </x-card-modern>
-    @endif
-
-    <x-card-modern class="list-card"  >
-        <div class="list-card-header">
-            <h5><i class="bi bi-people"></i> {{ __('Team Members') }} ({{ $activeMemberships->count() }})</h5>
-            <a href="{{ route('dashboard.users.create', $organization) }}" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-1);">
-                <i class="bi bi-plus-circle"></i> {{ __('Add Member') }}
-            </a>
-        </div>
-
-        @forelse($activeMemberships as $membership)
-            @php $user = $membership->user; @endphp
-            <div class="list-row">
-                <div class="row-avatar">
-                    @if($user->avatar_path)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url($user->avatar_path) }}" alt="">
-                    @else
-                        {{ $user->initials }}
-                    @endif
-                </div>
-                <div style="min-width: 0;">
-                    <div class="row-title">{{ $user->full_name }}</div>
-                    <div class="row-subtitle">{{ $user->email }}</div>
-                    @if($membership->job_title || $membership->employee_id)
-                        <div class="row-subtitle">
-                            {{ $membership->job_title }}
-                            @if($membership->employee_id) &middot; {{ $membership->employee_id }} @endif
-                        </div>
-                    @endif
-                </div>
-                <div class="row-actions">
-                    <span class="pill pill-primary">{{ ucfirst(str_replace('_', ' ', $membership->role)) }}</span>
-                    @if($membership->isBusinessVerified())
-                        <span class="pill pill-success"><i class="bi bi-patch-check-fill"></i> {{ __('Verified') }}</span>
-                    @elseif($membership->job_title || $membership->employee_id)
-                        <form action="{{ route('organizations.membership.verify', [$organization, $user]) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-success">{{ __('Verify') }}</button>
-                        </form>
-                    @endif
-                    <a href="{{ route('dashboard.users.edit', [$organization, $user]) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
-                    @if($user->id !== auth()->id())
-                        <form action="{{ route('dashboard.users.destroy', [$organization, $user]) }}" method="POST" onsubmit="return confirm('{{ __('Remove this member from the organization?') }}')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        @empty
-            <div class="empty-row">{{ __('No members yet') }}</div>
-        @endforelse
-    </x-card-modern>
-</div>
-
-<!-- Brands -->
-<div class="tab-panel" id="panel-brands">
-    <x-card-modern class="list-card"  >
-        <div class="list-card-header">
-            <h5><i class="bi bi-box-seam"></i> {{ __('Brands') }}</h5>
-            <a href="{{ route('organizations.brands.create', $organization) }}" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-1);">
-                <i class="bi bi-plus-circle"></i> {{ __('Add Brand') }}
-            </a>
-        </div>
-        @forelse($organization->brands as $brand)
-            <div class="list-row">
-                <div class="row-icon"><i class="bi bi-box-seam"></i></div>
-                <div style="flex: 1;">
-                    <div class="row-title">{{ $brand->name }}</div>
-                </div>
-                <div class="row-actions">
-                    <span class="pill {{ $brand->is_active ? 'pill-success' : 'pill-muted' }}">{{ $brand->is_active ? __('Active') : __('Inactive') }}</span>
-                    <a href="{{ route('organizations.brands.edit', [$organization, $brand]) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
-                    <form action="{{ route('organizations.brands.destroy', [$organization, $brand]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this brand? Its channels will be affected.') }}')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </form>
-                </div>
-            </div>
-        @empty
-            <div class="empty-row">{{ __('No brands yet') }}</div>
-        @endforelse
-    </x-card-modern>
-</div>
-
-<!-- Locations -->
-<div class="tab-panel" id="panel-locations">
-    <x-card-modern class="list-card"  >
-        <div class="list-card-header">
-            <h5><i class="bi bi-geo-alt"></i> {{ __('Locations') }}</h5>
-            <a href="{{ route('organizations.locations.create', $organization) }}" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-1);">
-                <i class="bi bi-plus-circle"></i> {{ __('Add Location') }}
-            </a>
-        </div>
-        @forelse($organization->locations as $location)
-            <div class="list-row">
-                <div class="row-icon"><i class="bi bi-geo-alt"></i></div>
-                <div style="flex: 1;">
-                    <div class="row-title">{{ $location->name }}</div>
-                    <div class="row-subtitle">{{ collect([$location->city, $location->country])->filter()->join(', ') ?: __('No address set') }}</div>
-                </div>
-                <div class="row-actions">
-                    <a href="{{ route('organizations.locations.edit', [$organization, $location]) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
-                    <form action="{{ route('organizations.locations.destroy', [$organization, $location]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this location?') }}')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </form>
-                </div>
-            </div>
-        @empty
-            <div class="empty-row">{{ __('No locations yet') }}</div>
-        @endforelse
-    </x-card-modern>
-</div>
-
-<!-- SLA Rules -->
-<div class="tab-panel" id="panel-sla">
-    <x-card-modern class="list-card"  >
-        <div class="list-card-header">
-            <h5><i class="bi bi-clock-history"></i> {{ __('SLA Rules') }}</h5>
-            <a href="{{ route('organizations.sla-rules.create', $organization) }}" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-1);">
-                <i class="bi bi-plus-circle"></i> {{ __('Add SLA Rule') }}
-            </a>
-        </div>
-        @forelse($organization->slaRules as $rule)
-            <div class="list-row">
-                <div class="row-icon"><i class="bi bi-clock-history"></i></div>
-                <div style="flex: 1;">
-                    <div class="row-title">{{ $rule->name }}</div>
-                    <div class="row-subtitle">
-                        {{ __('First response') }}: {{ $rule->first_response_time ? $rule->first_response_time . ' ' . __('min') : '—' }}
-                        &middot; {{ __('Resolution') }}: {{ $rule->resolution_time ? $rule->resolution_time . ' ' . __('min') : '—' }}
-                    </div>
-                </div>
-                <div class="row-actions">
-                    <span class="pill {{ $rule->is_active ? 'pill-success' : 'pill-muted' }}">{{ $rule->is_active ? __('Active') : __('Inactive') }}</span>
-                    <a href="{{ route('organizations.sla-rules.edit', [$organization, $rule]) }}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
-                    <form action="{{ route('organizations.sla-rules.destroy', [$organization, $rule]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this SLA rule?') }}')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </form>
-                </div>
-            </div>
-        @empty
-            <div class="empty-row">{{ __('No SLA rules yet') }}</div>
-        @endforelse
-    </x-card-modern>
-</div>
-
-<script>
-    (function () {
-        const tabs = document.querySelectorAll('.settings-tab');
-        const panels = document.querySelectorAll('.tab-panel');
-
-        function activate(tabName) {
-            tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
-            panels.forEach(p => p.classList.toggle('active', p.id === 'panel-' + tabName));
-        }
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function () {
-                activate(this.dataset.tab);
-                history.replaceState(null, '', '#' + this.dataset.tab);
-            });
-        });
-
-        const initial = window.location.hash ? window.location.hash.substring(1) : 'general';
-        activate(document.getElementById('panel-' + initial) ? initial : 'general');
-    })();
-</script>
 @endsection
+
+@push('scripts')
+<script>
+    // Keep the active tab in the URL hash so links like #members still work.
+    (function ($) {
+        var hash = window.location.hash;
+        if (hash && $('#settingsTabs a[href="#tab-' + hash.substring(1) + '"]').length) {
+            $('#settingsTabs a[href="#tab-' + hash.substring(1) + '"]').tab('show');
+        }
+        $('#settingsTabs a').on('shown.bs.tab', function (e) {
+            history.replaceState(null, '', '#' + $(e.target).attr('href').replace('#tab-', ''));
+        });
+    })(jQuery);
+</script>
+@endpush

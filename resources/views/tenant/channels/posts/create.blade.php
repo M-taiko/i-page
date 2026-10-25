@@ -1,312 +1,203 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
 
-@section('title', 'Create Post - ' . $channel->name)
+@section('title', __('Create Post') . ' - ' . $channel->name)
+
+@section('page-header')
+    <x-valex.page-header :title="__('Create Post')" :subtitle="__('Add a new post to :name', ['name' => $channel->name])">
+        <x-slot:actions>
+            <a href="{{ route('tenant.channels.show', $channel->id) }}" class="btn btn-outline-secondary"><i class="fe fe-arrow-left"></i> {{ $channel->name }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
 
 @section('content')
-<style>
-    .form-container {
-        background: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-6);
-        max-width: 800px;
-        margin: 0 auto;
-    }
+@php
+    $formats = config('posts.formats');
+    $styles = config('posts.card_styles');
+    $badges = config('posts.badges');
+    $reactions = config('posts.reactions');
+    $currentFormat = old('post_format', 'standard');
+    $oldReactions = old('reactions', ['like']);
+    $oldPoll = old('poll_options', ['', '']);
+@endphp
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <form method="POST" action="{{ route('tenant.channels.posts.store', $channel->id) }}" enctype="multipart/form-data" id="postForm">
+            @csrf
 
-    .form-group {
-        margin-bottom: var(--space-6);
-    }
+            {{-- 1. Format --}}
+            <x-valex.card :title="__('Post type')">
+                <div class="row">
+                    @foreach ($formats as $key => $f)
+                        <div class="col-6 col-md-4 col-xl mb-2">
+                            <label class="card h-100 mb-0 text-center" style="cursor:pointer">
+                                <div class="card-body py-3 px-2">
+                                    <input type="radio" name="post_format" value="{{ $key }}" class="d-none format-radio" @checked($currentFormat === $key)>
+                                    <i class="fe fe-{{ $f['icon'] }} tx-24 d-block mb-1"></i>
+                                    <strong class="d-block">{{ __($f['name']) }}</strong>
+                                    <small class="text-muted">{{ __($f['description']) }}</small>
+                                </div>
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+                @error('post_format')<div class="text-danger small">{{ $message }}</div>@enderror
+            </x-valex.card>
 
-    .form-label {
-        display: block;
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-semibold);
-        color: var(--text-primary);
-        margin-bottom: var(--space-2);
-    }
+            {{-- 2. Content --}}
+            <x-valex.card :title="__('Content')">
+                <div class="d-flex align-items-center mb-3 p-3 bg-primary-transparent rounded">
+                    <span class="avatar avatar-md brround bg-primary mx-2"><i class="fe fe-message-circle"></i></span>
+                    <div><strong>{{ $channel->name }}</strong><div class="small text-muted">{{ $channel->description ?? __('No description') }}</div></div>
+                </div>
 
-    .form-input,
-    .form-textarea {
-        width: 100%;
-        padding: var(--space-3) var(--space-4);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-md);
-        font-size: var(--text-sm);
-        font-family: inherit;
-        background-color: var(--surface-bg);
-        color: var(--text-primary);
-        transition: all var(--transition-fast);
-    }
+                <x-valex.input name="title" :label="__('Title')" maxlength="150" :placeholder="__('Optional headline')" />
+                <x-valex.textarea name="body" rows="6" required maxlength="5000" id="bodyField"
+                    :label="__('Post Content')" :placeholder="__('Write your post content here (minimum 10 characters)...')" />
+                <div class="small text-muted mb-3"><span id="charCount">0</span> / 5000 {{ __('characters') }}</div>
 
-    .form-input:focus,
-    .form-textarea:focus {
-        outline: none;
-        border-color: var(--primary-500);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
+                {{-- Standard: single image --}}
+                <div class="form-group fmt fmt-standard">
+                    <label for="image">{{ __('Post Image (Optional)') }}</label>
+                    <input type="file" id="image" name="image" accept="image/*" class="form-control @error('image') is-invalid @enderror">
+                    <small class="form-text text-muted">{{ __('PNG, JPG, GIF or WebP up to 2MB') }}</small>
+                    @error('image')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
 
-    .form-textarea {
-        min-height: 300px;
-        resize: vertical;
-    }
+                {{-- Gallery --}}
+                <div class="form-group fmt fmt-gallery" style="display:none">
+                    <label for="gallery">{{ __('Photos') }} <span class="tx-danger">*</span></label>
+                    <input type="file" id="gallery" name="gallery[]" accept="image/*" multiple class="form-control @error('gallery') is-invalid @enderror @error('gallery.*') is-invalid @enderror">
+                    <small class="form-text text-muted">{{ __('Up to :n photos, 4MB each. Two or more photos are shown as a carousel.', ['n' => config('posts.limits.gallery_images')]) }}</small>
+                    @error('gallery')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    @error('gallery.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
 
-    .char-count {
-        font-size: var(--text-xs);
-        color: var(--text-tertiary);
-        margin-top: var(--space-1);
-    }
-
-    .form-actions {
-        display: flex;
-        gap: var(--space-3);
-        margin-top: var(--space-6);
-    }
-
-    .btn {
-        padding: var(--space-3) var(--space-6);
-        border: none;
-        border-radius: var(--radius-md);
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-medium);
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-2);
-        transition: all var(--transition-fast);
-    }
-
-    .btn-primary {
-        background-color: var(--primary-600);
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: var(--primary-700);
-    }
-
-    .btn-secondary {
-        background-color: var(--surface-hover);
-        color: var(--text-primary);
-        border: 1px solid var(--surface-border);
-    }
-
-    .btn-secondary:hover {
-        background-color: var(--primary-50);
-    }
-
-    .header-section {
-        margin-bottom: var(--space-6);
-    }
-
-    .header-title {
-        font-size: var(--text-2xl);
-        font-weight: var(--font-weight-bold);
-        color: var(--text-primary);
-        margin: 0 0 var(--space-2) 0;
-    }
-
-    .header-subtitle {
-        color: var(--text-secondary);
-        margin: 0;
-    }
-
-    .channel-info {
-        background: var(--primary-50);
-        border: 1px solid var(--primary-200);
-        border-radius: var(--radius-md);
-        padding: var(--space-3) var(--space-4);
-        margin-bottom: var(--space-6);
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-    }
-
-    .channel-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: var(--radius-md);
-        background: linear-gradient(135deg, var(--primary-600), var(--secondary-600));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        flex-shrink: 0;
-    }
-
-    .channel-details h4 {
-        margin: 0;
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-semibold);
-        color: var(--text-primary);
-    }
-
-    .channel-details small {
-        color: var(--text-secondary);
-        font-size: var(--text-xs);
-    }
-
-    .file-input-wrapper {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
-        width: 100%;
-    }
-
-    .file-input-label {
-        display: block;
-        padding: var(--space-6);
-        border: 2px dashed var(--surface-border);
-        border-radius: var(--radius-md);
-        background: var(--surface-hover);
-        text-align: center;
-        cursor: pointer;
-        transition: all var(--transition-fast);
-    }
-
-    .file-input-label:hover {
-        border-color: var(--primary-500);
-        background: var(--primary-50);
-    }
-
-    input[type="file"] {
-        display: none;
-    }
-
-    .file-name {
-        margin-top: var(--space-2);
-        font-size: var(--text-sm);
-        color: var(--primary-600);
-    }
-
-    .error-message {
-        color: var(--danger-600);
-        font-size: var(--text-sm);
-        margin-top: var(--space-1);
-    }
-</style>
-
-<!-- Header -->
-<div class="header-section">
-    <h1 class="header-title">
-        <i class="bi bi-pencil-square"></i> Create Post
-    </h1>
-    <p class="header-subtitle">Add a new post to {{ $channel->name }}</p>
-</div>
-
-<!-- Channel Info -->
-<div class="channel-info">
-    <div class="channel-avatar">
-        <i class="bi bi-chat-dots"></i>
-    </div>
-    <div class="channel-details">
-        <h4>{{ $channel->name }}</h4>
-        <small>{{ $channel->description ?? 'No description' }}</small>
-    </div>
-</div>
-
-<!-- Form -->
-<form method="POST" action="{{ route('tenant.channels.posts.store', $channel->id) }}" enctype="multipart/form-data">
-    @csrf
-
-    <div class="form-container">
-        <!-- Body -->
-        <div class="form-group">
-            <label for="body" class="form-label">
-                <i class="bi bi-chat-left"></i> Post Content
-            </label>
-            <textarea id="body" name="body" class="form-textarea @error('body') border-danger @enderror"
-                      placeholder="Write your post content here (minimum 10 characters)..." required>{{ old('body') }}</textarea>
-            <div class="char-count">
-                <span id="charCount">0</span> / 5000 characters
-            </div>
-            @error('body')
-                <div class="error-message">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <!-- Image -->
-        <div class="form-group">
-            <label for="image" class="form-label">
-                <i class="bi bi-image"></i> Post Image (Optional)
-            </label>
-            <div class="file-input-wrapper">
-                <label for="image" class="file-input-label">
-                    <div>
-                        <i class="bi bi-cloud-upload" style="font-size: 2rem; color: var(--primary-600);"></i>
-                        <p style="margin: var(--space-2) 0 0 0; color: var(--text-secondary);">
-                            Click to upload or drag and drop
-                        </p>
-                        <small style="color: var(--text-tertiary);">
-                            PNG, JPG, GIF up to 2MB
-                        </small>
+                {{-- Poll --}}
+                <div class="fmt fmt-poll" style="display:none">
+                    <label>{{ __('Poll options') }} <span class="tx-danger">*</span></label>
+                    <div id="pollOptions">
+                        @foreach ($oldPoll as $opt)
+                            <div class="input-group mb-2 poll-row">
+                                <input type="text" name="poll_options[]" class="form-control" maxlength="150" value="{{ $opt }}" placeholder="{{ __('Option') }}">
+                                <div class="input-group-append"><button type="button" class="btn btn-outline-danger poll-remove" title="{{ __('Remove') }}"><i class="fe fe-x"></i></button></div>
+                            </div>
+                        @endforeach
                     </div>
-                </label>
-                <input type="file" id="image" name="image" accept="image/*">
-                <div id="fileName" class="file-name"></div>
-            </div>
-            @error('image')
-                <div class="error-message">{{ $message }}</div>
-            @enderror
-        </div>
+                    @error('poll_options')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="addPollOption"><i class="fe fe-plus"></i> {{ __('Add option') }}</button>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="custom-control custom-switch mt-4">
+                                <input type="checkbox" class="custom-control-input" id="poll_multiple" name="poll_multiple" value="1" @checked(old('poll_multiple'))>
+                                <label class="custom-control-label" for="poll_multiple">{{ __('Allow multiple answers') }}</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4"><x-valex.input name="poll_ends_at" type="datetime-local" :label="__('Ends at (optional)')" /></div>
+                        <div class="col-md-4">
+                            <x-valex.select name="poll_show_results" :label="__('Show results')" :value="'always'"
+                                :options="['always' => __('Always'), 'after_vote' => __('After voting')]" />
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Actions -->
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-circle"></i> Publish Post
-            </button>
-            <a href="{{ route('tenant.channels.show', $channel->id) }}" class="btn btn-secondary">
-                <i class="bi bi-x-circle"></i> Cancel
-            </a>
-        </div>
+                {{-- Event --}}
+                <div class="fmt fmt-event" style="display:none">
+                    <div class="row">
+                        <div class="col-md-6"><x-valex.input name="event_starts_at" type="datetime-local" :label="__('Starts at')" /></div>
+                        <div class="col-md-6"><x-valex.input name="event_ends_at" type="datetime-local" :label="__('Ends at (optional)')" /></div>
+                        <div class="col-md-8"><x-valex.input name="event_location" :label="__('Location')" maxlength="200" /></div>
+                        <div class="col-md-4"><x-valex.input name="event_capacity" type="number" min="1" :label="__('Capacity (optional)')" /></div>
+                    </div>
+                </div>
+
+                {{-- Rating --}}
+                <div class="fmt fmt-rating alert alert-info mb-0" style="display:none">
+                    <i class="fe fe-star"></i> {{ __('People will rate this post from 1 to 5 stars. Use the content above to say what they are rating.') }}
+                </div>
+            </x-valex.card>
+
+            {{-- 3. Presentation --}}
+            <x-valex.card :title="__('Appearance & priority')">
+                <div class="form-group">
+                    <label>{{ __('Card design') }}</label>
+                    <div class="row">
+                        @foreach ($styles as $key => $s)
+                            <div class="col-6 col-md-3 mb-2">
+                                <label class="card h-100 mb-0" style="cursor:pointer">
+                                    <div class="card-body py-3">
+                                        <input type="radio" name="card_style" value="{{ $key }}" @checked(old('card_style', 'classic') === $key)>
+                                        <strong>{{ __($s['name']) }}</strong>
+                                        <div class="small text-muted">{{ __($s['description']) }}</div>
+                                    </div>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <x-valex.select name="priority" :label="__('Priority')" :value="'medium'"
+                            :options="collect(config('posts.priorities'))->map(fn ($l) => __($l))->all()" />
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="badge_key">{{ __('Badge') }}</label>
+                            <select name="badge_key" id="badge_key" class="form-control">
+                                <option value="">{{ __('No badge') }}</option>
+                                @foreach ($badges as $key => [$label, $color])
+                                    <option value="{{ $key }}" data-color="{{ $color }}" @selected(old('badge_key') === $key)>{{ __($label) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4"><x-valex.input name="badge_label" :label="__('Custom badge text (optional)')" maxlength="40" /></div>
+                </div>
+
+                <div class="form-group mb-0">
+                    <label>{{ __('Reactions people can use') }}</label>
+                    <div class="d-flex flex-wrap">
+                        @foreach ($reactions as $key => [$label, $emoji])
+                            <div class="custom-control custom-checkbox mx-3">
+                                <input type="checkbox" class="custom-control-input" id="react_{{ $key }}" name="reactions[]" value="{{ $key }}" @checked(in_array($key, $oldReactions, true))>
+                                <label class="custom-control-label" for="react_{{ $key }}">{{ $emoji }} {{ __($label) }}</label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </x-valex.card>
+
+            <button type="submit" class="btn btn-primary"><i class="fe fe-check-circle"></i> {{ __('Publish Post') }}</button>
+            <a href="{{ route('tenant.channels.show', $channel->id) }}" class="btn btn-light">{{ __('Cancel') }}</a>
+        </form>
     </div>
-</form>
+</div>
+@endsection
 
+@push('scripts')
 <script>
-    // Character counter
-    const bodyInput = document.getElementById('body');
-    const charCount = document.getElementById('charCount');
+    jQuery(function ($) {
+        var maxOptions = {{ config('posts.limits.poll_options_max') }};
 
-    bodyInput.addEventListener('input', () => {
-        charCount.textContent = bodyInput.value.length;
-    });
-
-    // File input handler
-    const fileInput = document.getElementById('image');
-    const fileLabel = document.querySelector('.file-input-label');
-    const fileName = document.getElementById('fileName');
-
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files.length > 0) {
-            fileName.textContent = '✓ ' + fileInput.files[0].name + ' selected';
-        } else {
-            fileName.textContent = '';
+        function showFormat() {
+            var f = $('input[name="post_format"]:checked').val() || 'standard';
+            $('.fmt').hide(); $('.fmt-' + f).show();
+            $('.format-radio').each(function () { $(this).closest('.card').toggleClass('border-primary', this.checked); });
+            $('#bodyField').attr('placeholder', f === 'poll' ? @json(__('Ask your question...')) : f === 'event' ? @json(__('Describe the event...')) : f === 'rating' ? @json(__('What are people rating?')) : @json(__('Write your post content here (minimum 10 characters)...')));
         }
-    });
+        $('.format-radio').on('change', showFormat);
+        showFormat();
 
-    fileLabel.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileLabel.style.borderColor = 'var(--primary-500)';
-        fileLabel.style.background = 'var(--primary-50)';
-    });
+        $('#bodyField').on('input', function () { $('#charCount').text(this.value.length); }).trigger('input');
 
-    fileLabel.addEventListener('dragleave', () => {
-        fileLabel.style.borderColor = 'var(--surface-border)';
-        fileLabel.style.background = 'var(--surface-hover)';
-    });
-
-    fileLabel.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileLabel.style.borderColor = 'var(--surface-border)';
-        fileLabel.style.background = 'var(--surface-hover)';
-
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            fileName.textContent = '✓ ' + e.dataTransfer.files[0].name + ' selected';
-        }
+        $('#addPollOption').on('click', function () {
+            if ($('#pollOptions .poll-row').length >= maxOptions) return;
+            $('#pollOptions').append('<div class="input-group mb-2 poll-row"><input type="text" name="poll_options[]" class="form-control" maxlength="150" placeholder="' + @json(__('Option')) + '"><div class="input-group-append"><button type="button" class="btn btn-outline-danger poll-remove"><i class="fe fe-x"></i></button></div></div>');
+        });
+        $('#pollOptions').on('click', '.poll-remove', function () {
+            if ($('#pollOptions .poll-row').length > 2) $(this).closest('.poll-row').remove();
+        });
     });
 </script>
-
-@endsection
+@endpush

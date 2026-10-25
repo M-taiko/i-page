@@ -26,6 +26,11 @@ class Post extends Model
         'body',
         'image_path',
         'post_type',
+        'post_format',
+        'card_style',
+        'badge_key',
+        'badge_label',
+        'options',
         'priority',
         'language',
         'requires_acknowledgment',
@@ -46,6 +51,7 @@ class Post extends Model
         'scheduled_for' => 'datetime',
         'requires_acknowledgment' => 'boolean',
         'is_emergency' => 'boolean',
+        'options' => 'array',
     ];
 
     public function organization(): BelongsTo
@@ -101,6 +107,85 @@ class Post extends Model
     public function media(): MorphMany
     {
         return $this->morphMany(Media::class, 'owner');
+    }
+
+    // ---------------------------------------------------- Formats (ADR-013)
+
+    public function pollOptions(): HasMany
+    {
+        return $this->hasMany(PostPollOption::class)->orderBy('sort_order');
+    }
+
+    public function pollVotes(): HasMany
+    {
+        return $this->hasMany(PostPollVote::class);
+    }
+
+    public function rsvps(): HasMany
+    {
+        return $this->hasMany(PostRsvp::class);
+    }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(PostRating::class);
+    }
+
+    /** A value from the per-format settings JSON, with a default. */
+    public function option(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->options ?? [], $key, $default);
+    }
+
+    /** Gallery images (media rows), in upload order. */
+    public function galleryImages()
+    {
+        return $this->media->where('usage_type', 'gallery')->sortBy('id')->values();
+    }
+
+    /** First image to use as a thumbnail: the gallery's first photo, else the single image. */
+    public function coverUrl(): ?string
+    {
+        $first = $this->galleryImages()->first();
+        if ($first) {
+            return \Illuminate\Support\Facades\Storage::disk($first->disk)->url($first->path);
+        }
+
+        return $this->image_path ? \Illuminate\Support\Facades\Storage::url($this->image_path) : null;
+    }
+
+    /** Reaction keys enabled for this post (defaults to like only). */
+    public function enabledReactions(): array
+    {
+        $all = array_keys(config('posts.reactions'));
+        $enabled = array_values(array_intersect((array) $this->option('reactions', ['like']), $all));
+
+        return $enabled ?: ['like'];
+    }
+
+    /** Badge as [label, color, icon] or null. */
+    public function badge(): ?array
+    {
+        if (! $this->badge_key || ! isset(config('posts.badges')[$this->badge_key])) {
+            return null;
+        }
+
+        [$label, $color, $icon] = config('posts.badges')[$this->badge_key];
+
+        return ['label' => $this->badge_label ?: __($label), 'color' => $color, 'icon' => $icon];
+    }
+
+    /** True when the post shows the interaction widgets instead of the plain like button. */
+    public function hasWidgets(): bool
+    {
+        return ($this->post_format ?: 'standard') !== 'standard' || $this->enabledReactions() !== ['like'];
+    }
+
+    public function pollClosed(): bool
+    {
+        $ends = $this->option('poll.ends_at');
+
+        return $ends && \Illuminate\Support\Carbon::parse($ends)->isPast();
     }
 
     public function scopePublished($query)

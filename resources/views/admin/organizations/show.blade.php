@@ -1,394 +1,184 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
 
 @section('title', $organization->name)
 
+@section('page-header')
+    <x-valex.page-header :title="$organization->name" :subtitle="__('Organization')">
+        <x-slot:actions>
+            <a href="{{ route('admin.organizations.index') }}" class="btn btn-outline-secondary mx-1"><i class="fe fe-arrow-left"></i> {{ __('Back') }}</a>
+            <a href="{{ route('admin.organizations.edit', $organization->id) }}" class="btn btn-warning mx-1"><i class="fe fe-edit"></i> {{ __('Edit Organization') }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
+
 @section('content')
-<!-- Page Header with Back Button -->
-<div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6);">
-    <a href="{{ route('admin.organizations.index') }}" class="btn" style="background-color: var(--surface-hover); color: var(--text-primary); border: 1px solid var(--surface-border); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
-        <i class="bi bi-arrow-left"></i>
-        <span>{{ __('Back') }}</span>
-    </a>
-</div>
+@php
+    $status = $organization->status ?? 'active';
+    $memberCount = $organization->users()->count();
+@endphp
 
-<!-- Header Section -->
-<x-card-modern style="background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%); color: white; margin-bottom: var(--space-6); position: relative; overflow: hidden;">
-    <div style="position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full);"></div>
-    <div style="position: relative; z-index: 1;">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4);">
-            <div style="flex: 1;">
-                <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl); font-weight: var(--font-weight-bold); color: white;">
-                    {{ $organization->name }}
-                </h1>
-                <p style="margin: 0 0 var(--space-3); opacity: 0.9; color: white;">
-                    {{ $organization->description ?? __('No description provided') }}
-                </p>
-                <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
-                    @if($organization->is_active)
-                        <span style="display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); background-color: rgba(16, 185, 129, 0.2); color: white; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium); border: 1px solid rgba(16, 185, 129, 0.3);">
-                            <i class="bi bi-check-circle"></i>
-                            {{ __('Active') }}
-                        </span>
-                    @else
-                        <span style="display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); background-color: rgba(239, 68, 68, 0.2); color: white; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium); border: 1px solid rgba(239, 68, 68, 0.3);">
-                            <i class="bi bi-x-circle"></i>
-                            {{ __('Inactive') }}
-                        </span>
-                    @endif
-                    @if($organization->city || $organization->country)
-                        <span style="display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); background-color: rgba(255, 255, 255, 0.1); color: white; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                            <i class="bi bi-geo-alt"></i>
-                            {{ $organization->city ?? '' }}{{ $organization->city && $organization->country ? ', ' : '' }}{{ $organization->country ?? '' }}
-                        </span>
-                    @endif
-                </div>
-            </div>
-            <div style="flex-shrink: 0; width: 80px; height: 80px; background: rgba(255, 255, 255, 0.15); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; font-size: var(--text-4xl); font-weight: var(--font-weight-bold); color: rgba(255, 255, 255, 0.8);">
-                {{ substr($organization->name, 0, 1) }}
-            </div>
+<div class="card bg-primary-gradient text-white">
+    <div class="card-body d-flex align-items-center justify-content-between flex-wrap">
+        <div>
+            <h3 class="text-white mb-1">{{ $organization->name }}</h3>
+            <p class="mb-2 op-8">{{ $organization->description ?? __('No description provided') }}</p>
+            <x-valex.badge :variant="$organization->is_active ? 'success' : 'danger'">{{ $organization->is_active ? __('Active') : __('Inactive') }}</x-valex.badge>
+            @if ($organization->city || $organization->country)
+                <x-valex.badge variant="light"><i class="fe fe-map-pin"></i> {{ collect([$organization->city, $organization->country])->filter()->implode(', ') }}</x-valex.badge>
+            @endif
         </div>
+        <span class="avatar avatar-xxl brround bg-white-transparent tx-30">{{ mb_substr($organization->name, 0, 1) }}</span>
     </div>
-</x-card-modern>
-
-<!-- Statistics Grid -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
-    <x-stat-card
-        title="{{ __('Max Channels') }}"
-        value="{{ $organization->max_channels }}"
-        icon="diagram-3"
-    />
-    <x-stat-card
-        title="{{ __('Active Channels') }}"
-        value="{{ $organization->channels()->count() }}"
-        icon="chat-dots"
-    />
-    <x-stat-card
-        title="{{ __('Team Members') }}"
-        value="{{ $organization->users()->count() }}"
-        icon="people"
-    />
-    <x-stat-card
-        title="{{ __('Total Posts') }}"
-        value="{{ $organization->posts()->count() }}"
-        icon="newspaper"
-    />
 </div>
 
-<!-- Main Content Grid -->
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); margin-bottom: var(--space-6);">
-    <!-- Left Column -->
-    <div>
-        <!-- Organization Information Card -->
-        <x-card-modern style="margin-bottom: var(--space-6);">
-            <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border);">
-                <i class="bi bi-info-circle" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-                <h2 style="margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                    {{ __('Organization Information') }}
-                </h2>
-            </div>
+<div class="row row-sm">
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Max Channels')" :value="$organization->max_channels" icon="layers" variant="primary" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Active Channels')" :value="$organization->channels()->count()" icon="message-circle" variant="success" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Team Members')" :value="$memberCount" icon="users" variant="info" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Total Posts')" :value="$organization->posts()->count()" icon="file-text" variant="warning" /></div>
+</div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);">
+<div class="row">
+    <div class="col-lg-8">
+        <x-valex.card :title="__('Organization Information')">
+            <div class="row">
+                <div class="col-md-6 mb-3"><div class="small text-muted text-uppercase">{{ __('Organization Name') }}</div><strong>{{ $organization->name }}</strong></div>
+                <div class="col-md-6 mb-3">
+                    <div class="small text-muted text-uppercase">{{ __('Status') }}</div>
+                    <x-valex.badge :variant="$organization->is_active ? 'success' : 'danger'">{{ $organization->is_active ? __('Active') : __('Inactive') }}</x-valex.badge>
+                </div>
+                <div class="col-md-6 mb-3"><div class="small text-muted text-uppercase">{{ __('City') }}</div>{{ $organization->city ?? __('Not specified') }}</div>
+                <div class="col-md-6 mb-3"><div class="small text-muted text-uppercase">{{ __('Country') }}</div>{{ $organization->country ?? __('Not specified') }}</div>
+            </div>
+            <hr>
+            <div class="small text-muted text-uppercase">{{ __('Description') }}</div>
+            <p class="mb-0">{{ $organization->description ?? __('No description provided') }}</p>
+        </x-valex.card>
+
+        <x-valex.card :title="__('Settings')">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="small text-muted text-uppercase">{{ __('Max Channels Allowed') }}</div>
+                <x-valex.badge variant="primary">{{ $organization->max_channels }}</x-valex.badge>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <p style="margin: 0 0 var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                        {{ __('Organization Name') }}
-                    </p>
-                    <p style="margin: 0; font-size: var(--text-base); color: var(--text-primary); font-weight: var(--font-weight-semibold);">
-                        {{ $organization->name }}
+                    <strong>{{ __('Organization Status') }}</strong>
+                    <p class="small text-muted mb-0">
+                        {{ $organization->is_active
+                            ? __('Organization is active. Team members can access and use all features.')
+                            : __('Organization is inactive. Team members cannot access the platform.') }}
                     </p>
                 </div>
-
-                <div>
-                    <p style="margin: 0 0 var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                        {{ __('Status') }}
-                    </p>
-                    @if($organization->is_active)
-                        <span style="display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); background-color: var(--success-50); color: var(--success-700); border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                            <i class="bi bi-check-circle"></i>
-                            {{ __('Active') }}
-                        </span>
-                    @else
-                        <span style="display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); background-color: var(--danger-50); color: var(--danger-700); border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                            <i class="bi bi-x-circle"></i>
-                            {{ __('Inactive') }}
-                        </span>
-                    @endif
-                </div>
-
-                <div>
-                    <p style="margin: 0 0 var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                        {{ __('City') }}
-                    </p>
-                    <p style="margin: 0; font-size: var(--text-base); color: var(--text-primary);">
-                        {{ $organization->city ?? __('Not specified') }}
-                    </p>
-                </div>
-
-                <div>
-                    <p style="margin: 0 0 var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                        {{ __('Country') }}
-                    </p>
-                    <p style="margin: 0; font-size: var(--text-base); color: var(--text-primary);">
-                        {{ $organization->country ?? __('Not specified') }}
-                    </p>
-                </div>
-            </div>
-
-            <div style="margin-top: var(--space-6); padding-top: var(--space-6); border-top: 1px solid var(--surface-border);">
-                <p style="margin: 0 0 var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                    {{ __('Description') }}
-                </p>
-                <p style="margin: 0; font-size: var(--text-base); color: var(--text-primary); line-height: var(--line-height-normal);">
-                    {{ $organization->description ?? __('No description provided') }}
-                </p>
-            </div>
-        </x-card-modern>
-
-        <!-- Settings Card -->
-        <x-card-modern>
-            <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border);">
-                <i class="bi bi-gear" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-                <h2 style="margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                    {{ __('Settings') }}
-                </h2>
-            </div>
-
-            <!-- Max Channels Setting -->
-            <div style="margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border);">
-                <p style="margin: 0 0 var(--space-2); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                    {{ __('Max Channels Allowed') }}
-                </p>
-                <span style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background-color: var(--primary-50); color: var(--primary-700); border-radius: var(--radius-md); font-weight: var(--font-weight-bold); font-size: var(--text-base);">
-                    {{ $organization->max_channels }}
-                </span>
-            </div>
-
-            <!-- Status Toggle -->
-            <div style="margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--surface-border);">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <p style="margin: 0 0 var(--space-1); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary);">
-                            {{ __('Organization Status') }}
-                        </p>
-                        <p style="margin: 0; font-size: var(--text-xs); color: var(--text-secondary);">
-                            @if($organization->is_active)
-                                {{ __('Organization is active. Team members can access and use all features.') }}
-                            @else
-                                {{ __('Organization is inactive. Team members cannot access the platform.') }}
-                            @endif
-                        </p>
-                    </div>
-
-                    <button type="button" id="toggle-btn" onclick="toggleOrganizationStatus()" style="position: relative; width: 50px; height: 28px; background-color: {{ $organization->is_active ? 'var(--success-500)' : 'var(--neutral-300)' }}; border-radius: 14px; border: none; cursor: pointer; transition: all var(--transition-fast); padding: 0;">
-                        <div style="position: absolute; top: 2px; {{ $organization->is_active ? 'right: 2px' : 'left: 2px' }}; width: 24px; height: 24px; background-color: white; border-radius: 50%; transition: all var(--transition-fast); box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+                <form id="status-form" action="{{ route('admin.organizations.update', $organization->id) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="is_active" value="{{ $organization->is_active ? 0 : 1 }}">
+                    <input type="hidden" name="name" value="{{ $organization->name }}">
+                    <input type="hidden" name="description" value="{{ $organization->description }}">
+                    <input type="hidden" name="city" value="{{ $organization->city }}">
+                    <input type="hidden" name="country" value="{{ $organization->country }}">
+                    <input type="hidden" name="max_channels" value="{{ $organization->max_channels }}">
+                    <button type="submit" class="btn btn-sm {{ $organization->is_active ? 'btn-outline-danger' : 'btn-outline-success' }}">
+                        {{ $organization->is_active ? __('Deactivate') : __('Activate') }}
                     </button>
-                </div>
+                </form>
             </div>
+            <hr>
+            <div class="small text-muted text-uppercase">{{ __('Created') }}</div>
+            {{ $organization->created_at->format('d M Y, H:i') }}
+        </x-valex.card>
 
-            <form id="status-form" action="{{ route('admin.organizations.update', $organization->id) }}" method="POST" style="display: none;">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="is_active" id="is_active_input" value="">
-                <input type="hidden" name="name" value="{{ $organization->name }}">
-                <input type="hidden" name="description" value="{{ $organization->description }}">
-                <input type="hidden" name="city" value="{{ $organization->city }}">
-                <input type="hidden" name="country" value="{{ $organization->country }}">
-                <input type="hidden" name="max_channels" value="{{ $organization->max_channels }}">
-            </form>
+        <x-valex.card :title="__('Brands & Channels')">
+            <x-slot:actions>
+                <a href="{{ route('admin.organizations.brands.create', $organization) }}" class="btn btn-sm btn-outline-primary mx-1"><i class="fe fe-plus"></i> {{ __('Brand') }}</a>
+                <a href="{{ route('admin.organizations.channels.create', $organization) }}" class="btn btn-sm btn-primary"><i class="fe fe-plus"></i> {{ __('Channel') }}</a>
+            </x-slot:actions>
 
-            <!-- Created Date -->
-            <div>
-                <p style="margin: 0 0 var(--space-1); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                    {{ __('Created') }}
-                </p>
-                <p style="margin: 0; font-size: var(--text-base); color: var(--text-primary);">
-                    {{ $organization->created_at->format('d M Y, H:i') }}
-                </p>
-            </div>
-        </x-card-modern>
-
-        <!-- Brands & Channels Card -->
-        <x-card-modern style="margin-top: var(--space-6);">
-            <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--surface-border);">
-                <i class="bi bi-diagram-3" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-                <h2 style="margin: 0; font-size: var(--text-xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                    {{ __('Brands & Channels') }}
-                </h2>
-                <div style="margin-left: auto; display: flex; gap: var(--space-2);">
-                    <a href="{{ route('admin.organizations.brands.create', $organization) }}" class="btn" style="background-color: var(--primary-50); color: var(--primary-700); border: 1px solid var(--primary-200); padding: var(--space-1) var(--space-3); border-radius: var(--radius-md); text-decoration: none; font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                        <i class="bi bi-plus-lg"></i> {{ __('Brand') }}
-                    </a>
-                    <a href="{{ route('admin.organizations.channels.create', $organization) }}" class="btn" style="background-color: var(--primary-600); color: white; padding: var(--space-1) var(--space-3); border-radius: var(--radius-md); text-decoration: none; font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                        <i class="bi bi-plus-lg"></i> {{ __('Channel') }}
-                    </a>
-                </div>
-            </div>
-
-            @forelse($organization->brands as $brand)
-                <div style="margin-bottom: var(--space-4);">
-                    <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
-                        <i class="bi bi-bookmark-star" style="color: var(--secondary-600);"></i>
-                        <strong style="color: var(--text-primary);">{{ $brand->name }}</strong>
-                        <a href="{{ route('admin.organizations.brands.edit', [$organization, $brand]) }}" style="font-size: var(--text-xs); color: var(--primary-600); text-decoration: none;">{{ __('edit') }}</a>
+            @forelse ($organization->brands as $brand)
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fe fe-bookmark text-purple mx-2"></i>
+                        <strong>{{ $brand->name }}</strong>
+                        <a href="{{ route('admin.organizations.brands.edit', [$organization, $brand]) }}" class="small mx-2">{{ __('edit') }}</a>
                     </div>
-                    <div style="padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-1);">
-                        @forelse($brand->channels as $channel)
-                            <div style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm);">
-                                <i class="bi bi-{{ $channel->type === 'public' ? 'globe' : 'lock' }}" style="color: var(--text-tertiary);"></i>
-                                <span style="color: var(--text-primary);">{{ $channel->name }}</span>
-                                <span style="font-size: var(--text-xs); color: var(--text-tertiary);">({{ $channel->type }})</span>
-                                <a href="{{ route('admin.organizations.channels.edit', [$organization, $channel]) }}" style="font-size: var(--text-xs); color: var(--primary-600); text-decoration: none; margin-left: auto;">{{ __('edit') }}</a>
-                            </div>
+                    <ul class="list-unstyled mb-0 mx-4">
+                        @forelse ($brand->channels as $channel)
+                            <li class="d-flex align-items-center small py-1">
+                                <i class="fe fe-{{ $channel->type === 'public' ? 'globe' : 'lock' }} text-muted mx-2"></i>
+                                {{ $channel->name }} <span class="text-muted mx-1">({{ $channel->type }})</span>
+                                <a href="{{ route('admin.organizations.channels.edit', [$organization, $channel]) }}" class="ml-auto">{{ __('edit') }}</a>
+                            </li>
                         @empty
-                            <span style="font-size: var(--text-xs); color: var(--text-tertiary);">{{ __('No channels yet') }}</span>
+                            <li class="small text-muted">{{ __('No channels yet') }}</li>
                         @endforelse
-                    </div>
+                    </ul>
                 </div>
             @empty
-                <p style="color: var(--text-secondary); font-size: var(--text-sm);">{{ __('No brands yet. Create one to start adding channels.') }}</p>
+                <p class="text-muted mb-0">{{ __('No brands yet. Create one to start adding channels.') }}</p>
             @endforelse
-        </x-card-modern>
+        </x-valex.card>
     </div>
 
-    <!-- Right Column -->
-    <div>
-        <!-- Team Members Card -->
-        <x-card-modern style="margin-bottom: var(--space-6);">
-            <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--surface-border);">
-                <i class="bi bi-people" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-                <h2 style="margin: 0; font-size: var(--text-lg); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                    {{ __('Team Members') }}
-                </h2>
-                <span style="margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background-color: var(--primary-50); color: var(--primary-700); border-radius: var(--radius-md); font-weight: var(--font-weight-bold); font-size: var(--text-xs);">
-                    {{ $organization->users()->count() }}
-                </span>
-            </div>
-
-            @if($organization->users()->count() > 0)
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid var(--surface-border);">
-                                <th style="padding: var(--space-3); text-align: left; font-weight: var(--font-weight-semibold); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase;">{{ __('Name') }}</th>
-                                <th style="padding: var(--space-3); text-align: left; font-weight: var(--font-weight-semibold); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase;">{{ __('Email') }}</th>
-                                <th style="padding: var(--space-3); text-align: center; font-weight: var(--font-weight-semibold); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase;">{{ __('Role') }}</th>
-                            </tr>
-                        </thead>
+    <div class="col-lg-4">
+        <x-valex.card :title="__('Team Members')" :subtitle="$memberCount">
+            @if ($memberCount > 0)
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Role') }}</th></tr></thead>
                         <tbody>
-                            @foreach($organization->users as $user)
-                                <tr style="border-bottom: 1px solid var(--surface-border); transition: background-color var(--transition-fast);" onmouseover="this.style.backgroundColor='var(--surface-hover)'" onmouseout="this.style.backgroundColor='transparent'">
-                                    <td style="padding: var(--space-3);">
-                                        <div style="display: flex; align-items: center; gap: var(--space-2);">
-                                            <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--primary-500), var(--secondary-500)); display: flex; align-items: center; justify-content: center; color: white; font-weight: var(--font-weight-bold); font-size: var(--text-xs);">
-                                                {{ $user->initials }}
-                                            </div>
-                                            <span style="font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--text-primary);">
-                                                {{ $user->full_name }}
-                                            </span>
+                            @foreach ($organization->users as $user)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="avatar avatar-sm brround bg-primary mx-2">{{ $user->initials }}</span>
+                                            <div><div>{{ $user->full_name }}</div><small class="text-muted">{{ $user->email }}</small></div>
                                         </div>
                                     </td>
-                                    <td style="padding: var(--space-3); font-size: var(--text-sm); color: var(--text-secondary);">
-                                        {{ $user->email }}
-                                    </td>
-                                    <td style="padding: var(--space-3); text-align: center;">
-                                        <span style="display: inline-flex; align-items: center; padding: var(--space-1) var(--space-2); background-color: var(--primary-50); color: var(--primary-700); border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                                            {{ $user->pivot->role }}
-                                        </span>
-                                    </td>
+                                    <td><x-valex.badge variant="primary">{{ $user->pivot->role }}</x-valex.badge></td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             @else
-                <div style="text-align: center; padding: var(--space-6);">
-                    <i class="bi bi-person-slash" style="font-size: var(--text-3xl); color: var(--text-tertiary); display: block; margin-bottom: var(--space-2);"></i>
-                    <p style="margin: 0; color: var(--text-secondary);">{{ __('No team members') }}</p>
-                </div>
+                <p class="text-muted text-center mb-0">{{ __('No team members') }}</p>
             @endif
-        </x-card-modern>
+        </x-valex.card>
 
-        <!-- Actions Card -->
-        <x-card-modern>
-            <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--surface-border);">
-                <i class="bi bi-lightning" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-                <h2 style="margin: 0; font-size: var(--text-lg); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                    {{ __('Actions') }}
-                </h2>
-            </div>
+        <x-valex.card :title="__('Actions')">
+            <div class="small text-muted text-uppercase mb-2">{{ __('Subscription') }}: <strong>{{ ucfirst($status) }}</strong></div>
 
-            <!-- Subscription status -->
-            <div style="margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--surface-border);">
-                <p style="margin: 0 0 var(--space-2); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); color: var(--text-secondary); text-transform: uppercase;">
-                    {{ __('Subscription') }}: <strong style="color: var(--text-primary);">{{ ucfirst($organization->status ?? 'active') }}</strong>
-                </p>
-                <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-                    @if(($organization->status ?? 'active') === 'active')
-                        <form action="{{ route('admin.organizations.suspend', $organization) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn" style="width: 100%; background-color: var(--warning-50); color: var(--warning-700); border: 1px solid var(--warning-200); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); cursor: pointer;">
-                                <i class="bi bi-pause-circle"></i> {{ __('Suspend') }}
-                            </button>
-                        </form>
-                    @else
-                        <form action="{{ route('admin.organizations.activate', $organization) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn" style="width: 100%; background-color: var(--success-50); color: var(--success-700); border: 1px solid var(--success-200); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); cursor: pointer;">
-                                <i class="bi bi-play-circle"></i> {{ __('Reactivate') }}
-                            </button>
-                        </form>
-                    @endif
-                    @if(($organization->status ?? 'active') !== 'cancelled')
-                        <form action="{{ route('admin.organizations.cancel', $organization) }}" method="POST" onsubmit="return confirm('{{ __('Cancel this organization\'s subscription?') }}')">
-                            @csrf
-                            <button type="submit" class="btn" style="width: 100%; background-color: var(--danger-50); color: var(--danger-700); border: 1px solid var(--danger-200); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); cursor: pointer;">
-                                <i class="bi bi-x-octagon"></i> {{ __('Cancel Subscription') }}
-                            </button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-                <a href="{{ route('admin.organizations.edit', $organization->id) }}" class="btn" style="background-color: var(--warning-50); color: var(--warning-700); border: 1px solid var(--warning-200); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--font-weight-medium);">
-                    <i class="bi bi-pencil"></i>
-                    <span>{{ __('Edit Organization') }}</span>
-                </a>
-
-                <form action="{{ route('admin.organizations.destroy', $organization->id) }}" method="POST">
+            @if ($status === 'active')
+                <form action="{{ route('admin.organizations.suspend', $organization) }}" method="POST" class="mb-2">
                     @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn" style="width: 100%; background-color: var(--danger-50); color: var(--danger-700); border: 1px solid var(--danger-200); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--font-weight-medium); cursor: pointer;" onclick="return confirm('{{ __('Are you sure you want to delete this organization? This action cannot be undone.') }}')">
-                        <i class="bi bi-trash"></i>
-                        <span>{{ __('Delete Organization') }}</span>
-                    </button>
+                    <button type="submit" class="btn btn-outline-warning btn-block"><i class="fe fe-pause-circle"></i> {{ __('Suspend') }}</button>
                 </form>
-            </div>
-        </x-card-modern>
+            @else
+                <form action="{{ route('admin.organizations.activate', $organization) }}" method="POST" class="mb-2">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-success btn-block"><i class="fe fe-play-circle"></i> {{ __('Reactivate') }}</button>
+                </form>
+            @endif
+
+            @if ($status !== 'cancelled')
+                <form action="{{ route('admin.organizations.cancel', $organization) }}" method="POST" class="mb-2"
+                      onsubmit="return confirm('{{ __('Cancel this organization\'s subscription?') }}')">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger btn-block"><i class="fe fe-x-octagon"></i> {{ __('Cancel Subscription') }}</button>
+                </form>
+            @endif
+
+            <hr>
+            <form action="{{ route('admin.organizations.destroy', $organization->id) }}" method="POST">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-block"
+                        onclick="return confirm('{{ __('Are you sure you want to delete this organization? This action cannot be undone.') }}')">
+                    <i class="fe fe-trash-2"></i> {{ __('Delete Organization') }}
+                </button>
+            </form>
+        </x-valex.card>
     </div>
 </div>
-
-<script>
-    function toggleOrganizationStatus() {
-        const isActive = {{ $organization->is_active ? 'true' : 'false' }};
-        const newStatus = isActive ? 0 : 1;
-        const btn = document.getElementById('toggle-btn');
-        const input = document.getElementById('is_active_input');
-
-        input.value = newStatus;
-
-        // Update button appearance
-        if (newStatus === 1) {
-            btn.style.backgroundColor = 'var(--success-500)';
-            btn.querySelector('div').style.right = '2px';
-            btn.querySelector('div').style.left = 'auto';
-        } else {
-            btn.style.backgroundColor = 'var(--neutral-300)';
-            btn.querySelector('div').style.left = '2px';
-            btn.querySelector('div').style.right = 'auto';
-        }
-
-        // Submit form
-        document.getElementById('status-form').submit();
-    }
-</script>
 @endsection

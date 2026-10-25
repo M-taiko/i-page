@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Purchased Valex theme source (license forbids redistribution); the compiled assets the app needs live in public/assets/valex
+/Valex Dashboard/

@@ -1,470 +1,250 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
 
 @section('title', $channel->name)
 
+@section('page-header')
+    <x-valex.page-header :title="$channel->name" :subtitle="__('Channel')">
+        <x-slot:actions>
+            <a href="{{ route('tenant.channels.index') }}" class="btn btn-outline-secondary"><i class="fe fe-arrow-left"></i> {{ __('Back to Channels') }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
+
 @section('content')
-    <style>
-        .info-group {
-            margin-bottom: 1.5rem;
-        }
-        .info-label {
-            font-size: 0.85rem;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        .info-value {
-            font-size: 1rem;
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, var(--primary-50), #e0e7ff);
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            border: 1px solid var(--primary-100);
-        }
-        .stat-card-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-600);
-        }
-        .stat-card-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-        .header-section {
-            background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
-            color: white;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .header-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 0 0 0.5rem 0;
-        }
-        .header-subtitle {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            margin: 0;
-        }
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(1, 1fr);
-            }
-            .header-title {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
+<x-valex.hero :title="$channel->name">
+    <x-valex.badge :variant="$channel->type === 'public' ? 'success' : 'warning'"><i class="fe fe-{{ $channel->type === 'public' ? 'globe' : 'lock' }}"></i> {{ $channel->type === 'public' ? __('Public') : __('Private') }}</x-valex.badge>
+    <x-valex.badge variant="info">{{ ucfirst($channel->status) }}</x-valex.badge>
+</x-valex.hero>
 
-    <div class="page-header mb-2">
-        <div class="page-header-top">
-            <div class="page-header-info">
-                <a href="{{ route('tenant.channels.index') }}" class="btn btn-sm btn-outline-secondary mb-3">
-                    <i class="bi bi-arrow-left"></i> Back to Channels
-                </a>
+<div class="row row-sm">
+    <div class="col-md-4"><x-valex.stat-card :title="__('Members')" :value="$stats['members']" icon="users" variant="primary" /></div>
+    <div class="col-md-4"><x-valex.stat-card :title="__('Posts')" :value="$stats['posts']" icon="file-text" variant="success" /></div>
+    <div class="col-md-4"><x-valex.stat-card :title="__('QR Codes')" :value="$stats['qr_codes']" icon="grid" variant="warning" /></div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <x-valex.card :title="__('Channel Information')">
+            <div class="mb-3"><div class="small text-muted text-uppercase">{{ __('Channel Name') }}</div><strong>{{ $channel->name }}</strong></div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="small text-muted text-uppercase">{{ __('Channel Type') }}</div>
+                    <x-valex.badge :variant="$channel->type === 'public' ? 'success' : 'warning'">{{ $channel->type === 'public' ? __('Public Channel') : __('Private Channel') }}</x-valex.badge>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="small text-muted text-uppercase">{{ __('Status') }}</div>
+                    <x-valex.badge variant="info">{{ ucfirst($channel->status) }}</x-valex.badge>
+                </div>
             </div>
-        </div>
+            <div class="small text-muted text-uppercase">{{ __('Description') }}</div>
+            <p class="mb-0">{{ $channel->description ?? __('No description provided') }}</p>
+        </x-valex.card>
+
+        <x-valex.card :title="__('Additional Information')">
+            <div class="row">
+                <div class="col-md-6 mb-3"><div class="small text-muted text-uppercase">{{ __('Created Date') }}</div>{{ $channel->created_at->format('M d, Y') }}</div>
+                <div class="col-md-6 mb-3"><div class="small text-muted text-uppercase">{{ __('Created At') }}</div>{{ $channel->created_at->format('h:i A') }}</div>
+                @if ($channel->updated_at->ne($channel->created_at))
+                    <div class="col-md-6"><div class="small text-muted text-uppercase">{{ __('Last Updated') }}</div>{{ $channel->updated_at->format('M d, Y h:i A') }}</div>
+                @endif
+            </div>
+        </x-valex.card>
     </div>
 
-    <!-- Header -->
-    <div class="header-section">
-        <h1 class="header-title">📺 {{ $channel->name }}</h1>
-        <p class="header-subtitle">
-            <span class="badge {{ $channel->type === 'public' ? 'bg-success' : 'bg-warning' }}">
-                {{ $channel->type === 'public' ? '🌍 Public' : '🔒 Private' }}
-            </span>
-            <span class="badge bg-info ms-2">{{ ucfirst($channel->status) }}</span>
-        </p>
-    </div>
-
-    <!-- Statistics -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-card-value">{{ $stats['members'] }}</div>
-            <div class="stat-card-label">Members</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-value">{{ $stats['posts'] }}</div>
-            <div class="stat-card-label">Posts</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-value">{{ $stats['qr_codes'] }}</div>
-            <div class="stat-card-label">QR Codes</div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Channel Information -->
-        <div class="col-lg-8">
-            <!-- Details Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">📋 Channel Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="info-group">
-                        <span class="info-label">Channel Name</span>
-                        <span class="info-value">{{ $channel->name }}</span>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-group">
-                                <span class="info-label">Channel Type</span>
-                                @if($channel->type === 'public')
-                                    <span class="badge bg-success">🌍 Public Channel</span>
-                                @else
-                                    <span class="badge bg-warning">🔒 Private Channel</span>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-group">
-                                <span class="info-label">Status</span>
-                                <span class="badge bg-info">{{ ucfirst($channel->status) }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="info-group">
-                        <span class="info-label">Description</span>
-                        <span class="info-value">{{ $channel->description ?? 'No description provided' }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Details Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">ℹ️ Additional Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-group">
-                                <span class="info-label">Created Date</span>
-                                <span class="info-value">{{ $channel->created_at->format('M d, Y') }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-group">
-                                <span class="info-label">Created At</span>
-                                <span class="info-value">{{ $channel->created_at->format('h:i A') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    @if($channel->updated_at->ne($channel->created_at))
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="info-group">
-                                    <span class="info-label">Last Updated</span>
-                                    <span class="info-value">{{ $channel->updated_at->format('M d, Y h:i A') }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Actions Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">⚙️ Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success">
-                            <i class="bi bi-plus-circle"></i> Create Post
-                        </a>
-                        <a href="{{ route('tenant.channels.edit', $channel->id) }}" class="btn btn-primary">
-                            <i class="bi bi-pencil"></i> Edit Channel
-                        </a>
-                        <form action="{{ route('tenant.channels.destroy', $channel->id) }}" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger w-100" onclick="return confirm('⚠️ Are you sure you want to delete this channel?\nAll associated data will be deleted!')">
-                                <i class="bi bi-trash"></i> Delete Channel
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if($pendingMembers->count() > 0)
-        <!-- Pending Join Requests (channel.join_request workflow) -->
-        <div style="margin-top: var(--space-8);">
-            <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-4); color: var(--text-primary);">
-                <i class="bi bi-hourglass-split"></i> Pending Join Requests ({{ $pendingMembers->count() }})
-            </h2>
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th style="width: 220px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($pendingMembers as $pending)
-                                <tr>
-                                    <td>{{ $pending->full_name }}</td>
-                                    <td class="text-muted small">{{ $pending->email }}</td>
-                                    <td class="text-end">
-                                        <form action="{{ route('tenant.channels.join-requests.approve', [$channel, $pending]) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-success">
-                                                <i class="bi bi-check-lg"></i> Approve
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('tenant.channels.join-requests.reject', [$channel, $pending]) }}" method="POST" class="d-inline" onsubmit="return confirm('Reject this join request?')">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-x-lg"></i> Reject
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <!-- Members Section -->
-    <div style="margin-top: var(--space-8);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
-            <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin: 0; color: var(--text-primary);">
-                <i class="bi bi-people"></i> Members ({{ $members->count() }})
-            </h2>
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#inviteMemberModal">
-                <i class="bi bi-person-plus"></i> Invite Member
-            </button>
-        </div>
-
-        @if($members->count() > 0)
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Joined</th>
-                                <th style="width: 160px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($members as $member)
-                                <tr>
-                                    <td>{{ $member->full_name }}</td>
-                                    <td class="text-muted small">{{ $member->email }}</td>
-                                    <td>
-                                        <form action="{{ route('tenant.channels.members.update', [$channel, $member]) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('PUT')
-                                            <select name="role" class="form-select form-select-sm d-inline-block" style="width: auto;" onchange="this.form.submit()">
-                                                <option value="member" @selected($member->pivot->role === 'member')>Staff</option>
-                                                <option value="moderator" @selected($member->pivot->role === 'moderator')>Moderator</option>
-                                                <option value="admin" @selected($member->pivot->role === 'admin')>Manager</option>
-                                            </select>
-                                        </form>
-                                    </td>
-                                    <td class="text-muted small">{{ $member->pivot->joined_at ? \Illuminate\Support\Carbon::parse($member->pivot->joined_at)->format('M d, Y') : '—' }}</td>
-                                    <td class="text-end">
-                                        <form action="{{ route('tenant.channels.members.destroy', [$channel, $member]) }}" method="POST" onsubmit="return confirm('Remove this member from the channel?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-x-lg"></i> Remove
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        @else
-            <div style="background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--space-6); text-align: center;">
-                <p style="color: var(--text-secondary); margin: 0;">No members yet. Invite someone to get started.</p>
-            </div>
-        @endif
-    </div>
-
-    <!-- QR Codes Section -->
-    <div style="margin-top: var(--space-8);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
-            <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin: 0; color: var(--text-primary);">
-                <i class="bi bi-qr-code"></i> QR Codes ({{ $qrCodes->count() }})
-            </h2>
-            <form action="{{ route('tenant.channels.qr-codes.store', $channel) }}" method="POST" class="d-flex gap-2">
+    <div class="col-lg-4">
+        <x-valex.card :title="__('Actions')">
+            <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success btn-block mb-2"><i class="fe fe-plus-circle"></i> {{ __('Create Post') }}</a>
+            <a href="{{ route('tenant.channels.edit', $channel->id) }}" class="btn btn-primary btn-block mb-2"><i class="fe fe-edit"></i> {{ __('Edit Channel') }}</a>
+            <form action="{{ route('tenant.channels.destroy', $channel->id) }}" method="POST">
                 @csrf
-                <input type="text" name="label" class="form-control form-control-sm" placeholder="Label (optional)" style="width: 180px;">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg"></i> Generate QR
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-block" onclick="return confirm('{{ __('Are you sure you want to delete this channel? All associated data will be deleted!') }}')">
+                    <i class="fe fe-trash-2"></i> {{ __('Delete Channel') }}
                 </button>
             </form>
-        </div>
+        </x-valex.card>
+    </div>
+</div>
 
-        @if($qrCodes->count() > 0)
-            <div class="row g-3">
-                @foreach($qrCodes as $qrCode)
-                    <div class="col-md-4 col-sm-6">
-                        <div class="card h-100 text-center p-3">
-                            <img src="data:image/svg+xml;base64,{{ $qrCode->preview_image }}" alt="QR code" class="mx-auto mb-1" style="width: 160px; height: 160px;">
-                            <div class="text-muted small text-break mb-1" style="font-size: 0.7rem;">{{ $qrCode->url }}</div>
-                            <div class="fw-semibold small text-truncate">{{ $qrCode->label ?? 'Untitled QR' }}</div>
-                            <div class="text-muted small mb-2">
-                                {{ $qrCode->scan_count }} {{ __('scans') }}
-                                &middot;
-                                <span class="badge {{ $qrCode->is_active ? 'bg-success' : 'bg-secondary' }}">
-                                    {{ $qrCode->is_active ? __('Active') : __('Inactive') }}
-                                </span>
-                            </div>
-                            <div class="d-flex gap-2 justify-content-center">
-                                <a href="{{ route('tenant.channels.qr-codes.download', [$channel, $qrCode]) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-download"></i>
-                                </a>
-                                <form action="{{ route('tenant.channels.qr-codes.toggle', [$channel, $qrCode]) }}" method="POST">
+{{-- Pending join requests --}}
+@if ($pendingMembers->count() > 0)
+    <x-valex.card :title="__('Pending Join Requests') . ' (' . $pendingMembers->count() . ')'">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Email') }}</th><th></th></tr></thead>
+                <tbody>
+                    @foreach ($pendingMembers as $pending)
+                        <tr>
+                            <td>{{ $pending->full_name }}</td>
+                            <td class="text-muted small">{{ $pending->email }}</td>
+                            <td class="text-right text-nowrap">
+                                <form action="{{ route('tenant.channels.join-requests.approve', [$channel, $pending]) }}" method="POST" class="d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-{{ $qrCode->is_active ? 'pause' : 'play' }}"></i>
-                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-success"><i class="fe fe-check"></i> {{ __('Approve') }}</button>
                                 </form>
-                                <form action="{{ route('tenant.channels.qr-codes.destroy', [$channel, $qrCode]) }}" method="POST" onsubmit="return confirm('Delete this QR code?')">
+                                <form action="{{ route('tenant.channels.join-requests.reject', [$channel, $pending]) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Reject this join request?') }}')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-x"></i> {{ __('Reject') }}</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </x-valex.card>
+@endif
+
+{{-- Members --}}
+<x-valex.card :title="__('Members') . ' (' . $members->count() . ')'">
+    <x-slot:actions>
+        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#inviteMemberModal"><i class="fe fe-user-plus"></i> {{ __('Invite Member') }}</button>
+    </x-slot:actions>
+
+    @if ($members->count() > 0)
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Email') }}</th><th>{{ __('Role') }}</th><th>{{ __('Joined') }}</th><th></th></tr></thead>
+                <tbody>
+                    @foreach ($members as $member)
+                        <tr>
+                            <td>{{ $member->full_name }}</td>
+                            <td class="text-muted small">{{ $member->email }}</td>
+                            <td>
+                                <form action="{{ route('tenant.channels.members.update', [$channel, $member]) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <select name="role" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+                                        <option value="member" @selected($member->pivot->role === 'member')>{{ __('Staff') }}</option>
+                                        <option value="moderator" @selected($member->pivot->role === 'moderator')>{{ __('Moderator') }}</option>
+                                        <option value="admin" @selected($member->pivot->role === 'admin')>{{ __('Manager') }}</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td class="text-muted small">{{ $member->pivot->joined_at ? \Illuminate\Support\Carbon::parse($member->pivot->joined_at)->format('M d, Y') : '—' }}</td>
+                            <td class="text-right">
+                                <form action="{{ route('tenant.channels.members.destroy', [$channel, $member]) }}" method="POST" onsubmit="return confirm('{{ __('Remove this member from the channel?') }}')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-x"></i> {{ __('Remove') }}</button>
                                 </form>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div style="background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--space-6); text-align: center;">
-                <p style="color: var(--text-secondary); margin: 0;">No QR codes yet. Generate one to let guests scan their way into this channel.</p>
-            </div>
-        @endif
-    </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <p class="text-muted text-center mb-0">{{ __('No members yet. Invite someone to get started.') }}</p>
+    @endif
+</x-valex.card>
 
-    <!-- Invite Member Modal -->
-    <div class="modal fade" id="inviteMemberModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="{{ route('tenant.channels.members.store', $channel) }}" method="POST">
-                    @csrf
-                    <div class="modal-header">
-                        <h5 class="modal-title"><i class="bi bi-person-plus"></i> Invite Member</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="text-muted small">Enter the email of any user — if they don't have an account yet, one will be created for them automatically.</p>
-                        <div class="mb-3">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+{{-- QR codes --}}
+<x-valex.card :title="__('QR Codes') . ' (' . $qrCodes->count() . ')'">
+    <x-slot:actions>
+        <form action="{{ route('tenant.channels.qr-codes.store', $channel) }}" method="POST" class="form-inline">
+            @csrf
+            <input type="text" name="label" class="form-control form-control-sm mx-2" placeholder="{{ __('Label (optional)') }}">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fe fe-plus"></i> {{ __('Generate QR') }}</button>
+        </form>
+    </x-slot:actions>
+
+    @if ($qrCodes->count() > 0)
+        <div class="row">
+            @foreach ($qrCodes as $qrCode)
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card h-100 text-center p-3 mb-0">
+                        <img src="data:image/svg+xml;base64,{{ $qrCode->preview_image }}" alt="QR code" class="mx-auto mb-1" style="width: 160px; height: 160px;">
+                        <div class="text-muted small text-break mb-1">{{ $qrCode->url }}</div>
+                        <div class="font-weight-bold small text-truncate">{{ $qrCode->label ?? __('Untitled QR') }}</div>
+                        <div class="text-muted small mb-2">
+                            {{ $qrCode->scan_count }} {{ __('scans') }} &middot;
+                            <x-valex.badge :variant="$qrCode->is_active ? 'success' : 'secondary'">{{ $qrCode->is_active ? __('Active') : __('Inactive') }}</x-valex.badge>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">First Name</label>
-                                <input type="text" name="first_name" class="form-control" placeholder="Optional, if new user">
+                        <div class="d-flex justify-content-center">
+                            <a href="{{ route('tenant.channels.qr-codes.download', [$channel, $qrCode]) }}" class="btn btn-sm btn-outline-primary mx-1"><i class="fe fe-download"></i></a>
+                            <form action="{{ route('tenant.channels.qr-codes.toggle', [$channel, $qrCode]) }}" method="POST" class="mx-1">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fe fe-{{ $qrCode->is_active ? 'pause' : 'play' }}"></i></button>
+                            </form>
+                            <form action="{{ route('tenant.channels.qr-codes.destroy', [$channel, $qrCode]) }}" method="POST" class="mx-1" onsubmit="return confirm('{{ __('Delete this QR code?') }}')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @else
+        <p class="text-muted text-center mb-0">{{ __('No QR codes yet. Generate one to let guests scan their way into this channel.') }}</p>
+    @endif
+</x-valex.card>
+
+{{-- Posts --}}
+<h5 class="mb-3"><i class="fe fe-file-text"></i> {{ __('Posts in this Channel') }}</h5>
+@php $channelPosts = $channel->posts()->latest('published_at')->get(); @endphp
+@if ($channelPosts->count() > 0)
+    <div class="row">
+        @foreach ($channelPosts as $post)
+            <div class="col-md-6 col-xl-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="avatar avatar-md brround bg-primary mx-2">{{ $post->author->initials }}</span>
+                            <div>
+                                <div class="font-weight-bold">{{ $post->author->full_name }}</div>
+                                <small class="text-muted">{{ $post->published_at?->diffForHumans() ?? __('Not published') }}</small>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Last Name</label>
-                                <input type="text" name="last_name" class="form-control" placeholder="Optional, if new user">
-                            </div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">Role</label>
-                            <select name="role" class="form-select" required>
-                                <option value="member">Staff — can post</option>
-                                <option value="moderator">Moderator — moderates content</option>
-                                <option value="admin">Manager — full channel control</option>
-                            </select>
-                        </div>
+                        <p class="text-muted mb-0">{{ Str::limit($post->body, 200) }}</p>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> Add to Channel
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
+        @endforeach
+    </div>
+@else
+    <x-valex.empty-state :title="__('No Posts Yet')" :message="__('Start by creating the first post in this channel')" icon="inbox">
+        <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success mt-3"><i class="fe fe-plus-circle"></i> {{ __('Create First Post') }}</a>
+    </x-valex.empty-state>
+@endif
+
+{{-- Invite member modal --}}
+<div class="modal fade" id="inviteMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('tenant.channels.members.store', $channel) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fe fe-user-plus"></i> {{ __('Invite Member') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">{{ __('Enter the email of any user — if they don\'t have an account yet, one will be created for them automatically.') }}</p>
+                    <div class="form-group">
+                        <label>{{ __('Email') }} <span class="tx-danger">*</span></label>
+                        <input type="email" name="email" class="form-control" required placeholder="name@example.com">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group"><label>{{ __('First Name') }}</label><input type="text" name="first_name" class="form-control" placeholder="{{ __('Optional, if new user') }}"></div>
+                        <div class="col-md-6 form-group"><label>{{ __('Last Name') }}</label><input type="text" name="last_name" class="form-control" placeholder="{{ __('Optional, if new user') }}"></div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>{{ __('Role') }}</label>
+                        <select name="role" class="form-control" required>
+                            <option value="member">{{ __('Staff — can post') }}</option>
+                            <option value="moderator">{{ __('Moderator — moderates content') }}</option>
+                            <option value="admin">{{ __('Manager — full channel control') }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary"><i class="fe fe-check"></i> {{ __('Add to Channel') }}</button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <!-- Posts Section -->
-    <div style="margin-top: var(--space-8);">
-        <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin-bottom: var(--space-4); color: var(--text-primary);">
-            <i class="bi bi-newspaper"></i> Posts in this Channel
-        </h2>
-
-        @if($channel->posts()->count() > 0)
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: var(--space-4);">
-                @foreach($channel->posts()->latest('published_at')->get() as $post)
-                    <div style="background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--space-4);">
-                        <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
-                            <div style="width: 40px; height: 40px; border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--primary-500), var(--secondary-500)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: var(--text-sm);">
-                                {{ $post->author->initials }}
-                            </div>
-                            <div style="flex: 1;">
-                                <h4 style="margin: 0; font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary);">
-                                    {{ $post->author->full_name }}
-                                </h4>
-                                <small style="color: var(--text-tertiary);">
-                                    {{ $post->published_at?->diffForHumans() ?? 'Not published' }}
-                                </small>
-                            </div>
-                        </div>
-
-                            <p style="margin: 0 0 var(--space-3); color: var(--text-secondary); font-size: var(--text-sm); line-height: var(--line-height-relaxed);">
-                            {{ Str::limit($post->body, 200) }}
-                        </p>
-
-                        <div style="display: flex; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-tertiary);">
-                            <span><i class="bi bi-hand-thumbs-up"></i> Likes</span>
-                            <span><i class="bi bi-chat"></i> Comments</span>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div style="background: var(--surface-bg); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: var(--space-6); text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: var(--space-3);">📭</div>
-                <h4 style="color: var(--text-primary); margin: 0 0 var(--space-2) 0;">No Posts Yet</h4>
-                <p style="color: var(--text-secondary); margin: 0 0 var(--space-4) 0;">Start by creating the first post in this channel</p>
-                <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
-                    <i class="bi bi-plus-circle"></i> Create First Post
-                </a>
-            </div>
-        @endif
-    </div>
+</div>
 @endsection

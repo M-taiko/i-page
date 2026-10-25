@@ -17,6 +17,8 @@ class Organization extends Model
 
     protected $fillable = [
         'organization_template_id',
+        'design_key',
+        'design_options',
         'name',
         'slug',
         'description',
@@ -36,6 +38,7 @@ class Organization extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'max_channels' => 'integer',
+        'design_options' => 'array',
     ];
 
     public function isActive(): bool

@@ -373,6 +373,83 @@ Columns updated on model changes (observer or event listener). Detailed analytic
 
 ---
 
+## ADR-011: Adopt the Valex Theme for Authenticated Dashboards
+
+**Date**: 2026-10-25
+
+**Title**: Valex (Bootstrap 4) Becomes the UI Shell for All Authenticated Pages
+
+**Status**: Accepted
+
+**Decision**: The licensed Valex admin theme replaces the `app-modern` shell (Bootstrap 5 via CDN) for authenticated pages: `/admin/*`, `/tenant/*`, `/organizations/*`, settings, users, groups, posts, tickets, audience segments, organization dashboards. Public guest-facing pages (`/browse*`, `/qr/*`, `/otp/*`, welcome, login/register) keep their current Guest-First mobile shell until a separate decision.
+
+**Implementation**:
+- Theme assets are copied (only the plugins in use) to `public/assets/valex/`. The source folder `Valex Dashboard/` is not served and not deployed.
+- New layout `layouts/valex.blade.php` with partials for head, sidebar, header, footer and scripts. The permission-based, multi-organization sidebar logic is ported from `sidebar-modern`.
+- Direction: LTR loads `css/`, RTL loads `css-rtl/` (Valex ships separate builds), selected from the user's language as today (ADR-010).
+- Dark mode: driven by Valex `style-dark.css` / `skin-modes.css`, still persisted in `users.theme` (ADR-009).
+- Blade components (`card-modern`, `stat-card`, `btn`, `badge`, `form-input`, ...) are rewritten to emit Valex markup, so views consume components rather than raw theme classes.
+- Migration is incremental per route group; old and new layouts coexist until the last group is moved, then dead layouts are removed.
+
+**Rationale**:
+1. The owner purchased the theme and wants a single consistent premium look.
+2. Reusing a finished theme is cheaper than extending the hand-built design system.
+3. Component wrappers keep views decoupled from the theme (white-label readiness, see [[20_WHITE_LABEL.md]]).
+
+**Consequences**:
+- **Positive**: Consistent, polished dashboards; ready-made RTL, dark mode, tables, charts.
+- **Negative**: Valex is Bootstrap 4 and jQuery based while the app used Bootstrap 5, so every migrated view needs class/attribute conversion (`data-bs-*` to `data-*`, `ms/me` to `ml/mr`, `form-select` to `custom-select`, `badge bg-*` to `badge-*`). The theme's Bootstrap 4 is end-of-life, so it must not leak into guest pages or be used for new public-facing UI.
+- Theme license terms must be respected (no redistribution of the theme source).
+
+**Related**: [[10_UI_DESIGN_SYSTEM.md]], [[12_COMPONENT_LIBRARY.md]], [[29_DESIGN_TOKENS.md]], [[27_FEATURE_SPECIFICATIONS.md]]
+
+---
+
+## ADR-012: Organization Design Templates (block-based public page designs)
+
+**Date**: 2026-10-25
+
+**Title**: Each organization can choose an industry-specific Design Template for its public page
+
+**Status**: Accepted
+
+**Decision**: A *design* is an ordered list of reusable *blocks* (hero, channels, posts, about) defined in `config/designs.php`, grouped by the organization template's `industry_key`. An organization stores `design_key` (+ `design_options` JSON for colors/toggles). When `design_key` is set, `/browse/org/{id}` renders through a dedicated Valex-based layout (`layouts.guest-valex`); when null, the existing page is rendered unchanged.
+
+**Rationale**:
+1. Valex components need Bootstrap 4, jQuery and Valex CSS, which cannot coexist with the guest `mobile-shell` layout (ADR-011); a separate layout isolates them.
+2. Designs as data keep them reusable, configurable and cheap to add (White Label, see [[20_WHITE_LABEL.md]]); no page is duplicated per industry.
+3. Null `design_key` keeps every existing organization working with zero migration risk.
+
+**Consequences**:
+- **Positive**: Different look per industry; admins can change design without code; new designs are configuration.
+- **Negative**: Two public rendering paths (classic + Valex) until the classic page is retired; Valex CSS adds weight on the designed page (only loaded there).
+
+**Implementation**: `organizations.design_key`, `organizations.design_options`; `App\Support\Designs`; blocks in `resources/views/guest/valex/blocks/`; switch in `GuestController::organizationDetail`.
+
+**Addendum (channels)**: Channels and sub-channels can also choose a design (`channels.design_key`, `channels.design_options`). Channel designs are industry-agnostic (`config/designs.php` → `channels`) and reuse the same blocks. Resolution order: the channel's own design, then its parent channel's design, otherwise the classic channel page. Colors fall back channel option → organization option → design accent.
+
+**Related**: [[12_COMPONENT_LIBRARY.md]], [[27_FEATURE_SPECIFICATIONS.md]], ADR-011
+
+---
+
+## ADR-013: Post Formats (interactive post types)
+
+**Date**: 2026-10-25
+
+**Title**: Posts have a format, a card style, a badge and per-format interactions
+
+**Status**: Accepted
+
+**Decision**: A post has a `post_format` (standard, gallery, poll, event, rating) that decides its form fields, rendering and interaction; plus a `card_style`, an optional `badge_key`/`badge_label`, the existing `priority`, and a per-post set of enabled reactions. Formats, card styles, badges and reaction sets are defined in `config/posts.php` (data, not code). Format-specific settings live in `posts.options` (JSON); interactions are stored in dedicated tables (`post_poll_options`, `post_poll_votes`, `post_rsvps`, `post_ratings`); reactions reuse `reactions.type`; gallery images reuse `media` (`usage_type = gallery`).
+
+**Rationale**: New formats become configuration plus one widget partial; interactions need relational integrity (one vote per user, capacity limits) so they are not stored in JSON; existing posts remain valid (`standard`, `classic`).
+
+**Consequences**: Positive: richer engagement without new modules per feature; negative: every place that renders a post must use the shared partials (`posts/_badge`, `posts/_media`, `posts/_widgets`).
+
+**Related**: [[27_FEATURE_SPECIFICATIONS.md]], [[12_COMPONENT_LIBRARY.md]], ADR-012
+
+---
+
 ## Decision Template (Use for Future ADRs)
 
 **Date**: YYYY-MM-DD

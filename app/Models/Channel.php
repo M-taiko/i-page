@@ -28,10 +28,13 @@ class Channel extends Model
         'share_url',
         'organization_id',
         'brand_id',
+        'design_key',
+        'design_options',
     ];
 
     protected $casts = [
         'audience_count' => 'integer',
+        'design_options' => 'array',
     ];
 
     public function organization(): BelongsTo

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Channel;
 use App\Models\Organization;
+use App\Support\Designs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -32,7 +33,7 @@ class AdminChannelController extends Controller
             'type' => $validated['type'],
             'status' => 'active',
             'admin_user_id' => auth()->id(),
-        ]);
+        ] + Designs::channelAttributes($validated));
 
         if (!empty($validated['parent_channel_id'])) {
             $channel->parentChannels()->sync([$validated['parent_channel_id']]);
@@ -66,7 +67,7 @@ class AdminChannelController extends Controller
             'brand_id' => $validated['brand_id'],
             'name' => $validated['name'],
             'type' => $validated['type'],
-        ]);
+        ] + Designs::channelAttributes($validated));
 
         $channel->parentChannels()->sync(
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
@@ -102,6 +103,6 @@ class AdminChannelController extends Controller
                 \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
                 \Illuminate\Validation\Rule::notIn($channel ? [$channel->id] : []),
             ],
-        ]);
+        ] + Designs::channelRules());
     }
 }

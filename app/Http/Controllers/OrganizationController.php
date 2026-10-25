@@ -8,6 +8,7 @@ use App\Models\OrganizationMembership;
 use App\Models\OrganizationTemplate;
 use App\Models\User;
 use App\Services\OrganizationTemplateService;
+use App\Support\Designs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -26,7 +27,9 @@ class OrganizationController extends Controller
     public function create()
     {
         $templates = OrganizationTemplate::where('is_active', true)->orderBy('name')->get();
-        return view('admin.organizations.create', compact('templates'));
+        $designs = Designs::all();
+
+        return view('admin.organizations.create', compact('templates', 'designs'));
     }
 
     public function store(Request $request)
@@ -38,13 +41,21 @@ class OrganizationController extends Controller
             'country' => 'nullable|string|max:100',
             'max_channels' => 'required|integer|min:1|max:100',
             'organization_template_id' => 'nullable|exists:organization_templates,id',
+            'design_key' => 'nullable|string|max:60',
             'owner_first_name' => 'required|string|max:255',
             'owner_last_name' => 'required|string|max:255',
             'owner_email' => 'required|email|unique:users,email',
             'owner_password' => 'required|string|min:8|confirmed',
         ]);
 
+        // A design template must belong to the chosen organization template's industry (ADR-012).
+        $selectedTemplate = OrganizationTemplate::find($validated['organization_template_id'] ?? null);
+        if (! empty($validated['design_key']) && ! Designs::validFor($selectedTemplate, $validated['design_key'])) {
+            return back()->withInput()->withErrors(['design_key' => __('The selected design does not match the organization template.')]);
+        }
+
         $organization = Organization::create([
+            'design_key' => $validated['design_key'] ?? null,
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'description' => $validated['description'],

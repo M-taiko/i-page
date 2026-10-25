@@ -24,12 +24,7 @@ use Illuminate\Support\Facades\Auth;
 
 // Super Admin Dashboard
 Route::middleware(['auth'])->group(function () {
-    Route::get('/admin-dashboard', function () {
-        if (!auth()->user()->hasRole('super_admin')) {
-            abort(403);
-        }
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    Route::get('/admin-dashboard', \App\Http\Controllers\AdminDashboardController::class)->name('admin.dashboard');
 });
 
 // Homepage Route (Redirect based on auth status)
@@ -118,6 +113,12 @@ Route::middleware('auth')->prefix('posts')->name('posts.')->group(function () {
     Route::post('comments/{comment}/reject', [\App\Http\Controllers\CommentController::class, 'reject'])->name('comments.reject');
     Route::delete('comments/{comment}', [\App\Http\Controllers\CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('{post}/like', [\App\Http\Controllers\ReactionController::class, 'like'])->name('like');
+
+    // Post format interactions (ADR-013)
+    Route::post('{post}/react', [\App\Http\Controllers\PostInteractionController::class, 'react'])->name('react');
+    Route::post('{post}/vote', [\App\Http\Controllers\PostInteractionController::class, 'vote'])->name('vote');
+    Route::post('{post}/rsvp', [\App\Http\Controllers\PostInteractionController::class, 'rsvp'])->name('rsvp');
+    Route::post('{post}/rate', [\App\Http\Controllers\PostInteractionController::class, 'rate'])->name('rate');
 });
 
 // Follow Routes (organizations + brands)
@@ -169,6 +170,15 @@ Route::middleware('auth')->prefix('organizations/{organization}/membership')->na
 // LAYER 1 — Super Admin (I-PAGE platform owner)
 // ============================================================
 Route::middleware(['auth', 'verified', 'CheckRole:super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Platform CRM (read-only oversight)
+    Route::prefix('crm')->name('crm.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\AdminCrmController::class, 'index'])->name('index');
+        Route::get('organizations/{organization}', [\App\Http\Controllers\AdminCrmController::class, 'organization'])->name('organization');
+        Route::get('people', [\App\Http\Controllers\AdminCrmController::class, 'people'])->name('people');
+        Route::get('people/{user}', [\App\Http\Controllers\AdminCrmController::class, 'person'])->name('person');
+        Route::get('activity', [\App\Http\Controllers\AdminCrmController::class, 'activity'])->name('activity');
+    });
+
     Route::resource('organizations', OrganizationController::class);
 
     // Add a member (admin/manager/moderator/staff) to any organization
@@ -267,7 +277,13 @@ Route::middleware(['auth', 'verified', 'organization.active'])->prefix('organiza
     // Organization Dashboard & Settings
     Route::get('dashboard', [\App\Http\Controllers\TenantOrganizationController::class, 'dashboard'])->name('dashboard');
     Route::get('settings', [\App\Http\Controllers\TenantOrganizationController::class, 'settings'])->name('settings');
+
+    // Organization CRM
+    Route::get('crm', [\App\Http\Controllers\TenantCrmController::class, 'contacts'])->name('crm.contacts');
+    Route::get('crm/activity', [\App\Http\Controllers\TenantCrmController::class, 'activity'])->name('crm.activity');
+    Route::get('crm/contacts/{user}', [\App\Http\Controllers\TenantCrmController::class, 'contact'])->name('crm.contact');
     Route::put('{organization}', [\App\Http\Controllers\TenantOrganizationController::class, 'update'])->name('update');
+    Route::put('{organization}/design', [\App\Http\Controllers\TenantOrganizationController::class, 'updateDesign'])->name('design.update');
 
     // Brand Management
     Route::get('{organization}/brands', [\App\Http\Controllers\BrandController::class, 'index'])->name('brands.index');

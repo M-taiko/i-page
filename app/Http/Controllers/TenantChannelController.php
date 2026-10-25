@@ -100,7 +100,7 @@ class TenantChannelController extends Controller
                 'integer',
                 \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
             ],
-        ]);
+        ] + \App\Support\Designs::channelRules());
 
         $channel = Channel::create([
             'name' => $validated['name'],
@@ -110,7 +110,7 @@ class TenantChannelController extends Controller
             'organization_id' => $organization->id,
             'status' => 'active',
             'admin_user_id' => auth()->id(),
-        ]);
+        ] + \App\Support\Designs::channelAttributes($validated));
 
         if (!empty($validated['parent_channel_id'])) {
             $channel->parentChannels()->sync([$validated['parent_channel_id']]);
@@ -192,13 +192,13 @@ class TenantChannelController extends Controller
                 \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
                 \Illuminate\Validation\Rule::notIn([$channel->id]),
             ],
-        ]);
+        ] + \App\Support\Designs::channelRules());
 
         $channel->update([
             'name' => $validated['name'],
             'type' => $validated['type'],
             'brand_id' => $validated['brand_id'],
-        ]);
+        ] + \App\Support\Designs::channelAttributes($validated));
 
         $channel->parentChannels()->sync(
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []

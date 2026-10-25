@@ -102,30 +102,9 @@
             </div>
         </div>
 
-        @if($post->title)
-            <div class="post-title-text">{{ $post->title }}</div>
-        @endif
-        <div class="post-body-text">{{ $post->body }}</div>
-
-        @if($post->image_path)
-            <img src="{{ \Illuminate\Support\Facades\Storage::url($post->image_path) }}" alt="" class="post-image">
-        @endif
+        @include('posts.partials._content', ['post' => $post, 'showWidgets' => true, 'flash' => true])
 
         <div class="post-footer">
-            @auth
-                <form action="{{ route('posts.like', $post->id) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
-                        <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
-                        <span>{{ $likeCount }}</span>
-                    </button>
-                </form>
-            @else
-                <button type="button" class="post-action" onclick="requireSignIn()">
-                    <i class="bi bi-hand-thumbs-up"></i>
-                    <span>{{ $likeCount }}</span>
-                </button>
-            @endauth
             <div class="post-action" style="cursor: default;">
                 <i class="bi bi-chat"></i>
                 <span>{{ $comments->count() }}</span>

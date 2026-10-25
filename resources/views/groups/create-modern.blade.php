@@ -1,58 +1,25 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
 
 @section('title', __('Create Group'))
 
+@section('page-header')
+    <x-valex.page-header :title="__('Create Group')" :subtitle="__('Add a new group to organize your team')" />
+@endsection
+
 @section('content')
-<!-- Page Header -->
-<div class="page-header">
-    <div class="page-header-info">
-        <h1>{{ __('Create Group') }}</h1>
-        <p>{{ __('Add a new group to organize your team') }}</p>
+<div class="row">
+    <div class="col-lg-7">
+        <x-valex.card :title="__('New Group')">
+            <form action="{{ route('dashboard.groups.store', session('current_organization_id')) }}" method="POST">
+                @csrf
+                <x-valex.input name="name" :label="__('Group Name')" required :placeholder="__('Enter group name')" />
+                <x-valex.textarea name="description" :label="__('Description')" :placeholder="__('Optional description')" />
+                <x-valex.select name="branch_id" :label="__('Branch')" required :placeholder="__('— Select Branch —')" :options="$branches->pluck('name', 'id')->all()" />
+
+                <button type="submit" class="btn btn-primary">{{ __('Create Group') }}</button>
+                <a href="{{ route('dashboard.groups.index', session('current_organization_id')) }}" class="btn btn-light">{{ __('Cancel') }}</a>
+            </form>
+        </x-valex.card>
     </div>
-</div>
-
-<div style="max-width: 600px;">
-    <x-card-modern title="{{ __('New Group') }}" icon="diagram-3" elevated>
-        <form action="{{ route('dashboard.groups.store', session('current_organization_id')) }}" method="POST">
-            @csrf
-
-            <x-form-input
-                name="name"
-                label="{{ __('Group Name') }}"
-                placeholder="{{ __('Enter group name') }}"
-                icon="diagram-3"
-                required
-                error="{{ $errors->first('name') }}"
-            />
-
-            <div class="form-group">
-                <label class="form-label">{{ __('Description') }}</label>
-                <textarea name="description" class="form-input @error('description') is-invalid @enderror" rows="4" placeholder="{{ __('Optional description') }}">{{ old('description') }}</textarea>
-                @error('description')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">{{ __('Branch') }}<span style="color: var(--danger-500);">*</span></label>
-                <select name="branch_id" class="form-input @error('branch_id') is-invalid @enderror" required>
-                    <option value="">{{ __('— Select Branch —') }}</option>
-                    @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
-                            {{ $branch->name }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('branch_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <div style="margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--surface-border); display: flex; gap: var(--space-3);">
-                <x-btn type="submit" variant="primary">{{ __('Create Group') }}</x-btn>
-                <x-btn href="{{ route('dashboard.groups.index', session('current_organization_id')) }}" variant="outline">{{ __('Cancel') }}</x-btn>
-            </div>
-        </form>
-    </x-card-modern>
 </div>
 @endsection

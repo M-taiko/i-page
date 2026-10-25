@@ -1,187 +1,69 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
 
-@section('title', 'View Channels')
+@section('title', __('View Channels'))
+
+@section('page-header')
+    <x-valex.page-header :title="__('All Channels')" :subtitle="__('View and manage all channels in your organization')">
+        <x-slot:actions>
+            <a href="{{ route('dashboard.channels.create', $organization) }}" class="btn btn-primary"><i class="fe fe-plus-circle"></i> {{ __('Create New Channel') }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
 
 @section('content')
-    <style>
-        .channel-card {
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            margin-bottom: 1rem;
-        }
-        .channel-card:hover {
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            border-color: var(--primary-600);
-        }
-        .channel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 1rem;
-            gap: 1rem;
-        }
-        .channel-title h4 {
-            margin: 0 0 0.25rem 0;
-            font-weight: 700;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-        }
-        .channel-desc {
-            font-size: 0.9rem;
-            color: var(--text-tertiary);
-            margin: 0;
-        }
-        .channel-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin: 1rem 0;
-            padding: 1rem 0;
-            border-top: 1px solid #f3f4f6;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        .channel-stat {
-            text-align: center;
-        }
-        .channel-stat-value {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: var(--primary-600);
-        }
-        .channel-stat-label {
-            font-size: 0.8rem;
-            color: var(--text-tertiary);
-            text-transform: uppercase;
-            margin-top: 0.25rem;
-        }
-        .channel-type {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        .channel-type.public {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        .channel-type.private {
-            background: #fce7f3;
-            color: #be185d;
-        }
-        .channel-actions {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: flex-end;
-            padding-top: 1rem;
-            border-top: 1px solid #f3f4f6;
-            margin-top: 1rem;
-        }
-        @media (max-width: 768px) {
-            .channel-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
-
-    <div class="page-header mb-4">
-        <div class="page-header-top">
-            <div class="page-header-info">
-                <h1>📺 All Channels</h1>
-                <p>View and manage all channels in your organization</p>
-            </div>
-            <div class="page-header-actions">
-                <a href="{{ route('dashboard.channels.create', $organization) }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Create New Channel
-                </a>
-            </div>
+<x-valex.card>
+    <form method="GET" action="{{ route('dashboard.channels.index', $organization) }}" class="form-row align-items-center">
+        <div class="col-md-6 mb-2 mb-md-0">
+            <input type="text" name="q" class="form-control" placeholder="{{ __('Search channels by name...') }}" value="{{ request('q') }}">
         </div>
-    </div>
-
-    <!-- Search Bar -->
-    <div style="margin-bottom: 2rem;">
-        <form method="GET" action="{{ route('dashboard.channels.index', $organization) }}" style="display: flex; gap: var(--space-3);">
-            <input type="text" name="q" placeholder="Search channels by name..." value="{{ request('q') }}" style="flex: 1; padding: var(--space-3) var(--space-4); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); font-size: var(--text-sm); background-color: var(--surface-bg); color: var(--text-primary);">
-            <select name="type" style="padding: var(--space-3) var(--space-4); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); font-size: var(--text-sm); background-color: var(--surface-bg); color: var(--text-primary);">
-                <option value="">All Types</option>
-                <option value="public" {{ request('type') === 'public' ? 'selected' : '' }}>Public Only</option>
-                <option value="private" {{ request('type') === 'private' ? 'selected' : '' }}>Private Only</option>
+        <div class="col-md-3 mb-2 mb-md-0">
+            <select name="type" class="form-control">
+                <option value="">{{ __('All Types') }}</option>
+                <option value="public" @selected(request('type') === 'public')>{{ __('Public Only') }}</option>
+                <option value="private" @selected(request('type') === 'private')>{{ __('Private Only') }}</option>
             </select>
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search"></i> Search
-            </button>
-        </form>
-    </div>
+        </div>
+        <div class="col-md-3"><button type="submit" class="btn btn-primary btn-block"><i class="fe fe-search"></i> {{ __('Search') }}</button></div>
+    </form>
+</x-valex.card>
 
-    @if(session('success'))
-        <x-alert-modern type="success" dismissible>
-            {{ session('success') }}
-        </x-alert-modern>
-    @endif
-
-    <!-- Channels List -->
-    @forelse($channels as $channel)
-        <div class="channel-card">
-            <div class="channel-header">
-                <div class="channel-title">
-                    <h4>{{ $channel->name }}</h4>
-                    <p class="channel-desc">{{ $channel->description ?? 'No description' }}</p>
+@forelse ($channels as $channel)
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h5 class="mb-1">{{ $channel->name }}</h5>
+                    <p class="text-muted mb-0">{{ $channel->description ?? __('No description') }}</p>
                 </div>
-                <span class="channel-type {{ $channel->type }}">
-                    {{ $channel->type === 'public' ? '🌍 Public' : '🔒 Private' }}
-                </span>
-            </div>
-
-            <div class="channel-stats">
-                <div class="channel-stat">
-                    <div class="channel-stat-value">{{ $channel->users()->count() }}</div>
-                    <div class="channel-stat-label">Members</div>
-                </div>
-                <div class="channel-stat">
-                    <div class="channel-stat-value">{{ $channel->posts()->count() }}</div>
-                    <div class="channel-stat-label">Posts</div>
-                </div>
-                <div class="channel-stat">
-                    <div class="channel-stat-value">{{ $channel->created_at->diffForHumans(parts: 1, syntax: 'short') }}</div>
-                    <div class="channel-stat-label">Created</div>
+                <div>
+                    <x-valex.badge :variant="$channel->type === 'public' ? 'success' : 'pink'"><i class="fe fe-{{ $channel->type === 'public' ? 'globe' : 'lock' }}"></i> {{ $channel->type === 'public' ? __('Public') : __('Private') }}</x-valex.badge>
                 </div>
             </div>
 
-            <div class="channel-actions">
-                <a href="{{ route('dashboard.channels.show', [$organization, $channel->id]) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-eye"></i> View
-                </a>
-                <a href="{{ route('dashboard.channels.edit', [$organization, $channel->id]) }}" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-pencil"></i> Edit
-                </a>
-                <form action="{{ route('dashboard.channels.destroy', [$organization, $channel->id]) }}" method="POST" style="display: inline;">
+            <div class="row text-center border-top border-bottom my-3 py-3">
+                <div class="col-4"><h4 class="text-primary mb-0">{{ $channel->users()->count() }}</h4><small class="text-muted text-uppercase">{{ __('Members') }}</small></div>
+                <div class="col-4"><h4 class="text-primary mb-0">{{ $channel->posts()->count() }}</h4><small class="text-muted text-uppercase">{{ __('Posts') }}</small></div>
+                <div class="col-4"><h4 class="text-primary mb-0">{{ $channel->created_at->diffForHumans(parts: 1, syntax: 'short') }}</h4><small class="text-muted text-uppercase">{{ __('Created') }}</small></div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <a href="{{ route('dashboard.channels.show', [$organization, $channel->id]) }}" class="btn btn-sm btn-outline-primary mx-1"><i class="fe fe-eye"></i> {{ __('View') }}</a>
+                <a href="{{ route('dashboard.channels.edit', [$organization, $channel->id]) }}" class="btn btn-sm btn-outline-warning mx-1"><i class="fe fe-edit"></i> {{ __('Edit') }}</a>
+                <form action="{{ route('dashboard.channels.destroy', [$organization, $channel->id]) }}" method="POST" class="d-inline">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this channel?')">
-                        <i class="bi bi-trash"></i> Delete
-                    </button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('{{ __('Are you sure you want to delete this channel?') }}')"><i class="fe fe-trash-2"></i> {{ __('Delete') }}</button>
                 </form>
             </div>
         </div>
-    @empty
-        <div class="card text-center py-5">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
-            <h4 class="text-muted">No channels yet</h4>
-            <p class="text-muted mb-3">Create your first channel now</p>
-            <a href="{{ route('dashboard.channels.create', $organization) }}" class="btn btn-primary" style="width: fit-content; margin: 0 auto;">
-                <i class="bi bi-plus-circle"></i> Create First Channel
-            </a>
-        </div>
-    @endforelse
+    </div>
+@empty
+    <x-valex.empty-state :title="__('No channels yet')" :message="__('Create your first channel now')" icon="inbox">
+        <a href="{{ route('dashboard.channels.create', $organization) }}" class="btn btn-primary mt-3"><i class="fe fe-plus-circle"></i> {{ __('Create First Channel') }}</a>
+    </x-valex.empty-state>
+@endforelse
 
-    <!-- Pagination -->
-    @if($channels->hasPages())
-        <nav class="d-flex justify-content-center mt-4">
-            {{ $channels->links() }}
-        </nav>
-    @endif
-
+@if ($channels->hasPages())
+    <div class="d-flex justify-content-center mt-4">{{ $channels->links('pagination::bootstrap-4') }}</div>
+@endif
 @endsection

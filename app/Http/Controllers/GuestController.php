@@ -4,11 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Models\Post;
+use App\Support\Designs;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class GuestController extends Controller
 {
+    /**
+     * The organization's design template, or null for the classic page.
+     * `?preview_design=key` previews another design of the same industry, for organization admins only.
+     */
+    private function resolveDesign(Organization $organization): ?array
+    {
+        $industry = $organization->template?->industry_key;
+        $preview = request()->query('preview_design');
+
+        if ($preview && auth()->check() && Gate::allows('update', $organization)) {
+            if ($design = Designs::find($industry, $preview)) {
+                return $design;
+            }
+        }
+
+        return Designs::forOrganization($organization);
+    }
+
     private function recordViews(iterable $posts): void
     {
         if (!auth()->check()) {
@@ -101,6 +121,23 @@ class GuestController extends Controller
         ->withQueryString();
         $this->recordViews($posts);
 
+        // Organizations that picked a design template render through the Valex public layout (ADR-012).
+        if ($design = $this->resolveDesign($organization)) {
+            $channelGroups = $brands->filter(fn ($b) => $b->channels->isNotEmpty())
+                ->map(fn ($b) => ['title' => $b->name, 'channels' => $b->channels])->values()
+                ->when($unbrandedChannels->isNotEmpty(), fn ($c) => $c->push(['title' => __('Other Channels'), 'channels' => $unbrandedChannels]));
+
+            return view('guest.valex.organization', [
+                'organization' => $organization,
+                'design' => $design,
+                'options' => Designs::options($organization, $design),
+                'channelGroups' => $channelGroups,
+                'posts' => $posts,
+                'isFollowing' => auth()->check()
+                    && auth()->user()->followedOrganizations()->where('organization_id', $organization->id)->exists(),
+            ]);
+        }
+
         return view('guest.organization-detail', compact('organization', 'brands', 'unbrandedChannels', 'posts'));
     }
 
@@ -146,6 +183,39 @@ class GuestController extends Controller
             ->where('type', 'public')
             ->orderBy('name')
             ->get();
+
+        // Channels with a design template render through the Valex public layout (ADR-012 addendum).
+        $design = Designs::forChannel($channel);
+        $preview = request()->query('preview_design');
+        if ($preview && auth()->check() && Gate::allows('update', $organization) && ($previewDesign = Designs::findChannel($preview))) {
+            $design = $previewDesign;
+        }
+
+        if ($design) {
+            // A parent channel lists its sub-channels; a sub-channel lists its siblings.
+            $related = ($parentChannel ?? $channel)->childChannels()
+                ->where('type', 'public')
+                ->where('channels.id', '!=', $channel->id)
+                ->withCount('users', 'posts')
+                ->with(['childChannels' => fn ($q) => $q->withCount('users', 'posts')])
+                ->orderBy('name')
+                ->get();
+            $channelGroups = $related->isEmpty()
+                ? collect()
+                : collect([['title' => $parentChannel ? __('Related channels') : __('Sub-channels'), 'channels' => $related]]);
+
+            return view('guest.valex.channel', [
+                'organization' => $organization,
+                'channel' => $channel,
+                'design' => $design,
+                'options' => Designs::channelOptions($channel, $organization, $design),
+                'posts' => $posts,
+                'parentChannel' => $parentChannel,
+                'channelGroups' => $channelGroups,
+                'isSubscribed' => $isSubscribed,
+                'isFavorited' => $isFavorited,
+            ]);
+        }
 
         return view('guest.channel-detail', compact('organization', 'channel', 'posts', 'isSubscribed', 'isFavorited', 'orgChannels', 'parentChannel', 'subChannels'));
     }

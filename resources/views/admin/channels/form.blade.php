@@ -1,93 +1,45 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
+
+@section('title', isset($channel) ? __('Edit Channel') : __('New Channel'))
+
+@section('page-header')
+    <x-valex.page-header :title="isset($channel) ? __('Edit Channel') : __('New Channel')" :subtitle="$organization->name">
+        <x-slot:actions>
+            <a href="{{ route('admin.organizations.show', $organization) }}" class="btn btn-outline-secondary"><i class="fe fe-arrow-left"></i> {{ $organization->name }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
 
 @section('content')
-<div class="container-lg py-4" style="max-width: 640px;">
-    <div class="mb-4">
-        <a href="{{ route('admin.organizations.show', $organization) }}" class="text-decoration-none text-muted">
-            <i class="bi bi-arrow-left"></i> {{ $organization->name }}
-        </a>
-        <h1 class="h3 mt-2">{{ isset($channel) ? __('Edit Channel') : __('New Channel') }}</h1>
-    </div>
-
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-            <form method="POST"
-                  action="{{ isset($channel)
-                        ? route('admin.organizations.channels.update', [$organization, $channel])
-                        : route('admin.organizations.channels.store', $organization) }}">
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <x-valex.card>
+            <form method="POST" action="{{ isset($channel)
+                    ? route('admin.organizations.channels.update', [$organization, $channel])
+                    : route('admin.organizations.channels.store', $organization) }}">
                 @csrf
-                @if (isset($channel))
-                    @method('PUT')
-                @endif
+                @if (isset($channel)) @method('PUT') @endif
 
-                <div class="mb-3">
-                    <label for="brand_id" class="form-label">{{ __('Brand') }}</label>
-                    <select name="brand_id" id="brand_id" class="form-select" required>
-                        <option value="">{{ __('Select a brand') }}</option>
-                        @foreach ($brands as $brand)
-                            <option value="{{ $brand->id }}"
-                                @selected(old('brand_id', $channel->brand_id ?? null) == $brand->id)>
-                                {{ $brand->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @if ($brands->isEmpty())
-                        <small class="text-danger">{{ __('This organization has no active brands yet. Create a brand first.') }}</small>
-                    @endif
-                </div>
+                <x-valex.select name="brand_id" :label="__('Brand')" required :placeholder="__('Select a brand')"
+                    :options="$brands->pluck('name', 'id')->all()" :value="$channel->brand_id ?? null"
+                    :help="$brands->isEmpty() ? __('This organization has no active brands yet. Create a brand first.') : null" />
 
-                <div class="mb-3">
-                    <label for="name" class="form-label">{{ __('Channel Name') }}</label>
-                    <input type="text" name="name" id="name" class="form-control"
-                           value="{{ old('name', $channel->name ?? '') }}" required>
-                </div>
+                <x-valex.input name="name" :label="__('Channel Name')" :value="$channel->name ?? ''" required />
 
-                <div class="mb-3">
-                    <label for="parent_channel_id" class="form-label">{{ __('Parent Channel (optional)') }}</label>
-                    <select name="parent_channel_id" id="parent_channel_id" class="form-select">
-                        <option value="">{{ __('None — this is a top-level channel') }}</option>
-                        @foreach ($parentOptions ?? [] as $option)
-                            <option value="{{ $option->id }}"
-                                @selected(old('parent_channel_id', $currentParentId ?? null) == $option->id)>
-                                {{ $option->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <small class="text-muted">{{ __('Nest this channel under another one — visitors will see it in a popup when they tap the parent channel.') }}</small>
-                </div>
+                <x-valex.select name="parent_channel_id" :label="__('Parent Channel (optional)')"
+                    :placeholder="__('None — this is a top-level channel')"
+                    :options="collect($parentOptions ?? [])->pluck('name', 'id')->all()" :value="$currentParentId ?? null"
+                    :help="__('Nest this channel under another one — visitors will see it in a popup when they tap the parent channel.')" />
 
-                <div class="mb-4">
-                    <label for="type" class="form-label">{{ __('Visibility') }}</label>
-                    <select name="type" id="type" class="form-select" required>
-                        <option value="public" @selected(old('type', $channel->type ?? 'public') === 'public')>
-                            {{ __('Public — browsable without login') }}
-                        </option>
-                        <option value="private" @selected(old('type', $channel->type ?? '') === 'private')>
-                            {{ __('Private — requires login & subscription') }}
-                        </option>
-                    </select>
-                </div>
+                <x-valex.select name="type" :label="__('Visibility')" required :value="$channel->type ?? 'public'"
+                    :options="['public' => __('Public — browsable without login'), 'private' => __('Private — requires login & subscription')]" />
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        {{ isset($channel) ? __('Save Changes') : __('Create Channel') }}
-                    </button>
-                    <a href="{{ route('admin.organizations.show', $organization) }}" class="btn btn-outline-secondary">
-                        {{ __('Cancel') }}
-                    </a>
-                </div>
+                @include('channels._design-fields')
+
+                <button type="submit" class="btn btn-primary">{{ isset($channel) ? __('Save Changes') : __('Create Channel') }}</button>
+                <a href="{{ route('admin.organizations.show', $organization) }}" class="btn btn-light">{{ __('Cancel') }}</a>
             </form>
-        </div>
+        </x-valex.card>
     </div>
 </div>
 @endsection

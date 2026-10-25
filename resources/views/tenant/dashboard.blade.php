@@ -1,106 +1,51 @@
-@extends('layouts.app-modern')
+@extends('layouts.valex')
 
 @section('title', __('Organization Dashboard'))
 
+@section('page-header')
+    <x-valex.page-header :title="$organization->name" :subtitle="__('Manage your organization communications and content')">
+        <x-slot:actions>
+            <a href="{{ route('tenant.channels.create') }}" class="btn btn-primary"><i class="fe fe-plus-circle"></i> {{ __('Create Channel') }}</a>
+        </x-slot:actions>
+    </x-valex.page-header>
+@endsection
+
 @section('content')
-<!-- Page Header -->
-<div class="page-header">
-    <div class="page-header-top">
-        <div class="page-header-info">
-            <h1>{{ $organization->name }}</h1>
-            <p>{{ __('Manage your organization communications and content') }}</p>
-        </div>
-        <div class="page-header-actions">
-            <a href="{{ route('tenant.channels.create') }}" class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
-                <i class="bi bi-plus-circle"></i>
-                <span>{{ __('Create Channel') }}</span>
-            </a>
-        </div>
-    </div>
+<div class="row row-sm">
+    <div class="col-sm-6 col-xl-4"><x-valex.stat-card :title="__('Channels')" :value="$stats['total_channels'] . '/' . $stats['max_channels']" icon="message-circle" variant="primary" /></div>
+    <div class="col-sm-6 col-xl-4"><x-valex.stat-card :title="__('Posts')" :value="$stats['total_posts']" icon="file-text" variant="success" /></div>
+    <div class="col-sm-6 col-xl-4"><x-valex.stat-card :title="__('Team Members')" :value="$stats['total_users']" icon="users" variant="info" /></div>
 </div>
 
-<!-- Statistics Cards -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
-    <x-stat-card
-        title="{{ __('Channels') }}"
-        value="{{ $stats['total_channels'] }}/{{ $stats['max_channels'] }}"
-        icon="chat-dots"
-    />
-    <x-stat-card
-        title="{{ __('Posts') }}"
-        value="{{ $stats['total_posts'] }}"
-        icon="newspaper"
-    />
-    <x-stat-card
-        title="{{ __('Team Members') }}"
-        value="{{ $stats['total_users'] }}"
-        icon="people"
-    />
-</div>
-
-<!-- Recent Posts Section -->
-@if($stats['recent_posts']->count() > 0)
-    <div style="margin-bottom: var(--space-6);">
-        <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);">
-            <i class="bi bi-newspaper" style="font-size: var(--text-2xl); color: var(--primary-600);"></i>
-            <h2 style="margin: 0; font-size: var(--text-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
-                {{ __('Recent Posts') }}
-            </h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4);">
-            @foreach($stats['recent_posts'] as $post)
-                <x-card-modern>
-                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
-                        <div style="width: 40px; height: 40px; border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--primary-500), var(--secondary-500)); display: flex; align-items: center; justify-content: center; color: white; font-weight: var(--font-weight-bold); font-size: var(--text-sm);">
-                            {{ $post->author->initials }}
+@if ($stats['recent_posts']->count() > 0)
+    <h5 class="mb-3"><i class="fe fe-file-text"></i> {{ __('Recent Posts') }}</h5>
+    <div class="row row-sm">
+        @foreach ($stats['recent_posts'] as $post)
+            <div class="col-md-6 col-xl-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="avatar avatar-md brround bg-primary mx-2">{{ $post->author->initials }}</span>
+                            <div>
+                                <div class="font-weight-bold">{{ $post->author->full_name }}</div>
+                                <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
+                            </div>
                         </div>
-                        <div style="flex: 1;">
-                            <h4 style="margin: 0; font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--text-primary);">
-                                {{ $post->author->full_name }}
-                            </h4>
-                            <p style="margin: var(--space-1) 0 0; font-size: var(--text-xs); color: var(--text-tertiary);">
-                                {{ $post->created_at->diffForHumans() }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-primary); line-height: var(--line-height-normal);">
-                        {{ Str::limit($post->body, 120) }}
-                    </p>
-
-                    @if($post->channel)
-                        <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background-color: var(--primary-50); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
-                            <i class="bi bi-chat-dots" style="color: var(--primary-600);"></i>
-                            <span style="font-size: var(--text-xs); font-weight: var(--font-weight-medium); color: var(--primary-700);">
-                                {{ $post->channel->name }}
-                            </span>
-                        </div>
-                    @endif
-
-                    <div style="border-top: 1px solid var(--surface-border); padding-top: var(--space-3); display: flex; gap: var(--space-2);">
-                        @if($post->audience)
-                            <span style="display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); background-color: var(--secondary-50); color: var(--secondary-700); border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--font-weight-medium);">
-                                <i class="bi bi-eye"></i>
-                                {{ ucfirst($post->audience) }}
-                            </span>
+                        <p>{{ Str::limit($post->body, 120) }}</p>
+                        @if ($post->channel)
+                            <x-valex.badge variant="primary"><i class="fe fe-message-circle"></i> {{ $post->channel->name }}</x-valex.badge>
+                        @endif
+                        @if ($post->audience)
+                            <x-valex.badge variant="info"><i class="fe fe-eye"></i> {{ ucfirst($post->audience) }}</x-valex.badge>
                         @endif
                     </div>
-                </x-card-modern>
-            @endforeach
-        </div>
+                </div>
+            </div>
+        @endforeach
     </div>
 @else
-    <x-empty-state-modern
-        title="{{ __('No Posts Yet') }}"
-        message="{{ __('Start by creating your first post to engage with your team.') }}"
-        icon="newspaper"
-    >
-        <a href="{{ route('tenant.channels.create') }}" class="btn btn-primary mt-4" style="text-decoration: none; display: inline-flex; align-items: center; gap: var(--space-2);">
-            <i class="bi bi-plus-circle"></i>
-            <span>{{ __('Create First Channel') }}</span>
-        </a>
-    </x-empty-state-modern>
+    <x-valex.empty-state :title="__('No Posts Yet')" :message="__('Start by creating your first post to engage with your team.')" icon="file-text">
+        <a href="{{ route('tenant.channels.create') }}" class="btn btn-primary mt-3"><i class="fe fe-plus-circle"></i> {{ __('Create First Channel') }}</a>
+    </x-valex.empty-state>
 @endif
-
 @endsection

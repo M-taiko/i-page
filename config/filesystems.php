@@ -41,7 +41,9 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // Relative on purpose: uploaded files must load from whatever host/port the site is served on
+            // (APP_URL is often out of sync with `php artisan serve --port`).
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

@@ -678,25 +678,18 @@
                 @php
                     $postDetailUrl = $isPublic ? route('guest.post-detail', $post->id) : route('posts.show', $post->id);
                 @endphp
-                <a href="{{ $postDetailUrl }}" style="text-decoration: none; color: inherit; display: block;">
-                    @if($post->title)
-                        <div class="post-body" style="font-weight: var(--font-weight-bold); padding-bottom: 0;">{{ $post->title }}</div>
-                    @endif
-                    <div class="post-body">{{ Str::limit($post->body, 280) }}</div>
-
-                    @if($post->image_path)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url($post->image_path) }}" alt="" class="post-image">
-                    @endif
-                </a>
+                @include('posts.partials._content', ['post' => $post, 'limit' => 280, 'url' => $postDetailUrl, 'showWidgets' => $post->hasWidgets()])
 
                 <div class="post-footer">
-                    <form action="{{ route('posts.like', $post->id) }}" method="POST">
+                    @unless ($post->hasWidgets())
+<form action="{{ route('posts.like', $post->id) }}" method="POST">
                         @csrf
                         <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
                             <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
                             <span>{{ $likeCount }}</span>
                         </button>
                     </form>
+@endunless
 
                     <button type="button" class="post-action" onclick="toggleFeedComments(this)">
                         <i class="bi bi-chat"></i>
