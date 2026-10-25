@@ -27,21 +27,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin-dashboard', \App\Http\Controllers\AdminDashboardController::class)->name('admin.dashboard');
 });
 
-// Homepage Route (Redirect based on auth status)
-Route::get('/', function () {
-    if (auth()->check()) {
-        // Super Admin goes to admin dashboard
-        if (auth()->user()->hasRole('super_admin')) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        // Regular users go to feed
-        return redirect()->route('user.feed');
-    }
-
-    // Guests can browse public channels without logging in.
-    return redirect()->route('guest.home');
-})->name('home.index');
+// Public product landing page (docs/27). Signed-in users get a button to their workspace.
+Route::get('/', \App\Http\Controllers\LandingController::class)->name('home.index');
 
 // Public Browse Routes — used by BOTH guests and authenticated Layer 3 users.
 // This is the single organization/channel browsing surface for end users;

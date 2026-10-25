@@ -620,6 +620,28 @@ Define complete specifications for each feature **before** implementation. This 
 - [ ] Posts render the same widgets on the post page and channel feeds
 - [ ] Works in light/dark, RTL/LTR and on mobile
 
+### Feature: Product Landing Page (`/`)
+
+**Status**: In Development
+
+**Purpose**: A public, animated page at the site root that explains i-Page: what it is, how it works, everything built today and the roadmap. It is the first thing a visitor, buyer or investor sees.
+
+**Business Rules**:
+- Served at `/` (route name `home.index`) for everyone; signed-in users see an extra "Open my workspace" button that goes to their role's home (super admin dashboard, organization dashboard or feed). The old automatic redirect at `/` is replaced by this page.
+- Bilingual (Arabic default, English) with a language switch (`?lang=ar|en`, remembered in the session); full RTL/LTR support and dark mode (shares the site's `theme` preference).
+- Content lives in `config/landing.php` (not in the view) so copy can change without touching markup.
+- Live numbers (organizations, public channels, published posts, QR scans) come from the database, cached for 10 minutes; only aggregate counts are exposed, never personal data.
+- "Current" items must describe features that exist; "Roadmap" items come from the documented roadmap (`ENTERPRISE_REVIEW.md`, feature specs) and are labeled Next / Later.
+- Animations are CSS/vanilla JS only (no libraries), and are disabled under `prefers-reduced-motion`.
+
+**Sections**: Hero (rotating industries, animated QR-to-phone demo), live stats (count-up), How it works, Industries marquee, Platform features, Roles, Design system, Roadmap timeline, Principles and technology, Final call to action.
+
+**Acceptance Criteria**:
+- [ ] `/` renders for guests and signed-in users without errors, in both languages
+- [ ] RTL, dark mode and mobile widths work; no horizontal scrolling
+- [ ] Reduced-motion users get a static page
+- [ ] Statistics are aggregate-only and cached
+
 ---
 
 ---
