@@ -1,6 +1,10 @@
 @extends('layouts.mobile-shell')
 
 @section('title', ($post->title ?? Str::limit($post->body, 50)) . ' - i-Page')
+@section('meta_description', \Illuminate\Support\Str::limit($post->summary ?: $post->body, 180))
+@if ($postCover = $post->coverUrl())
+    @section('meta_image', url($postCover))
+@endif
 
 @section('app-bar')
     <button type="button" class="app-bar-icon-btn" onclick="history.back()" aria-label="{{ __('Back') }}">

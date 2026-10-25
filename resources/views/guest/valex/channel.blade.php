@@ -1,6 +1,7 @@
 @extends('layouts.guest-valex', ['primary' => $options['primary_color'], 'secondary' => $options['secondary_color'], 'backUrl' => route('guest.organization-detail', $organization)])
 
 @section('title', $channel->name)
+@section('meta_description', \Illuminate\Support\Str::limit($channel->description ?? __(':channel — updates from :org on i-Page.', ['channel' => $channel->name, 'org' => $organization->name]), 180))
 
 @push('styles')
     <link href="{{ asset('assets/valex/plugins/timeline/css/timeline.min.css') }}" rel="stylesheet">

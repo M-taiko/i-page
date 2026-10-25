@@ -1,6 +1,7 @@
 @extends('layouts.mobile-shell')
 
 @section('title', $channel->name . ' - i-Page')
+@section('meta_description', \Illuminate\Support\Str::limit($channel->description ?? __(':channel — updates from :org on i-Page.', ['channel' => $channel->name, 'org' => $organization->name]), 180))
 
 @section('app-bar')
     <a href="{{ route('guest.organization-detail', $organization) }}" class="app-bar-icon-btn" aria-label="{{ __('Back') }}">

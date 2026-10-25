@@ -1,6 +1,13 @@
 @extends('layouts.guest-valex', ['primary' => $options['primary_color'], 'secondary' => $options['secondary_color']])
 
 @section('title', $organization->name)
+@section('meta_description', \Illuminate\Support\Str::limit($organization->description ?: __('Follow :name on i-Page for news, announcements and updates.', ['name' => $organization->name]), 180))
+@php
+    $ogCover = \App\Support\Designs::coverPaths($organization->design_options ?? [])[0] ?? null;
+@endphp
+@if ($ogCover)
+    @section('meta_image', url(\Illuminate\Support\Facades\Storage::url($ogCover)))
+@endif
 
 @push('styles')
     <link href="{{ asset('assets/valex/plugins/timeline/css/timeline.min.css') }}" rel="stylesheet">

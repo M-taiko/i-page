@@ -1,6 +1,13 @@
 @extends('layouts.mobile-shell')
 
 @section('title', $organization->name . ' - i-Page')
+@section('meta_description', \Illuminate\Support\Str::limit($organization->description ?: __('Follow :name on i-Page for news, announcements and updates.', ['name' => $organization->name]), 180))
+@php
+    $ogCover = \App\Support\Designs::coverPaths($organization->design_options ?? [])[0] ?? null;
+@endphp
+@if ($ogCover)
+    @section('meta_image', url(\Illuminate\Support\Facades\Storage::url($ogCover)))
+@endif
 
 @section('app-bar')
     <a href="{{ route('guest.home') }}" class="app-bar-icon-btn" aria-label="{{ __('Back') }}">

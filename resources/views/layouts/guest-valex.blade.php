@@ -15,6 +15,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="{{ $primary }}">
     <title>@yield('title', 'i-Page') — {{ config('app.name', 'i-Page') }}</title>
+    @include('partials.seo-auto')
     <link rel="icon" href="{{ $assets('img/brand/favicon.png') }}" type="image/x-icon">
 
     <link href="{{ $assets($cssDir . '/icons.css') }}" rel="stylesheet">

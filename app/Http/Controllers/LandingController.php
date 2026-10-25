@@ -30,12 +30,63 @@ class LandingController extends Controller
         ]);
 
         return view('landing', [
+            'seo' => $this->seo($lang),
             't' => config("landing.$lang"),
             'lang' => $lang,
             'other' => $lang === 'ar' ? 'en' : 'ar',
             'stats' => $stats,
             'home' => $this->workspaceUrl($request),
         ]);
+    }
+
+    /** Share card + SEO metadata for the landing page in the given language. */
+    private function seo(string $lang): array
+    {
+        $t = config("landing.$lang.seo");
+        $home = rtrim(url('/'), '/') . '/';
+        $canonical = $lang === 'ar' ? $home : $home . '?lang=en';
+        $image = asset('images/og/ipage-share.jpg');
+
+        return [
+            'title' => $t['title'],
+            'description' => $t['description'],
+            'url' => $canonical,
+            'image' => $image,
+            'image_alt' => $t['image_alt'],
+            'locale' => $t['locale'],
+            'alternates' => ['ar' => $home, 'en' => $home . '?lang=en', 'x-default' => $home],
+            'schema' => [
+                '@context' => 'https://schema.org',
+                '@graph' => [
+                    [
+                        '@type' => 'Organization',
+                        '@id' => $home . '#organization',
+                        'name' => 'i-Page',
+                        'url' => $home,
+                        'logo' => asset('images/pwa/icon-512.png'),
+                        'slogan' => config('landing.en.brand_tag'),
+                    ],
+                    [
+                        '@type' => 'WebSite',
+                        '@id' => $home . '#website',
+                        'url' => $home,
+                        'name' => 'i-Page',
+                        'inLanguage' => $lang,
+                        'publisher' => ['@id' => $home . '#organization'],
+                    ],
+                    [
+                        '@type' => 'SoftwareApplication',
+                        'name' => 'i-Page',
+                        'applicationCategory' => 'BusinessApplication',
+                        'operatingSystem' => 'Web',
+                        'description' => $t['description'],
+                        'url' => $home,
+                        'image' => $image,
+                        'inLanguage' => $lang,
+                    ],
+                ],
+            ],
+        ];
     }
 
     /** Where a signed-in user's "Open my workspace" button goes. */

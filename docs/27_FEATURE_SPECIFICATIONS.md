@@ -634,6 +634,13 @@ Define complete specifications for each feature **before** implementation. This 
 - "Current" items must describe features that exist; "Roadmap" items come from the documented roadmap (`ENTERPRISE_REVIEW.md`, feature specs) and are labeled Next / Later.
 - Animations are CSS/vanilla JS only (no libraries), and are disabled under `prefers-reduced-motion`.
 
+**Sharing & SEO**: the landing page ships complete share metadata so links look good on WhatsApp, Facebook, X/Twitter, Telegram and LinkedIn, and search engines index it correctly:
+- Open Graph + Twitter Card tags with a 1200x630 JPEG thumbnail (`public/images/og/ipage-share.jpg`, kept under 300 KB because WhatsApp ignores heavier images), per-language title and description, `og:locale` with its alternate.
+- `<title>` up to 60 characters and description up to 160; canonical URL; `hreflang` for Arabic, English and `x-default`; `robots` with large image previews.
+- JSON-LD (`Organization`, `WebSite`, `SoftwareApplication`).
+- Dynamic `/sitemap.xml` (landing in both languages, browse page, active organizations and their public channels, capped and cached for an hour) and dynamic `/robots.txt` that blocks private areas (`/admin`, `/tenant`, `/organizations`, `/organization`, `/dashboard`, `/settings`, `/tickets`, `/posts`) and points to the sitemap.
+- Public pages that use the classic shell or the Valex public layout fall back to the same share card when they do not set their own.
+
 **Sections**: Hero (rotating industries, animated QR-to-phone demo), live stats (count-up), How it works, Industries marquee, Platform features, Roles, Design system, Roadmap timeline, Principles and technology, Final call to action.
 
 **Acceptance Criteria**:

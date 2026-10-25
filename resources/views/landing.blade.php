@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>i-Page — {{ $t['brand_tag'] }}</title>
-    <meta name="description" content="{{ $t['hero']['sub'] }}">
+    @include('partials.seo')
     <meta name="theme-color" content="#6259ca">
     <link rel="icon" href="{{ asset('images/brand/logo-mark.svg') }}" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">

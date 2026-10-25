@@ -29,6 +29,8 @@ Route::middleware(['auth'])->group(function () {
 
 // Public product landing page (docs/27). Signed-in users get a button to their workspace.
 Route::get('/', \App\Http\Controllers\LandingController::class)->name('home.index');
+Route::get('/sitemap.xml', [\App\Http\Controllers\SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('seo.robots');
 
 // Public Browse Routes — used by BOTH guests and authenticated Layer 3 users.
 // This is the single organization/channel browsing surface for end users;

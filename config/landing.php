@@ -13,6 +13,12 @@
 return [
     'ar' => [
         'dir' => 'rtl',
+        'seo' => [
+            'title' => 'i-Page | البوابة الرقمية لكل منظمة — تواصل بـ QR',
+            'description' => 'منصة تواصل مؤسسي: امسح QR واحد لتصلك أخبار وإعلانات واستطلاعات وفعاليات منظمتك من غير تطبيق. للفنادق والجامعات والمستشفيات والشركات.',
+            'image_alt' => 'i-Page — البوابة الرقمية لكل منظمة',
+            'locale' => 'ar_AR',
+        ],
         'brand_tag' => 'البوابة الرقمية لكل منظمة',
         'nav' => ['how' => 'كيف يعمل', 'features' => 'المميزات', 'roles' => 'الأدوار', 'designs' => 'التصميمات', 'roadmap' => 'خارطة الطريق', 'browse' => 'تصفّح المنظمات', 'signin' => 'تسجيل الدخول', 'workspace' => 'افتح مساحة العمل'],
         'hero' => [
@@ -109,6 +115,12 @@ return [
 
     'en' => [
         'dir' => 'ltr',
+        'seo' => [
+            'title' => 'i-Page | The Digital Front Door for Every Organization',
+            'description' => 'i-Page connects organizations with their people through QR codes: news, announcements, polls, events and support in one scan. No app needed.',
+            'image_alt' => 'i-Page — The Digital Front Door for Every Organization',
+            'locale' => 'en_US',
+        ],
         'brand_tag' => 'The Digital Front Door for Every Organization',
         'nav' => ['how' => 'How it works', 'features' => 'Features', 'roles' => 'Roles', 'designs' => 'Designs', 'roadmap' => 'Roadmap', 'browse' => 'Browse organizations', 'signin' => 'Sign in', 'workspace' => 'Open my workspace'],
         'hero' => [
