@@ -55,7 +55,7 @@ class Channel extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'channel_user')
-            ->withPivot('role', 'status', 'joined_at', 'muted_at')
+            ->withPivot('role', 'status', 'joined_at', 'muted_at', 'can_post', 'can_edit', 'can_delete')
             ->using(ChannelUser::class);
     }
 
@@ -77,6 +77,144 @@ class Channel extends Model
     public function childChannels(): BelongsToMany
     {
         return $this->belongsToMany(Channel::class, 'channel_channel', 'parent_channel_id', 'child_channel_id');
+    }
+
+    // ------------------------------------------ Hierarchy & feed (ADR-014)
+
+    public const POST_SETTING_DEFAULTS = [
+        'layout' => 'list',          // list | grid | compact
+        'card_style' => 'post',      // post (as chosen per post) | classic | image | gradient | spotlight
+        'excerpt' => 280,
+        'show_author' => true,
+        'show_date' => true,
+        'show_views' => true,
+        'show_reactions' => true,
+        'show_comments' => true,
+    ];
+
+    /** Role → default granular permissions used when inviting a member. */
+    public const ROLE_PERMISSIONS = [
+        'member' => ['can_post' => false, 'can_edit' => false, 'can_delete' => false],
+        'moderator' => ['can_post' => false, 'can_edit' => true, 'can_delete' => true],
+        'admin' => ['can_post' => true, 'can_edit' => true, 'can_delete' => true],
+    ];
+
+    private ?array $ancestorIdsCache = null;
+
+    /** Ids of every ancestor channel (parents, grandparents, ...). Cycle-safe. */
+    public function ancestorIds(): array
+    {
+        if ($this->ancestorIdsCache !== null) {
+            return $this->ancestorIdsCache;
+        }
+
+        $seen = [];
+        $frontier = [$this->id];
+        while ($frontier) {
+            $parents = \Illuminate\Support\Facades\DB::table('channel_channel')
+                ->whereIn('child_channel_id', $frontier)->pluck('parent_channel_id')->all();
+            $frontier = array_values(array_diff(array_unique($parents), $seen, [$this->id]));
+            $seen = array_merge($seen, $frontier);
+        }
+
+        return $this->ancestorIdsCache = $seen;
+    }
+
+    /** Ancestors this channel may inherit posts from: a public channel never inherits from private ones. */
+    public function inheritableAncestorIds(): array
+    {
+        $ids = $this->ancestorIds();
+        if (! $ids) {
+            return [];
+        }
+
+        return self::whereIn('id', $ids)
+            ->where('organization_id', $this->organization_id)
+            ->when($this->type !== 'private', fn ($q) => $q->where('type', 'public'))
+            ->pluck('id')->all();
+    }
+
+    /** Posts shown in this channel: its own plus cascading posts of its ancestors. */
+    public function feedQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $inherited = $this->inheritableAncestorIds();
+
+        return Post::query()->where(function ($q) use ($inherited) {
+            $q->where('channel_id', $this->id);
+            if ($inherited) {
+                $q->orWhere(fn ($w) => $w->whereIn('channel_id', $inherited)->where('cascade', true));
+            }
+        });
+    }
+
+    /**
+     * Currently pinned, published posts for the highlights strip: this channel's own pins, plus
+     * ancestor pins whose scope is "all" (options.pin_scope; missing = all). Independent of the
+     * post's own cascade flag, so a post can be highlighted everywhere while staying in one feed.
+     */
+    public function highlights(int $limit = 10)
+    {
+        $inherited = $this->inheritableAncestorIds();
+
+        return Post::query()
+            ->where(function ($q) use ($inherited) {
+                $q->where('channel_id', $this->id);
+                if ($inherited) {
+                    $q->orWhere(fn ($w) => $w->whereIn('channel_id', $inherited)
+                        ->where(fn ($s) => $s->whereNull('options->pin_scope')->orWhere('options->pin_scope', 'all')));
+                }
+            })
+            ->where('status', 'published')
+            ->where('pinned_until', '>', now())
+            ->with(['media', 'channel'])
+            ->latest('published_at')->limit($limit)->get();
+    }
+
+    /** Post presentation settings; a channel without its own uses the nearest ancestor's (any depth). */
+    public function postSettings(): array
+    {
+        $own = $this->design_options['posts'] ?? null;
+
+        $channel = $this;
+        $seen = [$this->id];
+        while ($own === null && ($channel = $channel->parentChannels()->first()) && ! in_array($channel->id, $seen, true)) {
+            $seen[] = $channel->id;
+            $own = $channel->design_options['posts'] ?? null;
+        }
+
+        return array_merge(self::POST_SETTING_DEFAULTS, array_intersect_key($own ?? [], self::POST_SETTING_DEFAULTS));
+    }
+
+    /** Whether the user manages this channel outright (all permissions). */
+    public function isManagedBy(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('super_admin') || $this->admin_user_id === $user->id) {
+            return true;
+        }
+
+        return $user->organizationMemberships()
+            ->where('organization_id', $this->organization_id)->where('status', 'active')
+            ->whereIn('role', ['organization_admin', 'manager'])->exists();
+    }
+
+    /** Granular permission check: $ability is post | edit | delete. */
+    public function userCan(?User $user, string $ability): bool
+    {
+        if (! $user || ! in_array($ability, ['post', 'edit', 'delete'], true)) {
+            return false;
+        }
+
+        if ($this->isManagedBy($user)) {
+            return true;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('channel_user')
+            ->where('channel_id', $this->id)->where('user_id', $user->id)
+            ->where('status', 'approved')->where('can_' . $ability, true)->exists();
     }
 
     public function getMemberCountAttribute(): int

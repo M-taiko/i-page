@@ -238,32 +238,63 @@
         </div>
     @endif
 
-    <div class="feed-list">
+    @include('channels._highlights', ['channel' => $channel])
+
+    @php
+        $ps = $postSettings ?? \App\Models\Channel::POST_SETTING_DEFAULTS;
+        $psStyle = $ps['card_style'] === 'post' ? null : $ps['card_style'];
+    @endphp
+    <style>
+        .feed-list.layout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); align-items: start; }
+        .feed-list.layout-compact .post-card { border-radius: var(--radius-md); }
+        .feed-list.layout-compact .post-header { padding: var(--space-3) var(--space-3) var(--space-2); }
+        .feed-list.layout-compact .pf-body { font-size: 13px; }
+        .post-from { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: rgba(98,89,202,.12); color: #6259ca; text-decoration: none; }
+        .post-pinned { font-size: 11px; font-weight: 800; color: #6259ca; }
+    </style>
+    <div class="feed-list layout-{{ $ps['layout'] }}">
         @forelse($posts as $post)
             @php
                 $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
                 $likeCount = $post->reactions()->where('type', 'like')->count();
                 $commentCount = $post->comments()->approved()->count();
                 $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();
+                $inherited = $post->channel_id !== $channel->id;
             @endphp
             <article class="post-card">
                 <div class="post-header">
-                    <div class="post-avatar" style="background-color: {{ $colorFor($post->author->full_name ?? $channel->name) }};">
-                        {{ $post->author->initials ?? substr($channel->name, 0, 1) }}
-                    </div>
+                    @if ($ps['show_author'])
+                        <div class="post-avatar" style="background-color: {{ $colorFor($post->author->full_name ?? $channel->name) }};">
+                            {{ $post->author->initials ?? substr($channel->name, 0, 1) }}
+                        </div>
+                    @endif
                     <div class="post-info">
-                        <div class="post-author">{{ $post->author->full_name ?? __('i-Page') }}</div>
+                        @if ($ps['show_author'])<div class="post-author">{{ $post->author->full_name ?? __('i-Page') }}</div>@endif
                         <div class="post-meta">
-                            <span>{{ $post->published_at?->diffForHumans() }}</span>
+                            @if ($ps['show_date'])<span>{{ $post->published_at?->diffForHumans() }}</span>@endif
+                            @if ($post->isPinned())<span class="post-pinned">📌 {{ __('Pinned') }}</span>@endif
+                            @if ($inherited && $post->channel)
+                                <a class="post-from" href="{{ route('guest.channel-detail', [$organization, $post->channel->slug]) }}">↳ {{ __('From :channel', ['channel' => $post->channel->name]) }}</a>
+                            @endif
                         </div>
                     </div>
+                    @include('posts.partials._manage')
                 </div>
 
-                @include('posts.partials._content', ['post' => $post, 'limit' => 280, 'url' => route('guest.post-detail', $post->id), 'showWidgets' => $post->hasWidgets()])
+                @include('posts.partials._content', [
+                    'post' => $post,
+                    'limit' => $ps['excerpt'],
+                    'url' => route('guest.post-detail', $post->id),
+                    'showWidgets' => $post->hasWidgets() && ($post->post_format !== 'standard' || $ps['show_reactions']),
+                    'cardStyle' => $psStyle,
+                    'hideMedia' => $ps['layout'] === 'compact',
+                    'hideReactions' => ! $ps['show_reactions'],
+                ])
 
+                @if ($ps['show_reactions'] || $ps['show_comments'] || $ps['show_views'])
                 <div class="post-footer">
                     @auth
-                        @unless ($post->hasWidgets())
+                        @if ($ps['show_reactions'] && ! $post->hasWidgets())
                         <form action="{{ route('posts.like', $post->id) }}" method="POST">
                             @csrf
                             <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
@@ -271,28 +302,38 @@
                                 <span>{{ $likeCount }}</span>
                             </button>
                         </form>
-                        @endunless
+                        @endif
+                        @if ($ps['show_comments'])
                         <button type="button" class="post-action" onclick="toggleFeedComments(this)">
                             <i class="bi bi-chat"></i>
                             <span>{{ $commentCount }}</span>
                         </button>
+                        @endif
                     @else
+                        @if ($ps['show_reactions'] && ! $post->hasWidgets())
                         <button type="button" class="post-action" onclick="requireSignIn()">
                             <i class="bi bi-hand-thumbs-up"></i>
                             <span>{{ $likeCount }}</span>
                         </button>
+                        @endif
+                        @if ($ps['show_comments'])
                         <button type="button" class="post-action" onclick="requireSignIn()">
                             <i class="bi bi-chat"></i>
                             <span>{{ $commentCount }}</span>
                         </button>
+                        @endif
                     @endauth
+                    @if ($ps['show_views'])
                     <div class="post-views">
                         <i class="bi bi-eye"></i>
                         <span>{{ $viewsCount }}</span>
                     </div>
+                    @endif
                 </div>
+                @endif
 
                 @auth
+                    @if ($ps['show_comments'])
                     <div class="feed-comments">
                         @foreach($post->comments()->approved()->latest()->take(3)->get() as $comment)
                             <div class="comment-item">
@@ -306,6 +347,7 @@
                             <button type="submit"><i class="bi bi-send"></i></button>
                         </form>
                     </div>
+                    @endif
                 @endauth
             </article>
         @empty

@@ -135,6 +135,7 @@
     @endif
 
     {{-- ===================== Reactions (all formats) ===================== --}}
+    @unless ($hideReactions ?? false)
     <div class="pf-react">
         @foreach ($post->enabledReactions() as $key)
             @php [$label, $emoji] = $reactionConfig[$key]; $count = (int) ($reactionCounts[$key] ?? 0); @endphp
@@ -149,4 +150,5 @@
             @endif
         @endforeach
     </div>
+    @endunless
 </div>

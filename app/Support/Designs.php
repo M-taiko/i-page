@@ -97,14 +97,22 @@ class Designs
         ];
     }
 
-    /** Model attributes (design_key, design_options) from validated channel form data. */
-    public static function channelAttributes(array $validated): array
+    /**
+     * Model attributes (design_key, design_options) from validated channel form data.
+     * Other saved options (e.g. post display settings) are kept; only the accent color is replaced.
+     */
+    public static function channelAttributes(array $validated, ?Channel $channel = null): array
     {
-        $color = $validated['design_primary_color'] ?? null;
+        $options = $channel?->design_options ?? [];
+        unset($options['primary_color']);
+
+        if ($color = $validated['design_primary_color'] ?? null) {
+            $options['primary_color'] = $color;
+        }
 
         return [
             'design_key' => $validated['design_key'] ?? null,
-            'design_options' => $color ? ['primary_color' => $color] : null,
+            'design_options' => $options ?: null,
         ];
     }
 

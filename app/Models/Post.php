@@ -18,6 +18,7 @@ class Post extends Model
     protected $fillable = [
         'author_id',
         'channel_id',
+        'cascade',
         'organization_id',
         'brand_id',
         'location_id',
@@ -52,6 +53,7 @@ class Post extends Model
         'requires_acknowledgment' => 'boolean',
         'is_emergency' => 'boolean',
         'options' => 'array',
+        'cascade' => 'boolean',
     ];
 
     public function organization(): BelongsTo
@@ -141,6 +143,20 @@ class Post extends Model
     public function galleryImages()
     {
         return $this->media->where('usage_type', 'gallery')->sortBy('id')->values();
+    }
+
+    /** Where a pin shows: 'channel' (its own channel only) or 'all' (also every sub-channel). */
+    public function pinScope(): string
+    {
+        return $this->option('pin_scope') === 'channel' ? 'channel' : 'all';
+    }
+
+    /** Thumbnail for the highlights strip: the pin's own image, else the post's first image. */
+    public function highlightThumbUrl(): ?string
+    {
+        $thumb = $this->option('pin_thumb');
+
+        return $thumb ? \Illuminate\Support\Facades\Storage::url($thumb) : $this->coverUrl();
     }
 
     /** First image to use as a thumbnail: the gallery's first photo, else the single image. */

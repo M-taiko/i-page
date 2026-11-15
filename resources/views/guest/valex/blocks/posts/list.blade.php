@@ -6,7 +6,8 @@
     <div class="card">
         <div class="list-group list-group-flush">
             @foreach ($posts as $post)
-                <a href="{{ route('guest.post-detail', $post->id) }}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <div class="list-group-item d-flex align-items-center">
+                <a href="{{ route('guest.post-detail', $post->id) }}" class="d-flex align-items-center flex-grow-1 text-reset" style="min-width:0">
                     @if ($cover = $post->coverUrl())
                         <img src="{{ $cover }}" class="avatar avatar-lg radius mx-2" style="object-fit: cover;" alt="">
                     @else
@@ -15,8 +16,11 @@
                     <span class="flex-grow-1">
                         <strong class="d-block">{{ $post->title ?: Str::limit($post->body, 50) }} @include('posts.partials._chips')</strong>
                         <small class="text-muted">{{ $post->channel?->name }} · {{ ($post->published_at ?? $post->created_at)->diffForHumans() }}</small>
+                        @include('guest.valex.blocks._post-flags')
                     </span>
                 </a>
+                @include('posts.partials._manage')
+                </div>
             @endforeach
         </div>
     </div>

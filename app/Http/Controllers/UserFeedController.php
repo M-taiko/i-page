@@ -41,13 +41,19 @@ class UserFeedController extends Controller
         $followedBrandChannelIds = Channel::whereIn('brand_id', $followedBrandIds)->pluck('id')->toArray();
         $followingChannelIds = array_values(array_unique(array_merge($subscribedChannelIds, $followedBrandChannelIds)));
 
+        // Parent channels whose posts cascade into the channels this user follows (ADR-014).
+        $cascadeSourceIds = Channel::whereIn('id', $followingChannelIds)->get()
+            ->flatMap(fn (Channel $c) => $c->inheritableAncestorIds())
+            ->unique()->diff($followingChannelIds)->values()->all();
+
         $query = Post::where('status', 'published')->with('author', 'channel.brand', 'channel.organization', 'organization');
 
         switch ($tab) {
             case 'following':
                 // Strictly what the user follows/subscribes to.
-                $query->where(function ($q) use ($followingChannelIds, $followedOrgIds) {
+                $query->where(function ($q) use ($followingChannelIds, $followedOrgIds, $cascadeSourceIds) {
                     $q->whereIn('channel_id', $followingChannelIds)
+                      ->orWhere(fn ($c) => $c->whereIn('channel_id', $cascadeSourceIds ?: [0])->where('cascade', true))
                       ->orWhere(function ($inner) use ($followedOrgIds) {
                           $inner->whereIn('organization_id', $followedOrgIds)->whereNull('channel_id');
                       });
@@ -74,8 +80,9 @@ class UserFeedController extends Controller
             case 'for_you':
             default:
                 // Personalized: following + a light sprinkle of public discovery.
-                $query->where(function ($q) use ($followingChannelIds, $followedOrgIds) {
+                $query->where(function ($q) use ($followingChannelIds, $followedOrgIds, $cascadeSourceIds) {
                     $q->whereIn('channel_id', $followingChannelIds)
+                      ->orWhere(fn ($c) => $c->whereIn('channel_id', $cascadeSourceIds ?: [0])->where('cascade', true))
                       ->orWhere(function ($inner) use ($followedOrgIds) {
                           $inner->whereIn('organization_id', $followedOrgIds)->whereNull('channel_id');
                       })

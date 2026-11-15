@@ -83,9 +83,9 @@ class ChannelController extends Controller
             return view('channels.pending', compact('channel', 'organization', 'membership'));
         }
 
-        $posts = $channel->posts()
+        $posts = $channel->feedQuery()
             ->where('status', 'published')
-            ->with(['author', 'organization', 'reactions', 'comments'])
+            ->with(['author', 'organization', 'reactions', 'comments', 'channel'])
             ->latest('published_at')
             ->paginate(20)
             ->withQueryString();

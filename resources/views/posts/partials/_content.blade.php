@@ -1,8 +1,10 @@
 {{-- Post title/body/media/badges in the post's card style (ADR-013).
-     Expects $post. Optional: $limit (truncate body), $url (link title and text), $showWidgets (render interactions). --}}
+     Expects $post. Optional: $limit (truncate body), $url (link title and text), $showWidgets (render interactions),
+     $cardStyle (channel override, ADR-014), $hideMedia (compact layouts), $hideReactions. --}}
 @include('posts.partials._styles')
 @php
-    $style = $post->card_style ?: 'classic';
+    $style = ($cardStyle ?? null) ?: ($post->card_style ?: 'classic');
+    $hideMedia = $hideMedia ?? false;
     $badge = $post->badge();
     $accent = $badge['color'] ?? null;
     $format = $post->post_format ?: 'standard';
@@ -23,7 +25,7 @@
         </div>
     @endif
 
-    @if ($style === 'image')
+    @if ($style === 'image' && ! $hideMedia)
         @include('posts.partials._media')
     @endif
 
@@ -37,7 +39,7 @@
         @if ($text)<div class="pf-body">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $text }}</a>@else{{ $text }}@endif</div>@endif
     @endif
 
-    @if ($style !== 'image')
+    @if ($style !== 'image' && ! $hideMedia)
         @include('posts.partials._media')
     @endif
 

@@ -150,13 +150,18 @@ class GuestController extends Controller
             ->withCount('users')
             ->firstOrFail();
 
-        $posts = $channel->posts()
+        // Own posts + posts cascading from parent channels (ADR-014).
+        $posts = $channel->feedQuery()
             ->where('status', 'published')
-            ->with('author')
+            ->with(['author', 'channel', 'media'])
             ->latest('published_at')
             ->paginate(20)
             ->withQueryString();
         $this->recordViews($posts);
+
+        $highlights = $channel->highlights();
+        $postSettings = $channel->postSettings();
+        view()->share(compact('highlights', 'postSettings'));
 
         $isSubscribed = auth()->check() && auth()->user()->channels()->where('channel_id', $channel->id)->exists();
         $isFavorited = auth()->check() && auth()->user()->collections()

@@ -450,6 +450,28 @@ Columns updated on model changes (observer or event listener). Detailed analytic
 
 ---
 
+## ADR-014: Channel hierarchy publishing, highlights and per-member channel permissions
+
+**Date**: 2026-11-14
+
+**Title**: Posts cascade down the channel tree at read time; pinned posts are highlights; channel members carry granular permissions
+
+**Status**: Accepted
+
+**Decision**:
+1. **Cascade at read time, not by copying.** A channel's feed is its own posts plus posts of every ancestor channel whose `posts.cascade` flag is on. One post row, one set of reactions/comments/receipts, no duplicates to keep in sync. A public channel only inherits from public ancestors, so private content never leaks downward into public pages.
+2. **Highlights.** A pinned post (`posts.pinned_until` in the future) is shown in a highlights strip at the top of the channel with a thumbnail (`options.pin_thumb`, else the post's first image). First tap opens a preview sheet (summary); second tap opens the post. Pins cascade like any other post.
+3. **Post presentation per channel.** `channels.design_options.posts` holds layout (list / grid / compact), a forced card style, excerpt length and visibility toggles (author, date, views, reactions, comments). A sub-channel without its own settings inherits its parent's.
+4. **Granular channel permissions.** `channel_user.can_post / can_edit / can_delete` are set per member when inviting or later. Organization admins/managers, the channel admin and super admins always have all three. All checks go through `Channel::userCan()`.
+
+**Rationale**: Read-time cascade keeps engagement data unified and makes "unpublish from children" a single flag. Permissions on the pivot keep the model simple (no new tables) and are independent of the member's role label.
+
+**Consequences**: Feed queries include ancestor ids (bounded, cached per request); every feed must use `Channel::feedQuery()` instead of `$channel->posts()`.
+
+**Related**: [[27_FEATURE_SPECIFICATIONS.md]], [[06_PERMISSION_MODEL.md]], ADR-012, ADR-013
+
+---
+
 ## Decision Template (Use for Future ADRs)
 
 **Date**: YYYY-MM-DD

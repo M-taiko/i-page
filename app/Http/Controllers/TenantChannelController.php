@@ -139,7 +139,7 @@ class TenantChannelController extends Controller
 
         $stats = [
             'members' => $channel->users()->wherePivot('status', 'approved')->count(),
-            'posts' => $channel->posts()->count(),
+            'posts' => $channel->feedQuery()->count(),
             'qr_codes' => $channel->qrCodes()->count(),
         ];
 
@@ -198,7 +198,7 @@ class TenantChannelController extends Controller
             'name' => $validated['name'],
             'type' => $validated['type'],
             'brand_id' => $validated['brand_id'],
-        ] + \App\Support\Designs::channelAttributes($validated));
+        ] + \App\Support\Designs::channelAttributes($validated, $channel));
 
         $channel->parentChannels()->sync(
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
@@ -253,7 +253,11 @@ class TenantChannelController extends Controller
             'first_name' => 'nullable|string|max:80',
             'last_name' => 'nullable|string|max:80',
             'role' => 'required|in:member,moderator,admin',
+            'can_post' => 'nullable|boolean',
+            'can_edit' => 'nullable|boolean',
+            'can_delete' => 'nullable|boolean',
         ]);
+        $pivot = ['role' => $validated['role']] + $this->permissionsFrom($request);
 
         $user = User::firstOrCreate(
             ['email' => $validated['email']],
@@ -267,9 +271,9 @@ class TenantChannelController extends Controller
         );
 
         if ($channel->users()->where('user_id', $user->id)->exists()) {
-            $channel->users()->updateExistingPivot($user->id, ['role' => $validated['role']]);
+            $channel->users()->updateExistingPivot($user->id, $pivot);
         } else {
-            $channel->users()->attach($user->id, ['role' => $validated['role'], 'joined_at' => now()]);
+            $channel->users()->attach($user->id, $pivot + ['joined_at' => now()]);
         }
 
         return back()->with('success', __(':name was added to the channel.', ['name' => $user->full_name]));
@@ -281,11 +285,56 @@ class TenantChannelController extends Controller
 
         $validated = $request->validate([
             'role' => 'required|in:member,moderator,admin',
+            'can_post' => 'nullable|boolean',
+            'can_edit' => 'nullable|boolean',
+            'can_delete' => 'nullable|boolean',
         ]);
 
-        $channel->users()->updateExistingPivot($user->id, ['role' => $validated['role']]);
+        $channel->users()->updateExistingPivot($user->id, ['role' => $validated['role']] + $this->permissionsFrom($request));
 
-        return back()->with('success', __('Role updated.'));
+        return back()->with('success', __('Role and permissions updated.'));
+    }
+
+    /** Each permission is independent of the role label (ADR-014). */
+    private function permissionsFrom(Request $request): array
+    {
+        return [
+            'can_post' => $request->boolean('can_post'),
+            'can_edit' => $request->boolean('can_edit'),
+            'can_delete' => $request->boolean('can_delete'),
+        ];
+    }
+
+    /** How posts are presented in this channel (inherited by sub-channels without their own settings). */
+    public function updatePostSettings(Request $request, Channel $channel)
+    {
+        $this->authorizeChannelAccess($channel);
+
+        $validated = $request->validate([
+            'inherit' => 'nullable|boolean',
+            'layout' => 'required_unless:inherit,1|in:list,grid,compact',
+            'card_style' => ['required_unless:inherit,1', \Illuminate\Validation\Rule::in(array_merge(['post'], array_keys(config('posts.card_styles'))))],
+            'excerpt' => 'nullable|integer|min:60|max:1000',
+        ]);
+
+        $options = $channel->design_options ?? [];
+        if ($request->boolean('inherit')) {
+            unset($options['posts']);
+        } else {
+            $options['posts'] = [
+                'layout' => $validated['layout'],
+                'card_style' => $validated['card_style'],
+                'excerpt' => (int) ($validated['excerpt'] ?? 280),
+                'show_author' => $request->boolean('show_author'),
+                'show_date' => $request->boolean('show_date'),
+                'show_views' => $request->boolean('show_views'),
+                'show_reactions' => $request->boolean('show_reactions'),
+                'show_comments' => $request->boolean('show_comments'),
+            ];
+        }
+        $channel->update(['design_options' => $options ?: null]);
+
+        return back()->with('success', __('Post display settings saved.'));
     }
 
     public function removeMember(Channel $channel, User $user)

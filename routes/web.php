@@ -207,6 +207,11 @@ Route::middleware(['auth', 'verified'])->prefix('tenant')->name('tenant.')->grou
     // Channel Posts
     Route::get('channels/{channel}/posts/create', [\App\Http\Controllers\TenantChannelPostController::class, 'create'])->name('channels.posts.create');
     Route::post('channels/{channel}/posts', [\App\Http\Controllers\TenantChannelPostController::class, 'store'])->name('channels.posts.store');
+    Route::get('channels/{channel}/posts/{post}/edit', [\App\Http\Controllers\TenantChannelPostController::class, 'edit'])->name('channels.posts.edit');
+    Route::put('channels/{channel}/posts/{post}', [\App\Http\Controllers\TenantChannelPostController::class, 'update'])->name('channels.posts.update');
+    Route::delete('channels/{channel}/posts/{post}', [\App\Http\Controllers\TenantChannelPostController::class, 'destroy'])->name('channels.posts.destroy');
+    Route::post('channels/{channel}/posts/{post}/pin', [\App\Http\Controllers\TenantChannelPostController::class, 'pin'])->name('channels.posts.pin');
+    Route::put('channels/{channel}/post-settings', [TenantChannelController::class, 'updatePostSettings'])->name('channels.post-settings');
 
     // Channel Members (invite by email — registered or not — with a role)
     Route::post('channels/{channel}/members', [TenantChannelController::class, 'inviteMember'])->name('channels.members.store');

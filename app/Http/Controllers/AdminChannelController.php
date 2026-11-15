@@ -67,7 +67,7 @@ class AdminChannelController extends Controller
             'brand_id' => $validated['brand_id'],
             'name' => $validated['name'],
             'type' => $validated['type'],
-        ] + Designs::channelAttributes($validated));
+        ] + Designs::channelAttributes($validated, $channel));
 
         $channel->parentChannels()->sync(
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []

@@ -15,5 +15,14 @@ class ChannelUser extends Pivot
         'status',
         'joined_at',
         'muted_at',
+        'can_post',
+        'can_edit',
+        'can_delete',
+    ];
+
+    protected $casts = [
+        'can_post' => 'boolean',
+        'can_edit' => 'boolean',
+        'can_delete' => 'boolean',
     ];
 }

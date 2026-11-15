@@ -14,7 +14,10 @@
                     @endif
                     <div class="card-body">
                         <div class="small text-muted mb-1">{{ $post->channel?->name }} · {{ ($post->published_at ?? $post->created_at)->format('M d, Y') }}</div>
-                        <h5 class="card-title">{{ $post->title ?: Str::limit($post->body, 50) }} @include('posts.partials._chips')</h5>
+                        <div class="d-flex align-items-start">
+                            <h5 class="card-title flex-grow-1">{{ $post->title ?: Str::limit($post->body, 50) }} @include('posts.partials._chips') @include('guest.valex.blocks._post-flags')</h5>
+                            @include('posts.partials._manage')
+                        </div>
                         <p class="card-text text-muted">{{ Str::limit($post->summary ?: $post->body, 110) }}</p>
                         <div class="d-flex align-items-center justify-content-between">
                             <span class="small"><span class="avatar avatar-xs brround bg-primary mx-1">{{ mb_substr($post->author?->first_name ?? '?', 0, 1) }}</span>{{ $post->author?->full_name }}</span>

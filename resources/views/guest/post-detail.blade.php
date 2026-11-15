@@ -102,8 +102,10 @@
                     <span>&middot;</span>
                     <i class="bi bi-globe2"></i>
                     <span>{{ __('Public') }}</span>
+                    @if ($post->isPinned())<span>&middot; 📌 {{ __('Pinned') }}</span>@endif
                 </div>
             </div>
+            @include('posts.partials._manage')
         </div>
 
         @include('posts.partials._content', ['post' => $post, 'showWidgets' => true, 'flash' => true])

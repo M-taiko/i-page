@@ -9,7 +9,7 @@
                 <div class="timeline-wrapper timeline-wrapper-primary {{ $loop->odd ? '' : 'timeline-inverted' }}">
                     <div class="timeline-badge"><i class="fe fe-file-text text-white"></i></div>
                     <div class="timeline-panel">
-                        <div class="timeline-heading"><h6 class="timeline-title"><a href="{{ route('guest.post-detail', $post->id) }}">{{ $post->title ?: Str::limit($post->body, 50) }} @include('posts.partials._chips')</a></h6></div>
+                        <div class="timeline-heading d-flex align-items-start"><h6 class="timeline-title flex-grow-1"><a href="{{ route('guest.post-detail', $post->id) }}">{{ $post->title ?: Str::limit($post->body, 50) }} @include('posts.partials._chips')</a> @include('guest.valex.blocks._post-flags')</h6>@include('posts.partials._manage')</div>
                         <div class="timeline-body"><p>{{ Str::limit($post->summary ?: $post->body, 140) }}</p></div>
                         <div class="timeline-footer d-flex align-items-center flex-wrap">
                             <i class="fe fe-message-circle"></i> <span class="mx-1">{{ $post->channel?->name }}</span>

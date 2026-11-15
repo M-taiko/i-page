@@ -95,38 +95,61 @@
     </x-valex.card>
 @endif
 
-{{-- Members --}}
-<x-valex.card :title="__('Members') . ' (' . $members->count() . ')'">
+{{-- Members: role + independent post / edit / delete permissions (ADR-014) --}}
+<x-valex.card :title="__('Members') . ' (' . $members->count() . ')'" :subtitle="__('Organization admins, managers and the channel admin always have every permission.')">
     <x-slot:actions>
         <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#inviteMemberModal"><i class="fe fe-user-plus"></i> {{ __('Invite Member') }}</button>
     </x-slot:actions>
 
     @if ($members->count() > 0)
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Email') }}</th><th>{{ __('Role') }}</th><th>{{ __('Joined') }}</th><th></th></tr></thead>
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>{{ __('Member') }}</th>
+                        <th>{{ __('Role') }}</th>
+                        <th class="text-center">{{ __('Write') }}</th>
+                        <th class="text-center">{{ __('Edit') }}</th>
+                        <th class="text-center">{{ __('Delete') }}</th>
+                        <th>{{ __('Joined') }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
                 <tbody>
                     @foreach ($members as $member)
+                        @php $formId = 'perm-' . $member->id; @endphp
                         <tr>
-                            <td>{{ $member->full_name }}</td>
-                            <td class="text-muted small">{{ $member->email }}</td>
                             <td>
-                                <form action="{{ route('tenant.channels.members.update', [$channel, $member]) }}" method="POST">
+                                <div class="font-weight-bold">{{ $member->full_name }}</div>
+                                <small class="text-muted">{{ $member->email }}</small>
+                            </td>
+                            <td>
+                                <form id="{{ $formId }}" action="{{ route('tenant.channels.members.update', [$channel, $member]) }}" method="POST">
                                     @csrf
                                     @method('PUT')
-                                    <select name="role" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
-                                        <option value="member" @selected($member->pivot->role === 'member')>{{ __('Staff') }}</option>
-                                        <option value="moderator" @selected($member->pivot->role === 'moderator')>{{ __('Moderator') }}</option>
-                                        <option value="admin" @selected($member->pivot->role === 'admin')>{{ __('Manager') }}</option>
-                                    </select>
                                 </form>
+                                <select name="role" form="{{ $formId }}" class="form-control form-control-sm w-auto role-select" data-target="{{ $formId }}">
+                                    <option value="member" @selected($member->pivot->role === 'member')>{{ __('Member') }}</option>
+                                    <option value="moderator" @selected($member->pivot->role === 'moderator')>{{ __('Moderator') }}</option>
+                                    <option value="admin" @selected($member->pivot->role === 'admin')>{{ __('Manager') }}</option>
+                                </select>
                             </td>
+                            @foreach (['can_post', 'can_edit', 'can_delete'] as $perm)
+                                <td class="text-center">
+                                    <div class="custom-control custom-switch d-inline-block">
+                                        <input type="checkbox" class="custom-control-input perm-{{ $formId }}" id="{{ $formId }}-{{ $perm }}"
+                                               name="{{ $perm }}" value="1" form="{{ $formId }}" data-perm="{{ $perm }}" @checked($member->pivot->{$perm})>
+                                        <label class="custom-control-label" for="{{ $formId }}-{{ $perm }}"><span class="sr-only">{{ $perm }}</span></label>
+                                    </div>
+                                </td>
+                            @endforeach
                             <td class="text-muted small">{{ $member->pivot->joined_at ? \Illuminate\Support\Carbon::parse($member->pivot->joined_at)->format('M d, Y') : '—' }}</td>
-                            <td class="text-right">
-                                <form action="{{ route('tenant.channels.members.destroy', [$channel, $member]) }}" method="POST" onsubmit="return confirm('{{ __('Remove this member from the channel?') }}')">
+                            <td class="text-right text-nowrap">
+                                <button type="submit" form="{{ $formId }}" class="btn btn-sm btn-primary"><i class="fe fe-check"></i> {{ __('Save') }}</button>
+                                <form action="{{ route('tenant.channels.members.destroy', [$channel, $member]) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Remove this member from the channel?') }}')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-x"></i> {{ __('Remove') }}</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Remove') }}"><i class="fe fe-x"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -182,23 +205,101 @@
     @endif
 </x-valex.card>
 
-{{-- Posts --}}
-<h5 class="mb-3"><i class="fe fe-file-text"></i> {{ __('Posts in this Channel') }}</h5>
-@php $channelPosts = $channel->posts()->latest('published_at')->get(); @endphp
+{{-- Post display settings (ADR-014) --}}
+@php
+    $ownSettings = $channel->design_options['posts'] ?? null;
+    $ps = $channel->postSettings();
+    $hasParent = $channel->parentChannels()->exists();
+@endphp
+<x-valex.card :title="__('Post display')" :subtitle="__('How posts look in this channel. Sub-channels without their own settings use these.')">
+    <form action="{{ route('tenant.channels.post-settings', $channel->id) }}" method="POST" id="postSettingsForm">
+        @csrf
+        @method('PUT')
+        @if ($hasParent)
+            <div class="custom-control custom-switch mb-3">
+                <input type="checkbox" class="custom-control-input" id="ps_inherit" name="inherit" value="1" @checked($ownSettings === null)>
+                <label class="custom-control-label" for="ps_inherit">{{ __('Use the parent channel\'s settings') }}</label>
+            </div>
+        @endif
+        <div id="psFields">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="d-block">{{ __('Layout') }}</label>
+                    <div class="btn-group btn-group-toggle w-100 mb-3" data-toggle="buttons">
+                        @foreach (['list' => ['fe-list', __('List')], 'grid' => ['fe-grid', __('Grid')], 'compact' => ['fe-align-justify', __('Compact')]] as $v => [$icon, $label])
+                            <label class="btn btn-outline-primary {{ $ps['layout'] === $v ? 'active' : '' }}">
+                                <input type="radio" name="layout" value="{{ $v }}" @checked($ps['layout'] === $v)> <i class="fe {{ $icon }}"></i> {{ $label }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="ps_card_style">{{ __('Card style') }}</label>
+                    <select name="card_style" id="ps_card_style" class="form-control mb-3">
+                        <option value="post" @selected($ps['card_style'] === 'post')>{{ __('As chosen on each post') }}</option>
+                        @foreach (config('posts.card_styles') as $key => $s)
+                            <option value="{{ $key }}" @selected($ps['card_style'] === $key)>{{ __('Always') }}: {{ __($s['name']) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="ps_excerpt">{{ __('Text preview length') }}</label>
+                    <input type="number" id="ps_excerpt" name="excerpt" class="form-control mb-3" min="60" max="1000" step="20" value="{{ $ps['excerpt'] }}">
+                </div>
+            </div>
+            <div class="d-flex flex-wrap">
+                @foreach (['show_author' => __('Author'), 'show_date' => __('Date'), 'show_views' => __('Views'), 'show_reactions' => __('Reactions'), 'show_comments' => __('Comments')] as $key => $label)
+                    <div class="custom-control custom-switch mx-3 mb-2">
+                        <input type="checkbox" class="custom-control-input" id="ps_{{ $key }}" name="{{ $key }}" value="1" @checked($ps[$key])>
+                        <label class="custom-control-label" for="ps_{{ $key }}">{{ $label }}</label>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2"><i class="fe fe-check"></i> {{ __('Save display settings') }}</button>
+    </form>
+</x-valex.card>
+
+{{-- Posts: own posts and posts cascading from parent channels --}}
+@php
+    $channelPosts = $channel->feedQuery()->with(['author', 'channel', 'media'])
+        ->orderByRaw('pinned_until IS NOT NULL AND pinned_until > NOW() DESC')
+        ->latest('published_at')->limit(30)->get();
+    $canPost = $channel->userCan(auth()->user(), 'post');
+@endphp
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0"><i class="fe fe-file-text"></i> {{ __('Posts in this Channel') }}</h5>
+    @if ($canPost)
+        <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success btn-sm"><i class="fe fe-plus-circle"></i> {{ __('Create Post') }}</a>
+    @endif
+</div>
 @if ($channelPosts->count() > 0)
     <div class="row">
         @foreach ($channelPosts as $post)
+            @php $inherited = $post->channel_id !== $channel->id; @endphp
             <div class="col-md-6 col-xl-4">
-                <div class="card">
+                <div class="card {{ $post->isPinned() ? 'border-primary' : '' }}">
+                    @if ($thumb = $post->coverUrl())
+                        <img src="{{ $thumb }}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="">
+                    @endif
                     <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <span class="avatar avatar-md brround bg-primary mx-2">{{ $post->author->initials }}</span>
-                            <div>
-                                <div class="font-weight-bold">{{ $post->author->full_name }}</div>
+                        <div class="d-flex align-items-start mb-2">
+                            <span class="avatar avatar-md brround bg-primary mx-2">{{ $post->author?->initials }}</span>
+                            <div class="flex-grow-1" style="min-width: 0;">
+                                <div class="font-weight-bold text-truncate">{{ $post->author?->full_name }}</div>
                                 <small class="text-muted">{{ $post->published_at?->diffForHumans() ?? __('Not published') }}</small>
                             </div>
+                            @include('posts.partials._manage')
                         </div>
-                        <p class="text-muted mb-0">{{ Str::limit($post->body, 200) }}</p>
+                        <div class="mb-2">
+                            @if ($post->isPinned())<span class="badge badge-primary">📌 {{ __('Highlight') }}</span>@endif
+                            @if ($inherited)<span class="badge badge-light border">↳ {{ __('From :channel', ['channel' => $post->channel?->name]) }}</span>@endif
+                            @if (! $inherited && $post->cascade && $channel->childChannels()->exists())<span class="badge badge-info">⤵ {{ __('Shown in sub-channels') }}</span>@endif
+                            @include('posts.partials._chips')
+                        </div>
+                        @if ($post->title)<h6 class="mb-1">{{ $post->title }}</h6>@endif
+                        <p class="text-muted mb-2">{{ Str::limit($post->body, 160) }}</p>
+                        <a href="{{ route('guest.post-detail', $post->id) }}" class="small" target="_blank">{{ __('View post') }} <i class="fe fe-external-link"></i></a>
                     </div>
                 </div>
             </div>
@@ -206,7 +307,9 @@
     </div>
 @else
     <x-valex.empty-state :title="__('No Posts Yet')" :message="__('Start by creating the first post in this channel')" icon="inbox">
-        <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success mt-3"><i class="fe fe-plus-circle"></i> {{ __('Create First Post') }}</a>
+        @if ($canPost)
+            <a href="{{ route('tenant.channels.posts.create', $channel->id) }}" class="btn btn-success mt-3"><i class="fe fe-plus-circle"></i> {{ __('Create First Post') }}</a>
+        @endif
     </x-valex.empty-state>
 @endif
 
@@ -230,13 +333,22 @@
                         <div class="col-md-6 form-group"><label>{{ __('First Name') }}</label><input type="text" name="first_name" class="form-control" placeholder="{{ __('Optional, if new user') }}"></div>
                         <div class="col-md-6 form-group"><label>{{ __('Last Name') }}</label><input type="text" name="last_name" class="form-control" placeholder="{{ __('Optional, if new user') }}"></div>
                     </div>
-                    <div class="form-group mb-0">
+                    <div class="form-group">
                         <label>{{ __('Role') }}</label>
-                        <select name="role" class="form-control" required>
-                            <option value="member">{{ __('Staff — can post') }}</option>
-                            <option value="moderator">{{ __('Moderator — moderates content') }}</option>
-                            <option value="admin">{{ __('Manager — full channel control') }}</option>
+                        <select name="role" class="form-control role-select" data-target="invite" required>
+                            <option value="member">{{ __('Member') }}</option>
+                            <option value="moderator">{{ __('Moderator') }}</option>
+                            <option value="admin">{{ __('Manager') }}</option>
                         </select>
+                    </div>
+                    <label class="d-block mb-2">{{ __('Permissions') }} <small class="text-muted">({{ __('preset from the role, adjust each one freely') }})</small></label>
+                    <div class="border rounded p-3">
+                        @foreach (['can_post' => ['fe-edit-3', __('Write posts')], 'can_edit' => ['fe-edit', __('Edit posts')], 'can_delete' => ['fe-trash-2', __('Delete posts')]] as $perm => [$icon, $label])
+                            <div class="custom-control custom-switch {{ $loop->last ? '' : 'mb-2' }}">
+                                <input type="checkbox" class="custom-control-input perm-invite" id="invite-{{ $perm }}" name="{{ $perm }}" value="1" data-perm="{{ $perm }}">
+                                <label class="custom-control-label" for="invite-{{ $perm }}"><i class="fe {{ $icon }}"></i> {{ $label }}</label>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -248,3 +360,25 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    jQuery(function ($) {
+        // Choosing a role presets the three permissions; each one can still be changed on its own.
+        var defaults = @json(\App\Models\Channel::ROLE_PERMISSIONS);
+        $(document).on('change', '.role-select', function () {
+            var preset = defaults[this.value] || {};
+            $('.perm-' + $(this).data('target')).each(function () { this.checked = !!preset[$(this).data('perm')]; });
+        });
+        $('#inviteMemberModal').on('show.bs.modal', function () { $(this).find('.role-select').trigger('change'); });
+
+        // "Use the parent channel's settings" disables the custom fields.
+        function syncInherit() {
+            var on = $('#ps_inherit').is(':checked');
+            $('#psFields').toggleClass('op-5', on).find('input, select').prop('disabled', on);
+        }
+        $('#ps_inherit').on('change', syncInherit);
+        syncInherit();
+    });
+</script>
+@endpush

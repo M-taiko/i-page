@@ -649,6 +649,24 @@ Define complete specifications for each feature **before** implementation. This 
 - [ ] Reduced-motion users get a static page
 - [ ] Statistics are aggregate-only and cached
 
+### Feature: Channel Cascade, Highlights, Post Presentation and Member Permissions
+
+**Status**: In Development (ADR-014)
+
+**Business Rules**:
+- **Cascade**: a post published in a channel also appears in all of its sub-channels, at every depth, unless "Show in sub-channels" is turned off for that post. Inherited posts are labeled with their source channel. Public channels never inherit from private ancestors.
+- **Highlights**: staff with post permission can pin a post (optional end date, optional thumbnail, summary). Pinned posts appear as a highlights strip at the top of the channel; tap = preview sheet with summary, tap again = full post. Max 10 highlights shown, newest first. When pinning, staff choose the scope: **this channel only** or **this channel and all sub-channels** (any depth). The highlight scope is independent of the post's cascade flag (a post can be highlighted everywhere while its feed entry stays in one channel).
+- **Presentation**: per channel: layout (list, grid, compact), forced card style or "as chosen per post", excerpt length, and toggles for author, date, view count, reactions and comments. Sub-channels inherit from the parent unless they define their own.
+- **Member permissions**: when inviting a member to a public or private channel, and at any time after, the organization owner/admin sets independently: can post, can edit posts, can delete posts. Defaults follow the role (member: none; moderator: edit + delete; admin: all) and can be changed individually.
+- Editing and deleting channel posts is done from the post page by anyone with the matching permission.
+
+**Acceptance Criteria**:
+- [ ] Parent post appears in children and grandchildren; turning cascade off removes it there
+- [ ] Private parent posts never show on a public child
+- [ ] Pin / unpin works; highlights preview then open the post
+- [ ] Each permission is enforced separately on the server
+- [ ] Presentation settings apply on the channel page and are inherited by sub-channels
+
 ---
 
 ---

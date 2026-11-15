@@ -12,6 +12,10 @@
         {{-- Sub-channel / sibling blocks are skipped when there is nothing to show. --}}
         @continue(str_starts_with($block, 'channels.') && $channelGroups->isEmpty())
         @include('guest.valex.blocks.' . $block)
+        {{-- Pinned highlights sit right under the channel header (ADR-014). --}}
+        @if ($loop->first)
+            @include('channels._highlights', ['channel' => $channel])
+        @endif
     @endforeach
 
     @if ($parentChannel)
