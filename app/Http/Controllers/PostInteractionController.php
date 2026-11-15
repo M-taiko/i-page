@@ -45,7 +45,7 @@ class PostInteractionController extends Controller
     private function run(Post $post, \Closure $action, ?string $success): RedirectResponse
     {
         abort_unless($post->status === 'published', 404);
-        abort_if($post->channel && ! $post->channel->canBeAccessedBy(auth()->user()), 403);
+        abort_unless($post->isVisibleTo(auth()->user()), 403);
 
         try {
             $action();

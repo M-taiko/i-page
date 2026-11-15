@@ -144,7 +144,20 @@ class Channel extends Model
             if ($inherited) {
                 $q->orWhere(fn ($w) => $w->whereIn('channel_id', $inherited)->where('cascade', true));
             }
+            $this->orWhereBrandPost($q);
         });
+    }
+
+    /** Brand posts reaching this channel (ADR-015): public channels never get private-audience posts. */
+    private function orWhereBrandPost($q): void
+    {
+        if (! $this->brand_id) {
+            return;
+        }
+
+        $q->orWhere(fn ($w) => $w->whereNull('channel_id')
+            ->where('brand_id', $this->brand_id)
+            ->whereIn('brand_audience', ['all', $this->type === 'private' ? 'private' : 'public']));
     }
 
     /**
@@ -163,10 +176,11 @@ class Channel extends Model
                     $q->orWhere(fn ($w) => $w->whereIn('channel_id', $inherited)
                         ->where(fn ($s) => $s->whereNull('options->pin_scope')->orWhere('options->pin_scope', 'all')));
                 }
+                $this->orWhereBrandPost($q);
             })
             ->where('status', 'published')
             ->where('pinned_until', '>', now())
-            ->with(['media', 'channel'])
+            ->with(['media', 'channel', 'brand'])
             ->latest('published_at')->limit($limit)->get();
     }
 
@@ -196,9 +210,64 @@ class Channel extends Model
             return true;
         }
 
+        if ($this->brand && $this->brand->isManagedBy($user)) {
+            return true;   // brand admins manage every channel of their brand (ADR-015)
+        }
+
         return $user->organizationMemberships()
             ->where('organization_id', $this->organization_id)->where('status', 'active')
             ->whereIn('role', ['organization_admin', 'manager'])->exists();
+    }
+
+    /** Approved member of this channel. */
+    public function hasMember(?User $user): bool
+    {
+        return $user && \Illuminate\Support\Facades\DB::table('channel_user')
+            ->where('channel_id', $this->id)->where('user_id', $user->id)->where('status', 'approved')->exists();
+    }
+
+    /**
+     * Who may see this channel's member list (ADR-015): managers of the channel/brand/organization,
+     * brand moderators, and the channel's own approved members. Nobody else.
+     */
+    public function membersVisibleTo(?User $user): bool
+    {
+        return $this->isManagedBy($user)
+            || ($this->brand && $this->brand->isModeratedBy($user))
+            || $this->hasMember($user);
+    }
+
+    /** Settings, members and QR codes: managers plus the channel's own admins (channel_user role admin). */
+    public function canAdminister(?User $user): bool
+    {
+        return $this->isManagedBy($user) || ($user && \Illuminate\Support\Facades\DB::table('channel_user')
+            ->where('channel_id', $this->id)->where('user_id', $user->id)
+            ->where('status', 'approved')->where('role', 'admin')->exists());
+    }
+
+    /**
+     * Channels of $organizationId that $user may open in the dashboard (ADR-015): everything for
+     * organization admins/managers and super admins; otherwise the channels they are an approved
+     * member or admin of, plus every channel of brands they manage or moderate.
+     */
+    public function scopeVisibleTo($query, User $user, int $organizationId)
+    {
+        $query->where('organization_id', $organizationId);
+
+        $orgManager = $user->hasRole('super_admin') || $user->organizationMemberships()
+            ->where('organization_id', $organizationId)->where('status', 'active')
+            ->whereIn('role', ['organization_admin', 'manager'])->exists();
+        if ($orgManager) {
+            return $query;
+        }
+
+        $db = \Illuminate\Support\Facades\DB::class;
+        $memberOf = $db::table('channel_user')->where('user_id', $user->id)->where('status', 'approved')->pluck('channel_id');
+        $brands = $db::table('brand_user')->where('user_id', $user->id)->pluck('brand_id');
+
+        return $query->where(fn ($q) => $q->whereIn('id', $memberOf)
+            ->orWhere('admin_user_id', $user->id)
+            ->orWhereIn('brand_id', $brands));
     }
 
     /** Granular permission check: $ability is post | edit | delete. */
@@ -210,6 +279,10 @@ class Channel extends Model
 
         if ($this->isManagedBy($user)) {
             return true;
+        }
+
+        if ($ability !== 'post' && $this->brand && $this->brand->isModeratedBy($user)) {
+            return true;   // brand moderators edit and delete across the brand
         }
 
         return \Illuminate\Support\Facades\DB::table('channel_user')

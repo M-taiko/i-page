@@ -1,12 +1,41 @@
-{{-- Where the post appears and whether it is a highlight (ADR-014). Expects $channel; optional $post when editing. --}}
+{{-- Where the post appears and whether it is a highlight (ADR-014/015).
+     Channel posts: expects $channel. Brand posts: expects $brand (audience selector instead of cascade). Optional $post when editing. --}}
 @php
     $post = $post ?? null;
-    $children = $channel->childChannels()->pluck('name');
+    $brand = $brand ?? null;
+    $children = $brand ? collect() : $channel->childChannels()->pluck('name');
     $pinned = old('pinned', $post?->isPinned() ? 1 : 0);
     $pinUntil = old('pinned_until', $post && $post->isPinned() && $post->pinned_until->lt(now()->addYears(5)) ? $post->pinned_until->format('Y-m-d\TH:i') : '');
     $pinThumb = $post?->option('pin_thumb');
 @endphp
 <x-valex.card :title="__('Publishing')">
+    @if ($brand)
+    @php
+        $audience = old('brand_audience', $post?->brand_audience ?? 'all');
+        $counts = $brand->channels()->selectRaw('type, count(*) c')->groupBy('type')->pluck('c', 'type');
+        $audiences = [
+            'all' => ['globe', __('All brand channels'), __(':n channels, at every level', ['n' => $counts->sum()])],
+            'public' => ['users', __('Public channels only'), __(':n channels visitors can see', ['n' => $counts['public'] ?? 0])],
+            'private' => ['lock', __('Private (staff) channels only'), __(':n internal channels — never shown publicly', ['n' => $counts['private'] ?? 0])],
+        ];
+    @endphp
+    <label class="d-block font-weight-bold">{{ __('Who receives this post?') }}</label>
+    <div class="row mb-2">
+        @foreach ($audiences as $key => [$icon, $label, $hint])
+            <div class="col-md-4 mb-2">
+                <label class="card h-100 mb-0 p-3" style="cursor:pointer">
+                    <div class="custom-control custom-radio">
+                        <input type="radio" class="custom-control-input" id="aud_{{ $key }}" name="brand_audience" value="{{ $key }}" @checked($audience === $key)>
+                        <label class="custom-control-label" for="aud_{{ $key }}"><i class="fe fe-{{ $icon }}"></i> <strong>{{ $label }}</strong></label>
+                    </div>
+                    <small class="text-muted mt-1">{{ $hint }}</small>
+                </label>
+            </div>
+        @endforeach
+    </div>
+    @error('brand_audience')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+    <p class="small text-muted mb-4">{{ __('Channel admins, moderators and every subscriber of the receiving channels are notified.') }}</p>
+    @else
     {{-- Cascade to sub-channels --}}
     <div class="d-flex align-items-start p-3 rounded bg-primary-transparent mb-3">
         <div class="custom-control custom-switch mt-1">
@@ -25,6 +54,7 @@
             {{ __('Public sub-channels never show posts from a private channel.') }}
         @endif
     </p>
+    @endif
 
     {{-- Highlight --}}
     <div class="custom-control custom-switch mb-2">
@@ -34,6 +64,9 @@
     </div>
 
     <div id="pinFields" class="border rounded p-3 mt-2" style="{{ $pinned ? '' : 'display:none' }}">
+        @if ($brand)
+        <p class="small text-muted">{{ __('A brand highlight appears at the top of every channel that receives the post.') }}</p>
+        @else
         @php $scope = old('pin_scope', $post?->pinScope() ?? 'all'); @endphp
         <label class="d-block font-weight-bold">{{ __('Where should it be pinned?') }}</label>
         <div class="row mb-3">
@@ -56,6 +89,7 @@
                 </label>
             </div>
         </div>
+        @endif
         <div class="row">
             <div class="col-md-6">
                 <x-valex.input name="pinned_until" type="datetime-local" :label="__('Highlight until (optional)')" :value="$pinUntil" :help="__('Leave empty to keep it until you unpin it.')" />

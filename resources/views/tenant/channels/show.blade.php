@@ -293,7 +293,7 @@
                         </div>
                         <div class="mb-2">
                             @if ($post->isPinned())<span class="badge badge-primary">📌 {{ __('Highlight') }}</span>@endif
-                            @if ($inherited)<span class="badge badge-light border">↳ {{ __('From :channel', ['channel' => $post->channel?->name]) }}</span>@endif
+                            @if ($post->isBrandPost())<span class="badge badge-light border">🏷️ {{ __('From :brand', ['brand' => $post->brand?->name]) }}</span>@elseif ($inherited)<span class="badge badge-light border">↳ {{ __('From :channel', ['channel' => $post->channel?->name]) }}</span>@endif
                             @if (! $inherited && $post->cascade && $channel->childChannels()->exists())<span class="badge badge-info">⤵ {{ __('Shown in sub-channels') }}</span>@endif
                             @include('posts.partials._chips')
                         </div>

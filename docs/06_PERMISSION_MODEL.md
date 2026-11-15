@@ -500,6 +500,20 @@ $publicChannels = Channel::where('type', 'public')
 
 ---
 
+## Brand and Channel Scopes (ADR-014, ADR-015)
+
+| Who | Scope | Can |
+|---|---|---|
+| Super admin | Platform | Everything (oversight) |
+| Organization admin / manager | Organization | Manage every brand and channel; assign brand managers |
+| Brand admin (`brand_user.role = admin`) | One brand | Publish brand posts; post / edit / delete / pin in every channel of the brand; manage members; brand dashboard, people and statistics |
+| Brand moderator (`brand_user.role = moderator`) | One brand | Edit, delete and pin posts in the brand's channels |
+| Channel admin (`channels.admin_user_id`) | One channel | All post permissions in that channel |
+| Channel member (`channel_user`) | One channel | Only the granted `can_post`, `can_edit`, `can_delete` |
+| Staff / visitor | Their channels | See members only of channels they are an approved member of |
+
+All checks go through `Brand::isManagedBy()`, `Channel::isManagedBy()`, `Channel::userCan()` and `Channel::membersVisibleTo()`.
+
 ## Related Documents
 
 - [[05_DATABASE_ARCHITECTURE.md]] — organization_user, channel_user pivot tables

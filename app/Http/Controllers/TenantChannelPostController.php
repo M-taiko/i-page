@@ -65,6 +65,7 @@ class TenantChannelPostController extends Controller
 
         $post->save();
         $afterSave($post);
+        app(\App\Services\PostNotificationService::class)->published($post);
 
         return redirect()->to($this->channelUrl($channel))->with('success', __('Post created successfully!'));
     }

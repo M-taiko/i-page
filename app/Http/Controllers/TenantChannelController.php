@@ -28,7 +28,8 @@ class TenantChannelController extends Controller
             abort(403);
         }
 
-        $channels = Channel::where('organization_id', $organization->id)
+        // Staff only see the channels they belong to (ADR-015).
+        $channels = Channel::visibleTo(auth()->user(), $organization->id)
             ->with('brand', 'childChannels')
             ->withCount('users', 'posts')
             ->paginate(10);
@@ -136,6 +137,8 @@ class TenantChannelController extends Controller
         if (!$organization || $channel->organization_id !== $organization->id) {
             abort(403);
         }
+        // Only managers and the channel's own members may open it (and see its members).
+        abort_unless($channel->membersVisibleTo(auth()->user()), 403);
 
         $stats = [
             'members' => $channel->users()->wherePivot('status', 'approved')->count(),
@@ -160,6 +163,7 @@ class TenantChannelController extends Controller
         if (!$organization || $channel->organization_id !== $organization->id) {
             abort(403);
         }
+        abort_unless($channel->canAdminister(auth()->user()), 403);
 
         $brands = $organization->brands()->where('is_active', true)->get();
         $parentOptions = Channel::where('organization_id', $organization->id)
@@ -177,6 +181,7 @@ class TenantChannelController extends Controller
         if (!$organization || $channel->organization_id !== $organization->id) {
             abort(403);
         }
+        abort_unless($channel->canAdminister(auth()->user()), 403);
 
         $validated = $request->validate([
             'name' => 'required|string|max:120',
@@ -214,6 +219,7 @@ class TenantChannelController extends Controller
         if (!$organization || $channel->organization_id !== $organization->id) {
             abort(403);
         }
+        abort_unless($channel->canAdminister(auth()->user()), 403);
 
         $channel->delete();
 
@@ -230,6 +236,7 @@ class TenantChannelController extends Controller
         if (!$organization || $channel->organization_id !== $organization->id) {
             abort(403);
         }
+        abort_unless($channel->canAdminister(auth()->user()), 403);
 
         $channel->update([
             'status' => $channel->status === 'active' ? 'archived' : 'active',
@@ -470,5 +477,6 @@ class TenantChannelController extends Controller
     {
         $organization = auth()->user()->currentOrganization;
         abort_unless($organization && $channel->organization_id === $organization->id, 403);
+        abort_unless($channel->canAdminister(auth()->user()), 403);
     }
 }

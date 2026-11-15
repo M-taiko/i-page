@@ -667,6 +667,36 @@ Define complete specifications for each feature **before** implementation. This 
 - [ ] Each permission is enforced separately on the server
 - [ ] Presentation settings apply on the channel page and are inherited by sub-channels
 
+### Feature: Brand Command Center
+
+**Status**: Implemented (ADR-015)
+
+**Example**: Hilton (brand) → Hilton Egypt, Hilton Saudi → Front Desk, Restaurants (→ KFC, Hotel restaurant), Civil Defense & Emergency Exits.
+
+**Business Rules**:
+- A brand admin publishes a **brand post** once and chooses the audience: all brand channels, public channels only, or private (staff) channels only. It appears in every matching channel at every depth, labeled with the brand.
+- Brand posts support every post format, card style, badge, reaction set and pin (pins appear in every brand channel).
+- **Notifications** on every new channel or brand post: channel admins, moderators and brand managers get a management notice; subscribers get a new-post notice; muted members and the author get none; nobody gets two notices for the same post.
+- **Brand managers** are assigned from the brand page by organization admins (admin or moderator). Brand admins manage all channels of their brand only.
+- **Brand dashboard**: overview statistics scoped to the brand (channels, subscribers, staff, posts, QR scans, engagement), the full channel tree, brand posts, people (every employee and subscriber in the brand's channels, with the channels they are in), managers, and an activity log.
+- **Visibility**: staff and visitors only see the members of channels they belong to; brand managers see their whole brand; organization admins see everything.
+
+**Acceptance Criteria**:
+- [x] Brand post audiences respected at every depth; private posts never reach public pages
+- [x] Notifications reach the right people exactly once
+- [x] Brand admin rights stop at the brand boundary
+- [x] Staff cannot open member lists of channels they are not in
+- [x] Brand statistics only count the brand's own data
+
+**Implementation**:
+- Routes: `organizations/{organization}/brands/{brand}` (dashboard, `?tab=overview|channels|posts|people|managers|activity`), `.../posts` (create/store/edit/update/destroy/pin), `.../managers` (assign/remove).
+- `BrandPostController` reuses `tenant/channels/posts/_post-fields` and `_publish-options` (brand mode: audience selector instead of cascade; a brand pin shows in every receiving channel).
+- `PostNotificationService::published()` runs after every channel and brand post (synchronous bulk insert, chunks of 500).
+- `Channel::scopeVisibleTo()` filters the dashboard channel list; `Channel::membersVisibleTo()` guards the channel page; `Channel::canAdminister()` guards settings, members and QR codes.
+- `Post::isVisibleTo()` guards the public post page and interactions (private brand posts need membership in a receiving private channel).
+- `DashboardStatsService::brand()` scopes statistics to the brand.
+- `BrandPolicy::view` = `Brand::isModeratedBy()`; the brands list shows only brands the user manages or moderates.
+
 ---
 
 ---

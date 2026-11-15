@@ -11,7 +11,7 @@
         <i class="bi bi-arrow-left"></i>
     </button>
     <div class="app-bar-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-        {{ $post->channel->name ?? ($post->organization->name ?? 'Post') }}
+        {{ $post->sourceName() ?? ($post->organization->name ?? 'Post') }}
     </div>
     <div class="app-bar-actions">
         <button type="button" class="app-bar-icon-btn" onclick="sharePost()" aria-label="{{ __('Share') }}">
@@ -82,8 +82,8 @@
     @php
         $avatarPalette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777'];
         $colorFor = fn($seed) => $avatarPalette[crc32($seed) % count($avatarPalette)];
-        $displayName = $post->channel->name ?? $post->organization->name ?? __('i-Page');
-        $subtitle = $post->channel?->brand->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
+        $displayName = $post->sourceName() ?? $post->organization->name ?? __('i-Page');
+        $subtitle = ($post->isBrandPost() ? __('Brand post') : $post->channel?->brand?->name) ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
         $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
         $likeCount = $post->reactions()->where('type', 'like')->count();
         $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();

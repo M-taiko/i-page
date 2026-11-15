@@ -1,9 +1,14 @@
-{{-- Pin / edit / delete menu for a channel post, shown only to people allowed to do it (ADR-014). Expects $post. --}}
+{{-- Pin / edit / delete menu for a channel or brand post, shown only to people allowed to do it (ADR-014/015). Expects $post. --}}
 @php
     $mChannel = $post->channel;
     $mUser = auth()->user();
-    $mCanEdit = $mChannel && $mUser && $mChannel->userCan($mUser, 'edit');
-    $mCanDelete = $mChannel && $mUser && $mChannel->userCan($mUser, 'delete');
+    $mBrand = $post->isBrandPost() ? $post->brand : null;
+    if ($mBrand) {
+        $mCanEdit = $mCanDelete = $mUser && $mBrand->isModeratedBy($mUser);
+    } else {
+        $mCanEdit = $mChannel && $mUser && $mChannel->userCan($mUser, 'edit');
+        $mCanDelete = $mChannel && $mUser && $mChannel->userCan($mUser, 'delete');
+    }
 @endphp
 @if ($mCanEdit || $mCanDelete)
 @once
@@ -23,6 +28,18 @@
 <details class="pm">
     <summary aria-label="{{ __('Post actions') }}">⋯</summary>
     <div class="pm-menu">
+        @if ($mBrand)
+            <form action="{{ route('organizations.brands.posts.pin', [$mBrand->organization_id, $mBrand->id, $post->id]) }}" method="POST">
+                @csrf
+                <button type="submit">{{ $post->isPinned() ? '✖️ ' . __('Unpin highlight') : '📌 ' . __('Pin in every brand channel') }}</button>
+            </form>
+            <a href="{{ route('organizations.brands.posts.edit', [$mBrand->organization_id, $mBrand->id, $post->id]) }}">✏️ {{ __('Edit post') }}</a>
+            <form action="{{ route('organizations.brands.posts.destroy', [$mBrand->organization_id, $mBrand->id, $post->id]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this post from every brand channel? This cannot be undone.') }}')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="pm-danger">🗑️ {{ __('Delete post') }}</button>
+            </form>
+        @else
         @if ($mCanEdit)
             @php
                 $mPinned = $post->isPinned();
@@ -52,6 +69,7 @@
                 @method('DELETE')
                 <button type="submit" class="pm-danger">🗑️ {{ __('Delete post') }}</button>
             </form>
+        @endif
         @endif
     </div>
 </details>

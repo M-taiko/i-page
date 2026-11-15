@@ -14,11 +14,8 @@ class BrandPolicy
 
     public function view(User $user, Brand $brand): bool
     {
-        // User must be a member of the brand's organization
-        return $user->organizationMemberships()
-            ->where('organization_id', $brand->organization_id)
-            ->where('status', 'active')
-            ->exists();
+        // The brand dashboard lists people and stats: brand admins/moderators and org managers only (ADR-015).
+        return $brand->isModeratedBy($user);
     }
 
     public function create(User $user): bool

@@ -153,7 +153,7 @@ class GuestController extends Controller
         // Own posts + posts cascading from parent channels (ADR-014).
         $posts = $channel->feedQuery()
             ->where('status', 'published')
-            ->with(['author', 'channel', 'media'])
+            ->with(['author', 'channel', 'brand', 'media'])
             ->latest('published_at')
             ->paginate(20)
             ->withQueryString();
@@ -234,9 +234,9 @@ class GuestController extends Controller
     public function postDetail(Post $post): View
     {
         abort_unless($post->status === 'published', 404);
-        abort_if($post->channel && $post->channel->type !== 'public', 404);
+        abort_unless($post->isVisibleTo(auth()->user()), 404);
 
-        $post->load('author', 'channel.brand', 'channel.organization', 'organization');
+        $post->load('author', 'channel.brand', 'channel.organization', 'organization', 'brand');
         $this->recordViews([$post]);
 
         $comments = $post->comments()->approved()->with('user')->latest()->get();

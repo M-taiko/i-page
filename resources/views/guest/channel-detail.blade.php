@@ -275,6 +275,8 @@
                             @if ($post->isPinned())<span class="post-pinned">📌 {{ __('Pinned') }}</span>@endif
                             @if ($inherited && $post->channel)
                                 <a class="post-from" href="{{ route('guest.channel-detail', [$organization, $post->channel->slug]) }}">↳ {{ __('From :channel', ['channel' => $post->channel->name]) }}</a>
+                            @elseif ($post->isBrandPost() && $post->brand)
+                                <span class="post-from">🏷️ {{ __('From :brand', ['brand' => $post->brand->name]) }}</span>
                             @endif
                         </div>
                     </div>

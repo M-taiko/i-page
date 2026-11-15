@@ -124,6 +124,52 @@ class DashboardStatsService
         });
     }
 
+    /**
+     * Everything scoped to one brand (ADR-015): its channels at every depth, posts in them plus
+     * brand-level posts, QR scans of its channels, engagement and the people subscribed.
+     */
+    public function brand(\App\Models\Brand $brand, int $days): array
+    {
+        return Cache::remember("dash.brand.{$brand->id}.$days", self::CACHE_SECONDS, function () use ($brand, $days) {
+            $since = CarbonImmutable::now()->subDays($days)->startOfDay();
+            $prev = $since->subDays($days);
+            $channelIds = $brand->channelIds();
+
+            $posts = fn () => Post::where(fn ($q) => $q->whereIn('channel_id', $channelIds)
+                ->orWhere(fn ($b) => $b->whereNull('channel_id')->where('brand_id', $brand->id)));
+            $qrIds = QrCode::where('ownable_type', Channel::class)->whereIn('ownable_id', $channelIds)->select('id');
+            $scans = fn () => QrScanLog::whereIn('qr_code_id', $qrIds);
+            $receipts = fn () => PostReceipt::whereIn('post_id', $posts()->select('id'));
+            $memberships = fn () => \Illuminate\Support\Facades\DB::table('channel_user')
+                ->whereIn('channel_id', $channelIds)->where('status', 'approved');
+            $staffIds = \Illuminate\Support\Facades\DB::table('organization_memberships')
+                ->where('organization_id', $brand->organization_id)->where('status', 'active')->whereNull('deleted_at')->pluck('user_id');
+            $people = $memberships()->distinct()->pluck('user_id');
+            $staff = $people->intersect($staffIds)->count();
+            $subscribersSince = fn ($from, $to = null) => $memberships()->where('joined_at', '>=', $from)
+                ->when($to, fn ($q) => $q->where('joined_at', '<', $to))->distinct()->count('user_id');
+
+            return [
+                'days' => $days,
+                'kpis' => [
+                    $this->kpi(__('Channels'), 'message-circle', 'purple', count($channelIds), $this->countBetween(Channel::whereIn('id', $channelIds), $since), $this->countBetween(Channel::whereIn('id', $channelIds), $prev, $since)),
+                    $this->kpi(__('Subscribers'), 'users', 'success', $people->count(), $subscribersSince($since), $subscribersSince($prev, $since)),
+                    $this->kpi(__('Staff'), 'briefcase', 'info', $staff, 0, 0),
+                    $this->kpi(__('Posts'), 'file-text', 'primary', $posts()->count(), $this->countBetween($posts(), $since), $this->countBetween($posts(), $prev, $since)),
+                    $this->kpi(__('Brand posts'), 'award', 'warning', $brand->brandPosts()->count(), $this->countBetween($brand->brandPosts()->getQuery(), $since), $this->countBetween($brand->brandPosts()->getQuery(), $prev, $since)),
+                    $this->kpi(__('QR Scans'), 'grid', 'danger', $scans()->count(), $this->countBetween($scans(), $since), $this->countBetween($scans(), $prev, $since)),
+                ],
+                'growth' => $this->series($days, [__('Posts') => $this->perDay($posts(), $since)]),
+                'scans' => $this->series($days, [__('QR scans') => $this->perDay($scans(), $since)]),
+                'devices' => $this->devices($scans(), $since),
+                'postTypes' => $this->postTypes($posts(), $since),
+                'engagement' => $this->engagement($receipts(), $since),
+                'topChannels' => Channel::whereIn('id', $channelIds)->withCount(['posts', 'users' => fn ($q) => $q->where('channel_user.status', 'approved')])
+                    ->orderByDesc('users_count')->limit(6)->get(),
+            ];
+        });
+    }
+
     private function kpi(string $label, string $icon, string $variant, int $total, int $current, int $previous): array
     {
         $change = $previous > 0 ? round((($current - $previous) / $previous) * 100) : ($current > 0 ? 100 : 0);

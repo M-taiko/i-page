@@ -85,7 +85,7 @@ class ChannelController extends Controller
 
         $posts = $channel->feedQuery()
             ->where('status', 'published')
-            ->with(['author', 'organization', 'reactions', 'comments', 'channel'])
+            ->with(['author', 'organization', 'reactions', 'comments', 'channel', 'brand'])
             ->latest('published_at')
             ->paginate(20)
             ->withQueryString();

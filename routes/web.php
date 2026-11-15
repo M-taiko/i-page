@@ -288,6 +288,16 @@ Route::middleware(['auth', 'verified', 'organization.active'])->prefix('organiza
     Route::put('{organization}/brands/{brand}', [\App\Http\Controllers\BrandController::class, 'update'])->name('brands.update');
     Route::delete('{organization}/brands/{brand}', [\App\Http\Controllers\BrandController::class, 'destroy'])->name('brands.destroy');
 
+    // Brand command center (ADR-015): brand posts and brand managers
+    Route::get('{organization}/brands/{brand}/posts/create', [\App\Http\Controllers\BrandPostController::class, 'create'])->name('brands.posts.create');
+    Route::post('{organization}/brands/{brand}/posts', [\App\Http\Controllers\BrandPostController::class, 'store'])->name('brands.posts.store');
+    Route::get('{organization}/brands/{brand}/posts/{post}/edit', [\App\Http\Controllers\BrandPostController::class, 'edit'])->name('brands.posts.edit');
+    Route::put('{organization}/brands/{brand}/posts/{post}', [\App\Http\Controllers\BrandPostController::class, 'update'])->name('brands.posts.update');
+    Route::delete('{organization}/brands/{brand}/posts/{post}', [\App\Http\Controllers\BrandPostController::class, 'destroy'])->name('brands.posts.destroy');
+    Route::post('{organization}/brands/{brand}/posts/{post}/pin', [\App\Http\Controllers\BrandPostController::class, 'pin'])->name('brands.posts.pin');
+    Route::post('{organization}/brands/{brand}/managers', [\App\Http\Controllers\BrandController::class, 'addManager'])->name('brands.managers.store');
+    Route::delete('{organization}/brands/{brand}/managers/{user}', [\App\Http\Controllers\BrandController::class, 'removeManager'])->name('brands.managers.destroy');
+
     // Location Management
     Route::get('{organization}/locations/create', [\App\Http\Controllers\LocationController::class, 'create'])->name('locations.create');
     Route::post('{organization}/locations', [\App\Http\Controllers\LocationController::class, 'store'])->name('locations.store');

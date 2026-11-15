@@ -472,6 +472,28 @@ Columns updated on model changes (observer or event listener). Detailed analytic
 
 ---
 
+## ADR-015: Brand as a command center
+
+**Date**: 2026-11-15
+
+**Title**: Brand posts, brand managers, brand-scoped statistics, post notifications and member visibility
+
+**Status**: Accepted
+
+**Decision**:
+1. **Brand posts** are posts with `brand_id` set, `channel_id` NULL and `brand_audience` in `all | public | private`. They are resolved at read time by `Channel::feedQuery()` for every channel of the brand (public channels never receive `private` audience posts). Brand pins appear in every brand channel's highlights.
+2. **Brand managers** live in `brand_user` (role `admin` or `moderator`), assigned by organization admins. A brand admin manages every channel of the brand (all post permissions, member management, brand dashboard); a brand moderator can edit and delete posts in the brand's channels. Neither has rights on other brands.
+3. **Notifications**: `PostNotificationService::published()` runs after every channel or brand post. Channel admins/moderators and brand managers get a management notice; approved, non-muted subscribers get a new-post notice. Recipients are de-duplicated and the author is excluded. Rows are bulk-inserted (the host runs the queue synchronously).
+4. **Member visibility**: organization admins/managers and brand managers (within their brand) see every channel's members. Everyone else only sees channels they are an approved member of, and only those channels' members.
+
+**Rationale**: Read-time resolution keeps one post row (one set of reactions, comments and receipts) regardless of how many channels show it. A pivot table for brand roles keeps organization roles untouched.
+
+**Consequences**: Feed queries gain one more OR branch (indexed on `brand_id`). Every place that lists channel members must use `Channel::membersVisibleTo()`. Dashboard channel lists use `Channel::scopeVisibleTo()`; channel settings, member management and QR codes require `Channel::canAdminister()` (managers plus the channel's own admins), so plain staff can no longer edit channels they merely belong to. Private-channel and private-audience posts are now openable on the public post page by people with access (`Post::isVisibleTo()`), so notification links never dead-end for them.
+
+**Related**: ADR-014, [[06_PERMISSION_MODEL.md]], [[27_FEATURE_SPECIFICATIONS.md]]
+
+---
+
 ## Decision Template (Use for Future ADRs)
 
 **Date**: YYYY-MM-DD

@@ -19,6 +19,7 @@ class Post extends Model
         'author_id',
         'channel_id',
         'cascade',
+        'brand_audience',
         'organization_id',
         'brand_id',
         'location_id',
@@ -143,6 +144,49 @@ class Post extends Model
     public function galleryImages()
     {
         return $this->media->where('usage_type', 'gallery')->sortBy('id')->values();
+    }
+
+    /** Posted at brand level and shown in the brand's channels (ADR-015). */
+    public function isBrandPost(): bool
+    {
+        return $this->channel_id === null && $this->brand_audience !== null;
+    }
+
+    /** Where this post lives: its channel name, or the brand name for brand posts. */
+    public function sourceName(): ?string
+    {
+        return $this->isBrandPost() ? $this->brand?->name : $this->channel?->name;
+    }
+
+    /**
+     * Can $user (or a guest) open this post? Public channel posts and brand posts reaching public
+     * channels are open to everyone; private ones need access to at least one receiving channel.
+     */
+    public function isVisibleTo(?User $user): bool
+    {
+        if ($this->isBrandPost()) {
+            if ($this->brand_audience !== 'private' && Channel::where('brand_id', $this->brand_id)->where('type', 'public')->exists()) {
+                return true;
+            }
+            if (! $user) {
+                return false;
+            }
+            if ($this->brand?->isModeratedBy($user)) {
+                return true;
+            }
+
+            return \Illuminate\Support\Facades\DB::table('channel_user')->join('channels', 'channels.id', '=', 'channel_user.channel_id')
+                ->where('channel_user.user_id', $user->id)->where('channel_user.status', 'approved')
+                ->where('channels.brand_id', $this->brand_id)
+                ->when($this->brand_audience !== 'all', fn ($q) => $q->where('channels.type', $this->brand_audience))
+                ->exists();
+        }
+
+        if (! $this->channel || $this->channel->type === 'public') {
+            return true;
+        }
+
+        return $user && $this->channel->canBeAccessedBy($user);
     }
 
     /** Where a pin shows: 'channel' (its own channel only) or 'all' (also every sub-channel). */
