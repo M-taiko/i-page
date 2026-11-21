@@ -174,7 +174,7 @@ class GuestController extends Controller
         $orgChannels = $organization->channels()
             ->where('type', 'public')
             ->whereDoesntHave('parentChannels')
-            ->withCount('posts')
+            ->withCount(['posts', 'users' => fn ($u) => $u->where('channel_user.status', 'approved')])
             ->orderBy('name')
             ->get();
 
@@ -185,6 +185,7 @@ class GuestController extends Controller
         $stripSource = ($hasChildren || ! $parentChannel) ? $channel : $parentChannel;
         $subChannels = $stripSource->childChannels()
             ->where('type', 'public')
+            ->withCount(['users' => fn ($u) => $u->where('channel_user.status', 'approved'), 'childChannels'])
             ->orderBy('name')
             ->get();
 

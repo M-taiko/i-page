@@ -59,7 +59,7 @@
     /* Instagram-style "stories" strip — all sibling channels of this org */
     .stories-strip {
         display: flex;
-        gap: var(--space-4);
+        gap: var(--space-2);
         overflow-x: auto;
         scrollbar-width: none;
         padding: var(--space-4);
@@ -76,8 +76,14 @@
         gap: 6px;
         text-decoration: none;
         flex-shrink: 0;
-        width: 68px;
+        width: 84px;
+        border-radius: 14px;
+        padding: 4px 2px;
+        outline-offset: 2px;
     }
+
+    .story-item:hover .story-ring { transform: translateY(-2px); }
+    .story-item:focus-visible { outline: 2px solid var(--primary-500); }
 
     .story-ring {
         width: 64px;
@@ -113,14 +119,18 @@
     }
 
     .story-name {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: var(--font-weight-semibold);
+        line-height: 1.3;
         color: var(--text-primary);
         text-align: center;
-        white-space: nowrap;
+        max-width: 84px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 68px;
+        overflow-wrap: anywhere;
+        min-height: 2.6em;
     }
 
     .story-item.current .story-name { color: var(--primary-600); }
@@ -201,7 +211,8 @@
     @if($subChannels->isNotEmpty())
         <div class="stories-strip">
             @if($parentChannel)
-                <a href="{{ route('guest.channel-detail', [$organization, $parentChannel->slug]) }}" class="story-item">
+                <a href="{{ route('guest.channel-detail', [$organization, $parentChannel->slug]) }}" class="story-item"
+                   data-tip="{{ $parentChannel->name }}" data-tip-sub="{{ __('Back to the parent channel') }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($parentChannel->name) }};">
                             <i class="bi bi-arrow-up-left" style="font-size: 20px;"></i>
@@ -212,7 +223,10 @@
             @endif
             @foreach($subChannels as $sub)
                 <a href="{{ route('guest.channel-detail', [$organization, $sub->slug]) }}"
-                   class="story-item {{ $sub->id === $channel->id ? 'current' : '' }}">
+                   class="story-item {{ $sub->id === $channel->id ? 'current' : '' }}"
+                   @if ($sub->id === $channel->id) aria-current="page" @endif
+                   data-tip="{{ $sub->name }}"
+                   data-tip-sub="{{ $sub->id === $channel->id ? __('You are here') : trim(trans_choice(':count member|:count members', $sub->users_count ?? 0) . ($sub->child_channels_count ? ' · ' . trans_choice(':count sub-channel|:count sub-channels', $sub->child_channels_count) : '')) }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($sub->name) }};">
                             {{ mb_substr($sub->name, 0, 1) }}
@@ -226,10 +240,13 @@
         <div class="stories-strip">
             @foreach($orgChannels as $orgChannel)
                 <a href="{{ route('guest.channel-detail', [$organization, $orgChannel->slug]) }}"
-                   class="story-item {{ $orgChannel->id === $channel->id ? 'current' : '' }}">
+                   class="story-item {{ $orgChannel->id === $channel->id ? 'current' : '' }}"
+                   @if ($orgChannel->id === $channel->id) aria-current="page" @endif
+                   data-tip="{{ $orgChannel->name }}"
+                   data-tip-sub="{{ $orgChannel->id === $channel->id ? __('You are here') : trans_choice(':count member|:count members', $orgChannel->users_count ?? 0) }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($orgChannel->name) }};">
-                            {{ substr($orgChannel->name, 0, 1) }}
+                            {{ mb_substr($orgChannel->name, 0, 1) }}
                         </div>
                     </div>
                     <div class="story-name">{{ $orgChannel->name }}</div>

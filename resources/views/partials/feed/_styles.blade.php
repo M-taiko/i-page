@@ -37,7 +37,7 @@
     .org-ring { width: 64px; height: 64px; margin: 0 auto 6px; padding: 3px; border-radius: 50%; background: conic-gradient(from 200deg, #6d5dfc, #ec4899, #f59e0b, #6d5dfc); transition: transform .2s; }
     .org:hover .org-ring { transform: scale(1.06); }
     .org-av { width: 100%; height: 100%; border-radius: 50%; border: 3px solid var(--surface-bg); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 20px; background: var(--av); }
-    .org-name { font-size: 11.5px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .org-name { font-size: 11.5px; font-weight: 600; line-height: 1.3; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 
     /* Suggested channels */
     .sug { flex: 0 0 auto; width: 168px; padding: 14px; border-radius: 18px; background: var(--surface-bg); border: 1px solid var(--surface-border); text-decoration: none; scroll-snap-align: start; transition: transform .2s, box-shadow .2s; }
@@ -102,3 +102,17 @@
 
     @media (prefers-reduced-motion: reduce) { .sk-b { animation: none; } .fc-btn.is-on i { animation: none; } }
     @media (min-width: 640px) { .hero h1 { font-size: 1.5rem; } }
+
+    /* Phones: a compact hero so the feed starts higher on the screen. */
+    @media (max-width: 520px) {
+        .hero { margin: 10px 12px; padding: 14px 14px 13px; border-radius: 20px; gap: 6px; }
+        .hero::after { width: 120px; height: 120px; inset: auto -30px -50px auto; }
+        .hero-kicker { font-size: 11.5px; }
+        .hero h1 { font-size: 1.05rem; margin: 2px 0 4px; }
+        .hero p { font-size: 12px; line-height: 1.45; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .hero-cta { padding: 6px 12px; font-size: 12px; }
+        .hero .ill { width: 86px; height: auto; margin-inline-end: -6px; }
+        .hero-stats { gap: 6px; }
+        .hero-stat { padding: 4px 9px; font-size: 11px; }
+        .hero-stat b { font-size: 12px; }
+    }

@@ -223,6 +223,22 @@
             .bn-item.active i, .bn-fab::after { animation: none; }
         }
 
+        /* Tooltip popup for any element with data-tip (title on the first line, data-tip-sub below).
+           Lives on <body> with position: fixed, so scrolling strips never clip it. */
+        .ip-tip {
+            position: fixed; z-index: 2000; max-width: min(280px, calc(100vw - 24px));
+            padding: 8px 12px; border-radius: 12px;
+            background: #0f172a; color: #fff; box-shadow: 0 12px 28px -10px rgba(15, 23, 42, .55);
+            font-size: 13px; font-weight: 700; line-height: 1.35; text-align: center; overflow-wrap: anywhere;
+            pointer-events: none; opacity: 0; transform: translateY(4px) scale(.97);
+            transition: opacity .15s ease, transform .15s ease;
+        }
+        .ip-tip.show { opacity: 1; transform: none; }
+        .ip-tip small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 500; opacity: .75; }
+        .ip-tip::after { content: ''; position: absolute; left: var(--arrow-x, 50%); top: 100%; width: 10px; height: 10px; background: inherit; transform: translate(-50%, -50%) rotate(45deg); border-radius: 2px; }
+        .ip-tip.below::after { top: 0; }
+        [data-theme="dark"] .ip-tip { background: #f8fafc; color: #0f172a; }
+        @media (prefers-reduced-motion: reduce) { .ip-tip { transition: none; } }
         /* Theme toggle in the app bar: shows the moon in light mode and the sun in dark mode. */
         .theme-toggle .bi-sun { display: none; }
         [data-theme="dark"] .theme-toggle .bi-sun { display: inline-block; }
@@ -351,6 +367,79 @@
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('theme', next);
         }
+    </script>
+    <script>
+        /* data-tip popups: hover (mouse), keyboard focus, and press-and-hold on touch screens. */
+        (function () {
+            let tip = null, target = null, holdTimer = null, hideTimer = null, held = false;
+
+            function show(el) {
+                clearTimeout(hideTimer);
+                target = el;
+                if (!tip) {
+                    tip = document.createElement('div');
+                    tip.className = 'ip-tip';
+                    tip.id = 'ipTip';
+                    tip.setAttribute('role', 'tooltip');
+                    document.body.appendChild(tip);
+                }
+                tip.textContent = el.dataset.tip;
+                if (el.dataset.tipSub) {
+                    const sub = document.createElement('small');
+                    sub.textContent = el.dataset.tipSub;
+                    tip.appendChild(sub);
+                }
+                el.setAttribute('aria-describedby', 'ipTip');
+                tip.classList.remove('show', 'below');
+                const r = el.getBoundingClientRect();
+                const t = tip.getBoundingClientRect();
+                const margin = 12;
+                let left = r.left + r.width / 2 - t.width / 2;
+                left = Math.max(margin, Math.min(left, window.innerWidth - t.width - margin));
+                let top = r.top - t.height - 10;
+                if (top < margin) { top = r.bottom + 10; tip.classList.add('below'); }
+                tip.style.left = left + 'px';
+                tip.style.top = top + 'px';
+                tip.style.setProperty('--arrow-x', (r.left + r.width / 2 - left) + 'px');
+                void tip.offsetWidth;   // restart the fade-in without waiting for a frame
+                tip.classList.add('show');
+            }
+            function hide(delay) {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                    if (tip) tip.classList.remove('show');
+                    if (target) target.removeAttribute('aria-describedby');
+                    target = null;
+                }, delay || 0);
+            }
+
+            document.addEventListener('pointerover', e => {
+                const el = e.target.closest('[data-tip]');
+                if (el && e.pointerType === 'mouse' && el !== target) show(el);
+            });
+            document.addEventListener('pointerout', e => {
+                const el = e.target.closest('[data-tip]');
+                if (el && e.pointerType === 'mouse' && !el.contains(e.relatedTarget)) hide(60);
+            });
+            document.addEventListener('focusin', e => { const el = e.target.closest('[data-tip]'); if (el) show(el); });
+            document.addEventListener('focusout', e => { if (e.target.closest('[data-tip]')) hide(); });
+
+            // Touch: hold ~0.45s to see the full name; the tap that ends a hold doesn't navigate.
+            document.addEventListener('touchstart', e => {
+                const el = e.target.closest('[data-tip]');
+                if (!el) return;
+                held = false;
+                holdTimer = setTimeout(() => { held = true; show(el); hide(1800); }, 450);
+            }, { passive: true });
+            ['touchend', 'touchmove', 'touchcancel'].forEach(type => document.addEventListener(type, () => clearTimeout(holdTimer), { passive: true }));
+            document.addEventListener('click', e => {
+                if (held && e.target.closest('[data-tip]')) { e.preventDefault(); e.stopPropagation(); held = false; }
+            }, true);
+            document.addEventListener('contextmenu', e => { if (e.target.closest('[data-tip]') && held) e.preventDefault(); });
+
+            window.addEventListener('scroll', () => hide(), true);
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+        })();
     </script>
     <script>
         (function () {

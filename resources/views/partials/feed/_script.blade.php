@@ -2,6 +2,15 @@
 <script>
     document.documentElement.classList.add('js');
 
+    /* Greeting and day/night scene follow the visitor's own clock, not the server's. */
+    (function () {
+        const h = new Date().getHours();
+        const part = h >= 5 && h < 12 ? 'morning' : (h >= 12 && h < 17 ? 'afternoon' : 'evening');
+        document.querySelectorAll('.js-greeting').forEach(el => { el.textContent = el.dataset[part]; });
+        const day = h >= 5 && h < 17;
+        document.querySelectorAll('[data-daytime]').forEach(el => { el.toggleAttribute('hidden', (el.dataset.daytime === 'day') !== day); });
+    })();
+
     function toggleFeedComments(button) {
         const box = button.closest('.fc').querySelector('.fc-comments');
         if (!box) return;

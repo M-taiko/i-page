@@ -27,7 +27,7 @@
     $palette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777', '#0891b2'];
     $colorFor = fn ($seed) => $palette[crc32((string) $seed) % count($palette)];
     $hour = (int) now()->format('G');
-    $greeting = $hour < 12 ? __('Good morning') : ($hour < 18 ? __('Good afternoon') : __('Good evening'));
+    $greeting = $hour >= 5 && $hour < 12 ? __('Good morning') : ($hour >= 12 && $hour < 17 ? __('Good afternoon') : __('Good evening'));
     $user = auth()->user();
 @endphp
 <div class="home">
@@ -35,12 +35,12 @@
     <section class="hero reveal">
         <div class="hero-text">
             @if ($tab === 'for-you')
-                <div class="hero-kicker">{{ $greeting }}{{ $user ? ', ' . $user->first_name : '' }} 👋</div>
+                <div class="hero-kicker"><span class="js-greeting" data-morning="{{ __('Good morning') }}" data-afternoon="{{ __('Good afternoon') }}" data-evening="{{ __('Good evening') }}">{{ $greeting }}</span>{{ $user ? ', ' . $user->first_name : '' }} 👋</div>
                 <h1>{{ __('Your feed is ready') }}</h1>
                 <p>{{ trans_choice('Fresh news from the :count channel you joined.|Fresh news from the :count channels you joined.', $joinedCount, ['count' => $joinedCount]) }}</p>
                 <a href="{{ route('guest.home', ['tab' => 'discover']) }}" class="hero-cta"><i class="bi bi-compass"></i> {{ __('Discover more') }}</a>
             @else
-                <div class="hero-kicker">{{ $user ? $greeting . ', ' . $user->first_name . ' 👋' : __('Welcome to i-Page') }}</div>
+                <div class="hero-kicker">@if ($user)<span class="js-greeting" data-morning="{{ __('Good morning') }}" data-afternoon="{{ __('Good afternoon') }}" data-evening="{{ __('Good evening') }}">{{ $greeting }}</span>, {{ $user->first_name }} 👋@else{{ __('Welcome to i-Page') }}@endif</div>
                 <h1>{{ __('Discover what\'s happening') }}</h1>
                 <p>{{ __('Hotels, stores, schools and more share their news here. Follow the channels you like to build your own feed.') }}</p>
                 @guest
@@ -73,7 +73,7 @@
                 </div>
                 <div class="hscroll">
                     @foreach ($organizations as $org)
-                        <a href="{{ route('guest.organization-detail', $org->id) }}" class="org" title="{{ $org->name }}">
+                        <a href="{{ route('guest.organization-detail', $org->id) }}" class="org" data-tip="{{ $org->name }}" data-tip-sub="{{ trans_choice(':count channel|:count channels', $org->channels_count) }}">
                             <div class="org-ring"><div class="org-av" style="--av: {{ $colorFor($org->name) }};">{{ mb_substr($org->name, 0, 1) }}</div></div>
                             <div class="org-name">{{ $org->name }}</div>
                         </a>
@@ -88,7 +88,7 @@
                 <div class="sec-head"><h2 id="sugTitle">{{ $hasFeed ? __('More channels for you') : __('Channels to start with') }}</h2></div>
                 <div class="hscroll">
                     @foreach ($suggested as $channel)
-                        <a href="{{ route('guest.channel-detail', [$channel->organization_id, $channel->slug]) }}" class="sug">
+                        <a href="{{ route('guest.channel-detail', [$channel->organization_id, $channel->slug]) }}" class="sug" data-tip="{{ $channel->name }}" data-tip-sub="{{ $channel->organization?->name }}">
                             <div class="sug-av" style="--av: {{ $colorFor($channel->name) }};">{{ mb_substr($channel->name, 0, 1) }}</div>
                             <div class="sug-name">{{ $channel->name }}</div>
                             <div class="sug-org">{{ $channel->organization?->name }}</div>

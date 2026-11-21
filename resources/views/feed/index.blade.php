@@ -378,14 +378,15 @@
     $palette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777', '#0891b2'];
     $colorFor = fn ($seed) => $palette[crc32((string) $seed) % count($palette)];
     $hour = (int) now()->format('G');
-    $greeting = $hour < 12 ? __('Good morning') : ($hour < 18 ? __('Good afternoon') : __('Good evening'));
-    $scene = $hour >= 5 && $hour < 17 ? 'sunrise' : 'night';
+    // Server-side fallback; the page script switches both to the visitor's own clock.
+    $day = $hour >= 5 && $hour < 17;
+    $greeting = $hour >= 5 && $hour < 12 ? __('Good morning') : ($hour >= 12 && $hour < 17 ? __('Good afternoon') : __('Good evening'));
     $me = auth()->user();
 @endphp
 <div class="home">
     <section class="hero reveal">
         <div class="hero-text">
-            <div class="hero-kicker">{{ $greeting }}, {{ $me->first_name }} 👋</div>
+            <div class="hero-kicker"><span class="js-greeting" data-morning="{{ __('Good morning') }}" data-afternoon="{{ __('Good afternoon') }}" data-evening="{{ __('Good evening') }}">{{ $greeting }}</span>, {{ $me->first_name }} 👋</div>
             @if ($hasFeed)
                 <h1>{{ $stats['today'] ? trans_choice(':count new post today|:count new posts today', $stats['today'], ['count' => $stats['today']]) : __('Here\'s what\'s new') }}</h1>
                 <p>{{ __('Everything from the channels you follow, newest first.') }}</p>
@@ -399,7 +400,8 @@
                 <a href="{{ route('collections.index') }}" class="hero-stat"><i class="bi bi-bookmark-heart"></i> <b>{{ $collections->count() }}</b> {{ __('collections') }}</a>
             </div>
         </div>
-        <x-illustration :name="$scene" size="132" />
+        <x-illustration name="sunrise" size="132" data-daytime="day" :hidden="! $day" />
+        <x-illustration name="night" size="132" data-daytime="night" :hidden="$day" />
     </section>
 
     <nav class="seg" aria-label="{{ __('Feed') }}">
@@ -467,7 +469,7 @@
                 <div class="sec-head"><h2 id="sugTitle">{{ __('Channels to start with') }}</h2><a href="{{ route('user.explore-channels') }}">{{ __('See all') }}</a></div>
                 <div class="hscroll">
                     @foreach ($suggested as $channel)
-                        <a href="{{ route('guest.channel-detail', [$channel->organization_id, $channel->slug]) }}" class="sug">
+                        <a href="{{ route('guest.channel-detail', [$channel->organization_id, $channel->slug]) }}" class="sug" data-tip="{{ $channel->name }}" data-tip-sub="{{ $channel->organization?->name }}">
                             <div class="sug-av" style="--av: {{ $colorFor($channel->name) }};">{{ mb_substr($channel->name, 0, 1) }}</div>
                             <div class="sug-name">{{ $channel->name }}</div>
                             <div class="sug-org">{{ $channel->organization?->name }}</div>

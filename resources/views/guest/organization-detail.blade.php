@@ -270,7 +270,8 @@
                         $subCount = $channel->childChannels->count();
                     @endphp
                     <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="spot" role="listitem"
-                       style="--spot-tone: {{ $tone }};" aria-label="{{ $channel->name }}">
+                       style="--spot-tone: {{ $tone }};" aria-label="{{ $channel->name }}"
+                       data-tip="{{ $channel->name }}" data-tip-sub="{{ $channel->users_count }} {{ __('members') }}{{ $subCount ? ' · ' . trans_choice(':count sub-channel|:count sub-channels', $subCount) : '' }}">
                         <div class="spot-tile">
                             @if($cover)
                                 <img src="{{ \Illuminate\Support\Facades\Storage::url($cover) }}" alt="" loading="lazy">

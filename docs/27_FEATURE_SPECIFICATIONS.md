@@ -717,7 +717,9 @@ Define complete specifications for each feature **before** implementation. This 
 - [x] Infinite scroll works on mobile; graceful fallback without JS
 - [x] Illustrations animate, respect reduced motion and dark mode, and appear across public pages and dashboard empty states
 
-**Implementation**: `GuestController::home()` (tabs for-you / discover, `?partial=1` JSON batches, discover seed in session), `Channel::feedQueryFor()`, `guest/partials/_feed-cards`, `<x-illustration>` + `public/css/illustrations.css` (loaded by every layout), illustrated empty states in public pages, member feed, collections, notifications, Valex design blocks, login/register and the shared `x-valex.empty-state` / `x-empty-state` / `x-empty-state-modern` components.
+- `/feed` (signed-in home) uses the same engine: **For you** (joined channels, cascades, tenant placements, plus page posts of followed organizations) and **Popular** for everyone — public posts ranked by freshness (halves after ~a week) and views (log scale relative to the most viewed post), 50/50, times a per-visit random factor (0.6–1). Users without channels land on Popular with suggested channels. Hero greeting and day/night scene follow the visitor's device clock.
+
+**Implementation**: `App\Services\FeedService` (joinedChannels, forYou, discover, popular, seed, page), `GuestController::home()`, `UserFeedController::index()` (tabs for-you / discover, `?partial=1` JSON batches, discover seed in session), `Channel::feedQueryFor()`, `guest/partials/_feed-cards`, `<x-illustration>` + `public/css/illustrations.css` (loaded by every layout), illustrated empty states in public pages, member feed, collections, notifications, Valex design blocks, login/register and the shared `x-valex.empty-state` / `x-empty-state` / `x-empty-state-modern` components.
 
 ---
 

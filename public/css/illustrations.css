@@ -19,6 +19,7 @@
 }
 
 .ill { display: block; max-width: 100%; height: auto; margin-inline: auto; overflow: visible; }
+.ill[hidden] { display: none; }
 .ill * { transform-box: fill-box; transform-origin: center; }
 
 .ill-float { animation: illFloat 4.5s ease-in-out infinite; }
