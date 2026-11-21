@@ -264,7 +264,7 @@ class Post extends Model
     /** Reaction keys enabled for this post (defaults to like only). */
     public function enabledReactions(): array
     {
-        $all = array_keys(config('posts.reactions'));
+        $all = array_keys((array) config('posts.reactions', ['like' => ['Like', '👍']])) ?: ['like'];
         $enabled = array_values(array_intersect((array) $this->option('reactions', ['like']), $all));
 
         return $enabled ?: ['like'];
@@ -273,7 +273,7 @@ class Post extends Model
     /** Badge as [label, color, icon] or null. */
     public function badge(): ?array
     {
-        if (! $this->badge_key || ! isset(config('posts.badges')[$this->badge_key])) {
+        if (! $this->badge_key || ! isset(((array) config('posts.badges', []))[$this->badge_key])) {
             return null;
         }
 
