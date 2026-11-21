@@ -61,10 +61,6 @@ class Organization extends Model
         return $this->belongsTo(OrganizationTemplate::class, 'organization_template_id');
     }
 
-    public function brands(): HasMany
-    {
-        return $this->hasMany(Brand::class);
-    }
 
     public function locations(): HasMany
     {

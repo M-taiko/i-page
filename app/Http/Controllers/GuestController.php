@@ -44,9 +44,11 @@ class GuestController extends Controller
     {
         $tab = in_array($request->query('tab'), ['latest', 'trending']) ? $request->query('tab') : 'latest';
 
-        $query = Post::whereHas('channel', fn ($q) => $q->where('type', 'public'))
+        // Public channel posts plus tenant posts shown on their tenant page (ADR-016).
+        $query = Post::where(fn ($q) => $q->whereHas('channel', fn ($c) => $c->where('type', 'public'))
+                ->orWhere(fn ($t) => $t->whereNull('channel_id')->whereNotNull('placement')->where('show_on_page', true)))
             ->where('status', 'published')
-            ->with('author', 'channel.brand', 'channel.organization');
+            ->with('author', 'channel.organization', 'organization');
 
         if ($tab === 'trending') {
             $query->withCount(['reactions', 'comments'])
@@ -88,44 +90,32 @@ class GuestController extends Controller
     {
         $organization->loadCount(['users', 'channels', 'posts']);
 
-        // Brands with their public, top-level channels (Organization → Brand → Channels).
-        // Sub-channels (channels with a parent) are hidden from the grid here —
-        // they surface in their parent's "sub-channels" popup instead.
-        $brands = $organization->brands()
-            ->where('is_active', true)
-            ->with(['channels' => fn ($q) => $q->where('type', 'public')
-                ->whereDoesntHave('parentChannels')
-                ->withCount('users', 'posts')
-                ->with(['childChannels' => fn ($cq) => $cq->withCount('users', 'posts')])
-            ])
-            ->get();
-
-        // Public, top-level channels not grouped under any brand
-        $unbrandedChannels = $organization->channels()
+        // Public, top-level channels; sub-channels surface in their parent's "sub-channels" popup.
+        $channels = $organization->channels()
             ->where('type', 'public')
-            ->whereNull('brand_id')
             ->whereDoesntHave('parentChannels')
             ->withCount('users', 'posts')
             ->with(['childChannels' => fn ($cq) => $cq->withCount('users', 'posts')])
+            ->orderBy('name')
             ->get();
 
-        // Recent posts from this organization's public channels
-        $posts = Post::whereHas('channel', function ($query) use ($organization) {
-            $query->where('organization_id', $organization->id)
-                  ->where('type', 'public');
-        })
-        ->where('status', 'published')
-        ->with('author', 'channel.brand')
-        ->latest('published_at')
-        ->paginate(12)
-        ->withQueryString();
+        // The tenant's own posts shown on its page, plus posts of its public channels (ADR-016).
+        $posts = Post::where(fn ($q) => $q
+                ->whereHas('channel', fn ($c) => $c->where('organization_id', $organization->id)->where('type', 'public'))
+                ->orWhere(fn ($t) => $t->whereNull('channel_id')->where('organization_id', $organization->id)
+                    ->whereNotNull('placement')->where('show_on_page', true)))
+            ->where('status', 'published')
+            ->with('author', 'channel', 'organization', 'media')
+            // Pinned first, then the tenant's own posts, then channel posts — newest first in each group.
+            ->orderByRaw('CASE WHEN pinned_until > ? THEN 0 WHEN channel_id IS NULL THEN 1 ELSE 2 END', [now()])
+            ->latest('published_at')
+            ->paginate(12)
+            ->withQueryString();
         $this->recordViews($posts);
 
         // Organizations that picked a design template render through the Valex public layout (ADR-012).
         if ($design = $this->resolveDesign($organization)) {
-            $channelGroups = $brands->filter(fn ($b) => $b->channels->isNotEmpty())
-                ->map(fn ($b) => ['title' => $b->name, 'channels' => $b->channels])->values()
-                ->when($unbrandedChannels->isNotEmpty(), fn ($c) => $c->push(['title' => __('Other Channels'), 'channels' => $unbrandedChannels]));
+            $channelGroups = $channels->isEmpty() ? collect() : collect([['title' => __('Channels'), 'channels' => $channels]]);
 
             return view('guest.valex.organization', [
                 'organization' => $organization,
@@ -138,7 +128,7 @@ class GuestController extends Controller
             ]);
         }
 
-        return view('guest.organization-detail', compact('organization', 'brands', 'unbrandedChannels', 'posts'));
+        return view('guest.organization-detail', compact('organization', 'channels', 'posts'));
     }
 
     public function channelDetail(Organization $organization, $channelSlug): View
@@ -146,14 +136,13 @@ class GuestController extends Controller
         $channel = $organization->channels()
             ->where('slug', $channelSlug)
             ->where('type', 'public')
-            ->with('brand')
             ->withCount('users')
             ->firstOrFail();
 
         // Own posts + posts cascading from parent channels (ADR-014).
         $posts = $channel->feedQuery()
             ->where('status', 'published')
-            ->with(['author', 'channel', 'brand', 'media'])
+            ->with(['author', 'channel', 'organization', 'media'])
             ->latest('published_at')
             ->paginate(20)
             ->withQueryString();
@@ -181,10 +170,12 @@ class GuestController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Sub-channel strip: a parent shows its own children; a sub-channel
-        // shows its parent plus its siblings so the visitor can move around.
+        // Navigation strip (any depth): a channel with sub-channels shows them (drill down);
+        // a leaf shows its siblings. Both get a "back to parent" item.
         $parentChannel = $channel->parentChannels()->where('type', 'public')->first();
-        $subChannels = ($parentChannel ?? $channel)->childChannels()
+        $hasChildren = $channel->childChannels()->where('type', 'public')->exists();
+        $stripSource = ($hasChildren || ! $parentChannel) ? $channel : $parentChannel;
+        $subChannels = $stripSource->childChannels()
             ->where('type', 'public')
             ->orderBy('name')
             ->get();
@@ -197,8 +188,8 @@ class GuestController extends Controller
         }
 
         if ($design) {
-            // A parent channel lists its sub-channels; a sub-channel lists its siblings.
-            $related = ($parentChannel ?? $channel)->childChannels()
+            // A channel with sub-channels lists them; a leaf lists its siblings.
+            $related = $stripSource->childChannels()
                 ->where('type', 'public')
                 ->where('channels.id', '!=', $channel->id)
                 ->withCount('users', 'posts')
@@ -207,7 +198,7 @@ class GuestController extends Controller
                 ->get();
             $channelGroups = $related->isEmpty()
                 ? collect()
-                : collect([['title' => $parentChannel ? __('Related channels') : __('Sub-channels'), 'channels' => $related]]);
+                : collect([['title' => $stripSource->is($channel) ? __('Sub-channels') : __('Related channels'), 'channels' => $related]]);
 
             return view('guest.valex.channel', [
                 'organization' => $organization,
@@ -236,7 +227,7 @@ class GuestController extends Controller
         abort_unless($post->status === 'published', 404);
         abort_unless($post->isVisibleTo(auth()->user()), 404);
 
-        $post->load('author', 'channel.brand', 'channel.organization', 'organization', 'brand');
+        $post->load('author', 'channel.organization', 'organization');
         $this->recordViews([$post]);
 
         $comments = $post->comments()->approved()->with('user')->latest()->get();

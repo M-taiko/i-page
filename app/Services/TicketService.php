@@ -18,7 +18,6 @@ class TicketService
             $ticket = Ticket::create([
                 'ticket_number' => $this->generateTicketNumber($data['organization_id']),
                 'organization_id' => $data['organization_id'],
-                'brand_id' => $data['brand_id'] ?? null,
                 'location_id' => $data['location_id'] ?? null,
                 'category_id' => $data['category_id'] ?? null,
                 'created_by' => $creator->id,

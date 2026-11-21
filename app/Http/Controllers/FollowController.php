@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 
@@ -26,21 +25,4 @@ class FollowController extends Controller
         return back()->with('success', 'Unfollowed ' . $organization->name);
     }
 
-    public function followBrand(Brand $brand)
-    {
-        $user = auth()->user();
-
-        if (!$user->followedBrands()->where('brand_id', $brand->id)->exists()) {
-            $user->followedBrands()->attach($brand->id);
-        }
-
-        return back()->with('success', 'Successfully followed ' . $brand->name);
-    }
-
-    public function unfollowBrand(Brand $brand)
-    {
-        auth()->user()->followedBrands()->detach($brand->id);
-
-        return back()->with('success', 'Unfollowed ' . $brand->name);
-    }
 }

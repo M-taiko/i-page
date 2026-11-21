@@ -1,9 +1,9 @@
 @extends('layouts.valex')
 
-@section('title', __('Edit Post') . ' - ' . $brand->name)
+@section('title', __('Edit Post') . ' - ' . $organization->name)
 
 @section('page-header')
-    <x-valex.page-header :title="__('Edit Post')" :subtitle="$brand->name">
+    <x-valex.page-header :title="__('Edit Post')" :subtitle="$organization->name">
         <x-slot:actions>
             <a href="{{ route('guest.post-detail', $post->id) }}" class="btn btn-outline-secondary" target="_blank"><i class="fe fe-eye"></i> {{ __('View post') }}</a>
         </x-slot:actions>
@@ -17,7 +17,7 @@
 @endphp
 <div class="row justify-content-center">
     <div class="col-lg-9">
-        <form method="POST" action="{{ route('organizations.brands.posts.update', [$organization, $brand, $post->id]) }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('organizations.posts.update', $post->id) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -48,10 +48,10 @@
                 </div>
             </x-valex.card>
 
-            @include('tenant.channels.posts._publish-options', ['post' => $post, 'brand' => $brand])
+            @include('tenant.channels.posts._publish-options', ['post' => $post, 'tenant' => $organization, 'channelTree' => $channelTree])
 
             <button type="submit" class="btn btn-primary"><i class="fe fe-check"></i> {{ __('Save changes') }}</button>
-            <a href="{{ url()->previous() }}" class="btn btn-light">{{ __('Cancel') }}</a>
+            <a href="{{ route('organizations.posts.index') }}" class="btn btn-light">{{ __('Cancel') }}</a>
         </form>
     </div>
 </div>

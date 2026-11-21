@@ -19,9 +19,9 @@ class Post extends Model
         'author_id',
         'channel_id',
         'cascade',
-        'brand_audience',
+        'placement',
+        'show_on_page',
         'organization_id',
-        'brand_id',
         'location_id',
         'title',
         'summary',
@@ -55,6 +55,7 @@ class Post extends Model
         'is_emergency' => 'boolean',
         'options' => 'array',
         'cascade' => 'boolean',
+        'show_on_page' => 'boolean',
     ];
 
     public function organization(): BelongsTo
@@ -82,9 +83,10 @@ class Post extends Model
         return $this->hasMany(Comment::class);
     }
 
-    public function brand(): BelongsTo
+    /** Channels a tenant post was placed in (placement = selected). */
+    public function targetChannels(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsTo(Brand::class);
+        return $this->belongsToMany(Channel::class, 'post_channel');
     }
 
     public function location(): BelongsTo
@@ -146,49 +148,94 @@ class Post extends Model
         return $this->media->where('usage_type', 'gallery')->sortBy('id')->values();
     }
 
-    /** Posted at brand level and shown in the brand's channels (ADR-015). */
-    public function isBrandPost(): bool
+    public const PLACEMENTS = ['page', 'all', 'selected'];
+
+    /** Published by the tenant itself, not inside a channel (ADR-016). */
+    public function isTenantPost(): bool
     {
-        return $this->channel_id === null && $this->brand_audience !== null;
+        return $this->channel_id === null && $this->placement !== null;
     }
 
-    /** Where this post lives: its channel name, or the brand name for brand posts. */
+    /** Where this post lives: its channel name, or the tenant name for tenant posts. */
     public function sourceName(): ?string
     {
-        return $this->isBrandPost() ? $this->brand?->name : $this->channel?->name;
+        return $this->isTenantPost() ? $this->organization?->name : $this->channel?->name;
+    }
+
+    /** @return array<int> ids of every channel that shows this post */
+    public function receivingChannelIds(): array
+    {
+        if (! $this->isTenantPost()) {
+            if (! $this->channel) {
+                return [];
+            }
+            $ids = [$this->channel_id];
+            if ($this->cascade) {
+                $ids = array_merge($ids, $this->inheritingDescendants([$this->channel_id]));
+            }
+
+            return array_values(array_unique($ids));
+        }
+
+        return match ($this->placement) {
+            'all' => Channel::where('organization_id', $this->organization_id)->pluck('id')->all(),
+            'selected' => (function () {
+                $chosen = \Illuminate\Support\Facades\DB::table('post_channel')->where('post_id', $this->id)->pluck('channel_id')->all();
+
+                return array_values(array_unique(array_merge($chosen, $this->cascade ? $this->inheritingDescendants($chosen) : [])));
+            })(),
+            default => [],
+        };
     }
 
     /**
-     * Can $user (or a guest) open this post? Public channel posts and brand posts reaching public
-     * channels are open to everyone; private ones need access to at least one receiving channel.
+     * Descendants of $sources that actually inherit from them: a public channel never shows posts
+     * of a private ancestor (mirrors Channel::inheritableAncestorIds()).
+     */
+    private function inheritingDescendants(array $sources): array
+    {
+        if (! $sources) {
+            return [];
+        }
+        $result = [];
+        $publicSources = Channel::whereIn('id', $sources)->where('type', 'public')->pluck('id')->all();
+        $privateSources = array_diff($sources, $publicSources);
+        if ($publicSources) {
+            $result = Channel::descendantIdsOf($publicSources);
+        }
+        if ($privateSources) {
+            $result = array_merge($result, Channel::whereIn('id', Channel::descendantIdsOf(array_values($privateSources)))->where('type', 'private')->pluck('id')->all());
+        }
+
+        return array_values(array_unique($result));
+    }
+
+    /**
+     * Can $user (or a guest) open this post? Public when it is on the tenant page or reaches a
+     * public channel; otherwise it needs access to a receiving channel or tenant management.
      */
     public function isVisibleTo(?User $user): bool
     {
-        if ($this->isBrandPost()) {
-            if ($this->brand_audience !== 'private' && Channel::where('brand_id', $this->brand_id)->where('type', 'public')->exists()) {
-                return true;
-            }
-            if (! $user) {
-                return false;
-            }
-            if ($this->brand?->isModeratedBy($user)) {
-                return true;
-            }
-
-            return \Illuminate\Support\Facades\DB::table('channel_user')->join('channels', 'channels.id', '=', 'channel_user.channel_id')
-                ->where('channel_user.user_id', $user->id)->where('channel_user.status', 'approved')
-                ->where('channels.brand_id', $this->brand_id)
-                ->when($this->brand_audience !== 'all', fn ($q) => $q->where('channels.type', $this->brand_audience))
-                ->exists();
+        if (! $this->isTenantPost() && (! $this->channel || $this->channel->type === 'public')) {
+            return true;
         }
-
-        if (! $this->channel || $this->channel->type === 'public') {
+        if ($this->isTenantPost() && $this->show_on_page) {
             return true;
         }
 
-        return $user && $this->channel->canBeAccessedBy($user);
-    }
+        $channels = Channel::whereIn('id', $this->receivingChannelIds())->get();
+        if ($channels->contains('type', 'public')) {
+            return true;
+        }
+        if (! $user) {
+            return false;
+        }
+        if (Channel::isOrgManager($user, $this->organization_id ?? $this->channel?->organization_id)) {
+            return true;
+        }
 
+        return $channels->contains(fn (Channel $c) => $c->canBeAccessedBy($user));
+    }
     /** Where a pin shows: 'channel' (its own channel only) or 'all' (also every sub-channel). */
     public function pinScope(): string
     {

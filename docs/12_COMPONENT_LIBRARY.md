@@ -80,13 +80,13 @@ Definitions (formats, card styles, badges, reactions, limits) live in `config/po
 ```blade
 @extends('layouts.valex')
 @section('page-header')
-    <x-valex.page-header :title="__('Brands')" :subtitle="$organization->name">
-        <x-slot:actions><a class="btn btn-primary" href="#">{{ __('New Brand') }}</a></x-slot:actions>
+    <x-valex.page-header :title="__('Channels')" :subtitle="$organization->name">
+        <x-slot:actions><a class="btn btn-primary" href="#">{{ __('New Channel') }}</a></x-slot:actions>
     </x-valex.page-header>
 @endsection
 @section('content')
     <x-valex.card :title="__('Basic Information')">
-        <x-valex.input name="name" :label="__('Brand Name')" required />
+        <x-valex.input name="name" :label="__('Channel Name')" required />
         <x-valex.select name="type" :label="__('Type')" :options="['a' => 'A', 'b' => 'B']" />
     </x-valex.card>
 @endsection

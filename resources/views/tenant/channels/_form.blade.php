@@ -1,17 +1,10 @@
-{{-- Shared by tenant/channels/create and edit. Expects $brands, $parentOptions, $selectedParentId, optional $channel. --}}
+{{-- Shared by tenant/channels/create and edit. Expects $parentOptions, $selectedParentId, optional $channel. --}}
 <form action="{{ isset($channel) ? route('tenant.channels.update', $channel->id) : route('tenant.channels.store') }}" method="POST">
     @csrf
     @if (isset($channel)) @method('PUT') @endif
 
     <div style="max-width: 700px;">
         <x-valex.card :title="__('Channel Information')">
-            <x-valex.select name="brand_id" :label="__('Brand')" required :placeholder="__('Select a brand')"
-                :options="$brands->pluck('name', 'id')->all()" :value="$channel->brand_id ?? null"
-                :help="__('Channels belong to a brand within your organization')" />
-            @if (! isset($channel) && $brands->isEmpty())
-                <div class="text-danger small mb-3"><i class="fe fe-alert-circle"></i> {{ __('No active brands yet — create a brand in Settings first.') }}</div>
-            @endif
-
             <x-valex.input name="name" :label="__('Channel Name')" :value="$channel->name ?? ''" required autocomplete="off"
                 :placeholder="__('Example: Reception, Support, Announcements')"
                 :help="__('The name that will appear for all members of this channel')" />

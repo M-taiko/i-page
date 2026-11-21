@@ -22,7 +22,6 @@ class SlaRuleController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'brand_id' => 'nullable|exists:brands,id',
             'location_id' => 'nullable|exists:locations,id',
             'category_id' => 'nullable|exists:ticket_categories,id',
             'priority' => 'nullable|in:low,medium,high,urgent',
@@ -54,7 +53,6 @@ class SlaRuleController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'brand_id' => 'nullable|exists:brands,id',
             'location_id' => 'nullable|exists:locations,id',
             'category_id' => 'nullable|exists:ticket_categories,id',
             'priority' => 'nullable|in:low,medium,high,urgent',

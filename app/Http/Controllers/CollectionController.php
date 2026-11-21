@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
 use App\Models\Channel;
 use App\Models\Organization;
 use App\Models\Post;
@@ -44,7 +43,7 @@ class CollectionController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $subscribedChannels = auth()->user()->channels()->with('organization', 'brand')->get();
+        $subscribedChannels = auth()->user()->channels()->with('organization')->get();
 
         // channel_id => [collection_id, ...] so the "Manage Channels" modal can pre-check membership.
         $channelCollectionMap = [];
@@ -208,35 +207,6 @@ class CollectionController extends Controller
     }
 
     /**
-     * Add every accessible channel of a brand to the collection, auto-subscribing where needed.
-     */
-    public function addBrand(UserCollection $collection, Brand $brand): RedirectResponse
-    {
-        $this->authorize('update', $collection);
-
-        $subscribedIds = auth()->user()->channels()->pluck('channels.id')->toArray();
-
-        $channels = $brand->channels()
-            ->where(function ($q) use ($subscribedIds) {
-                $q->where('type', 'public')->orWhereIn('id', $subscribedIds);
-            })
-            ->get();
-
-        foreach ($channels as $channel) {
-            $this->ensureSubscribed($channel);
-            if (!$collection->channels()->where('channel_id', $channel->id)->exists()) {
-                $collection->channels()->attach($channel->id);
-            }
-        }
-
-        return back()->with('success', __(':count channels from :name added to :collection.', [
-            'count' => $channels->count(),
-            'name' => $brand->name,
-            'collection' => $collection->name,
-        ]));
-    }
-
-    /**
      * One-click star: adds/removes a channel from the user's single default
      * "Favorites" collection (auto-created on first use) — a lighter-weight
      * shortcut than manually picking/creating a named collection.
@@ -290,7 +260,7 @@ class CollectionController extends Controller
 
         $posts = Post::where('status', 'published')
             ->whereIn('channel_id', $channelIds ?: [0])
-            ->with('author', 'channel.brand', 'channel.organization')
+            ->with('author', 'channel.organization')
             ->latest('published_at')
             ->paginate(15)
             ->withQueryString();
@@ -300,7 +270,7 @@ class CollectionController extends Controller
         }
 
         $collection->loadCount('channels');
-        $collectionChannels = $collection->channels()->with('organization', 'brand')->get();
+        $collectionChannels = $collection->channels()->with('organization')->get();
 
         return view('collections.show', compact('collection', 'posts', 'collectionChannels'));
     }

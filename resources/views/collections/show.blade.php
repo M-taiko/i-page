@@ -122,7 +122,7 @@
         @forelse($posts as $post)
             @php
                 $displayName = $post->channel->name ?? __('i-Page');
-                $subtitle = $post->channel->brand->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
+                $subtitle = $post->channel?->organization?->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
                 $isPublic = !$post->channel || $post->channel->type === 'public';
                 $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
                 $userLiked = $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();

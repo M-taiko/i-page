@@ -667,37 +667,35 @@ Define complete specifications for each feature **before** implementation. This 
 - [ ] Each permission is enforced separately on the server
 - [ ] Presentation settings apply on the channel page and are inherited by sub-channels
 
-### Feature: Brand Command Center
+### Feature: Tenant Command Center
 
-**Status**: Implemented (ADR-015)
+**Status**: Implemented (ADR-016, replaces the Brand Command Center of ADR-015)
 
-**Example**: Hilton (brand) → Hilton Egypt, Hilton Saudi → Front Desk, Restaurants (→ KFC, Hotel restaurant), Civil Defense & Emergency Exits.
+**Example**: Hilton (tenant) → Hilton Cairo Zamalek, Hilton Alexandria → Front Desk, Restaurants (→ Italian restaurant, Lobby café), Spa & Pool, Civil Defense & Emergency Exits, Staff Room (private).
 
 **Business Rules**:
-- A brand admin publishes a **brand post** once and chooses the audience: all brand channels, public channels only, or private (staff) channels only. It appears in every matching channel at every depth, labeled with the brand.
-- Brand posts support every post format, card style, badge, reaction set and pin (pins appear in every brand channel).
-- **Notifications** on every new channel or brand post: channel admins, moderators and brand managers get a management notice; subscribers get a new-post notice; muted members and the author get none; nobody gets two notices for the same post.
-- **Brand managers** are assigned from the brand page by organization admins (admin or moderator). Brand admins manage all channels of their brand only.
-- **Brand dashboard**: overview statistics scoped to the brand (channels, subscribers, staff, posts, QR scans, engagement), the full channel tree, brand posts, people (every employee and subscriber in the brand's channels, with the channels they are in), managers, and an activity log.
-- **Visibility**: staff and visitors only see the members of channels they belong to; brand managers see their whole brand; organization admins see everything.
+- Organization admins/managers publish a **tenant post** and choose where it appears: the tenant page only, every channel, or chosen channels (tree with checkboxes, sub-channels included), optionally cascading to the chosen channels' sub-channels. A switch decides whether it also shows on the public tenant page.
+- Tenant posts support every post format, card style, badge, reaction set and pin. They are labeled with the tenant name in channel feeds.
+- Private (staff) content never reaches public channels or the public page.
+- **Channel managers** are assigned by the tenant: admin, moderator or member (with can_post / can_edit / can_delete). Admin and moderator roles apply to the channel and all its sub-channels.
+- A channel admin sees and manages only their subtree; a moderator edits and deletes posts there; staff and visitors only see the channels they belong to and those channels' members.
+- Notifications on every new post: managers of receiving channels (own or inherited) and org admins get a management notice, subscribers a new-post notice; once per person, never the author, never muted members.
 
 **Acceptance Criteria**:
-- [x] Brand post audiences respected at every depth; private posts never reach public pages
-- [x] Notifications reach the right people exactly once
-- [x] Brand admin rights stop at the brand boundary
-- [x] Staff cannot open member lists of channels they are not in
-- [x] Brand statistics only count the brand's own data
+- [x] No brand table, column, route or screen remains
+- [x] Tenant post placements page / all / selected (+ cascade) appear exactly where chosen
+- [x] Staff-only tenant posts never appear publicly
+- [x] A hotel admin manages its departments but gets 403 on another hotel
+- [x] Moderators edit/delete but cannot post; members only have their granted rights
+- [x] Demo seeder creates international tenants in three industries, users of every role (password 123456789) and realistic interactions
 
 **Implementation**:
-- Routes: `organizations/{organization}/brands/{brand}` (dashboard, `?tab=overview|channels|posts|people|managers|activity`), `.../posts` (create/store/edit/update/destroy/pin), `.../managers` (assign/remove).
-- `BrandPostController` reuses `tenant/channels/posts/_post-fields` and `_publish-options` (brand mode: audience selector instead of cascade; a brand pin shows in every receiving channel).
-- `PostNotificationService::published()` runs after every channel and brand post (synchronous bulk insert, chunks of 500).
-- `Channel::scopeVisibleTo()` filters the dashboard channel list; `Channel::membersVisibleTo()` guards the channel page; `Channel::canAdminister()` guards settings, members and QR codes.
-- `Post::isVisibleTo()` guards the public post page and interactions (private brand posts need membership in a receiving private channel).
-- `DashboardStatsService::brand()` scopes statistics to the brand.
-- `BrandPolicy::view` = `Brand::isModeratedBy()`; the brands list shows only brands the user manages or moderates.
-
----
+- Screens (Organization section of the sidebar): **Tenant posts** (`organizations/posts`), **Channel managers** (`organizations/channel-managers`), **People** (`organizations/people`).
+- `TenantPostController` reuses `_post-fields` and `_publish-options` (tenant mode: placement + channel tree with checkboxes + cascade + show on page).
+- `Channel::roleFor()` resolves own/inherited roles; `scopeVisibleTo()`, `membersVisibleTo()`, `userCan()` build on it.
+- `Post::receivingChannelIds()` and `Post::isVisibleTo()` drive notifications and access; the public tenant page lists pinned posts, then tenant posts, then public channel posts.
+- Demo data: `Database\Seeders\InternationalDemoSeeder` — hotels (Hilton, Marriott), hypermarkets (Carrefour, LuLu) and schools (GEMS, Horizon) as Tenant → Country → City branch → departments, with views, reactions, comments, team replies and poll votes. Content lives in `database/seeders/Demo/DemoContent.php`; the account list is written to `storage/app/demo-accounts.csv`.
+- `reactions.type` widened from enum(like, love) to a string so every configured reaction can be stored (migration `2026_11_21_000001`).
 
 ---
 

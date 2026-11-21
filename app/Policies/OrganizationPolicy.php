@@ -51,11 +51,6 @@ class OrganizationPolicy
         return $user->hasRole('super_admin');
     }
 
-    public function manageBrands(User $user, Organization $organization): bool
-    {
-        return $this->update($user, $organization);
-    }
-
     public function manageLocations(User $user, Organization $organization): bool
     {
         return $this->update($user, $organization);

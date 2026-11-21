@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\Brand;
 use App\Models\Channel;
 use App\Models\Post;
 use Illuminate\Support\Facades\DB;
 
 /**
- * In-app notifications for newly published channel and brand posts (ADR-015).
- * Managers get a management notice, subscribers a new-post notice; each user at most once,
- * never the author, never members who muted the channel.
+ * In-app notifications for newly published channel and tenant posts (ADR-016).
+ * Managers (channel admins/moderators of the receiving channels or of any ancestor, and
+ * organization admins/managers) get a management notice, subscribers a new-post notice;
+ * each user at most once, never the author, never members who muted the channel.
  */
 class PostNotificationService
 {
@@ -24,15 +24,13 @@ class PostNotificationService
         }
 
         $channelIds = $this->targetChannelIds($post);
-        if (! $channelIds) {
-            return ['managers' => 0, 'subscribers' => 0];
-        }
+        $organizationId = $post->organization_id ?? $post->channel?->organization_id;
 
-        $managerIds = $this->managerIds($post, $channelIds);
-        $subscriberIds = DB::table('channel_user')
+        $managerIds = $this->managerIds($channelIds, $organizationId);
+        $subscriberIds = $channelIds ? DB::table('channel_user')
             ->whereIn('channel_id', $channelIds)
             ->where('status', 'approved')->whereNull('muted_at')
-            ->distinct()->pluck('user_id')->all();
+            ->distinct()->pluck('user_id')->all() : [];
 
         $exclude = [$post->author_id];
         $managerIds = array_values(array_diff(array_unique($managerIds), $exclude));
@@ -60,56 +58,41 @@ class PostNotificationService
     /** Channels the post appears in. */
     public function targetChannelIds(Post $post): array
     {
-        if ($post->isBrandPost()) {
-            return Channel::where('brand_id', $post->brand_id)
-                ->when($post->brand_audience === 'public', fn ($q) => $q->where('type', 'public'))
-                ->when($post->brand_audience === 'private', fn ($q) => $q->where('type', 'private'))
-                ->pluck('id')->all();
-        }
-
-        $source = $post->channel;
-        if (! $source) {
-            return [];
-        }
-        if (! $post->cascade) {
-            return [$source->id];
-        }
-
-        // Descendants, any depth (cycle-safe). Mirrors Channel::inheritableAncestorIds():
-        // a public channel never shows posts from a private ancestor.
-        $ids = [$source->id];
-        $frontier = [$source->id];
-        while ($frontier) {
-            $children = DB::table('channel_channel')->whereIn('parent_channel_id', $frontier)->pluck('child_channel_id')->all();
-            $frontier = array_values(array_diff(array_unique($children), $ids));
-            $ids = array_merge($ids, $frontier);
-        }
-        $descendants = array_diff($ids, [$source->id]);
-        if ($source->type === 'private' && $descendants) {
-            $descendants = Channel::whereIn('id', $descendants)->where('type', 'private')->pluck('id')->all();
-        }
-
-        return array_values(array_merge([$source->id], $descendants));
+        return $post->receivingChannelIds();
     }
 
-    private function managerIds(Post $post, array $channelIds): array
+    private function managerIds(array $channelIds, ?int $organizationId): array
     {
-        $ids = DB::table('channel_user')->whereIn('channel_id', $channelIds)
-            ->where('status', 'approved')->whereIn('role', ['admin', 'moderator'])->pluck('user_id')->all();
-        $ids = array_merge($ids, Channel::whereIn('id', $channelIds)->whereNotNull('admin_user_id')->pluck('admin_user_id')->all());
-
-        $brandIds = Channel::whereIn('id', $channelIds)->whereNotNull('brand_id')->distinct()->pluck('brand_id')->all();
-        if ($post->brand_id) {
-            $brandIds[] = $post->brand_id;
+        $ids = [];
+        if ($channelIds) {
+            // Roles inherit down the tree, so managers of any ancestor are managers here too.
+            $scope = array_values(array_unique(array_merge($channelIds, $this->ancestorIdsOf($channelIds))));
+            $ids = DB::table('channel_user')->whereIn('channel_id', $scope)
+                ->where('status', 'approved')->whereIn('role', ['admin', 'moderator'])->pluck('user_id')->all();
+            $ids = array_merge($ids, Channel::whereIn('id', $channelIds)->whereNotNull('admin_user_id')->pluck('admin_user_id')->all());
         }
-        $ids = array_merge($ids, DB::table('brand_user')->whereIn('brand_id', array_unique($brandIds))->pluck('user_id')->all());
 
-        $ids = array_merge($ids, DB::table('organization_memberships')
-            ->where('organization_id', $post->organization_id ?? Brand::find($post->brand_id)?->organization_id)
-            ->where('status', 'active')->whereIn('role', ['organization_admin', 'manager'])
-            ->whereNull('deleted_at')->pluck('user_id')->all());
+        if ($organizationId) {
+            $ids = array_merge($ids, DB::table('organization_memberships')
+                ->where('organization_id', $organizationId)
+                ->where('status', 'active')->whereIn('role', ['organization_admin', 'manager'])
+                ->whereNull('deleted_at')->pluck('user_id')->all());
+        }
 
         return $ids;
+    }
+
+    private function ancestorIdsOf(array $ids): array
+    {
+        $seen = $ids;
+        $frontier = $ids;
+        while ($frontier) {
+            $parents = DB::table('channel_channel')->whereIn('child_channel_id', $frontier)->pluck('parent_channel_id')->all();
+            $frontier = array_values(array_diff(array_unique($parents), $seen));
+            $seen = array_merge($seen, $frontier);
+        }
+
+        return array_values(array_diff($seen, $ids));
     }
 
     private function insert(array $userIds, string $type, array $data): void

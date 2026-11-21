@@ -1,10 +1,10 @@
-{{-- Pin / edit / delete menu for a channel or brand post, shown only to people allowed to do it (ADR-014/015). Expects $post. --}}
+{{-- Pin / edit / delete menu for a channel or tenant post, shown only to people allowed to do it (ADR-014/016). Expects $post. --}}
 @php
     $mChannel = $post->channel;
     $mUser = auth()->user();
-    $mBrand = $post->isBrandPost() ? $post->brand : null;
-    if ($mBrand) {
-        $mCanEdit = $mCanDelete = $mUser && $mBrand->isModeratedBy($mUser);
+    $mTenant = $post->isTenantPost();
+    if ($mTenant) {
+        $mCanEdit = $mCanDelete = $mUser && \App\Models\Channel::isOrgManager($mUser, $post->organization_id);
     } else {
         $mCanEdit = $mChannel && $mUser && $mChannel->userCan($mUser, 'edit');
         $mCanDelete = $mChannel && $mUser && $mChannel->userCan($mUser, 'delete');
@@ -28,13 +28,13 @@
 <details class="pm">
     <summary aria-label="{{ __('Post actions') }}">⋯</summary>
     <div class="pm-menu">
-        @if ($mBrand)
-            <form action="{{ route('organizations.brands.posts.pin', [$mBrand->organization_id, $mBrand->id, $post->id]) }}" method="POST">
+        @if ($mTenant)
+            <form action="{{ route('organizations.posts.pin', $post->id) }}" method="POST">
                 @csrf
-                <button type="submit">{{ $post->isPinned() ? '✖️ ' . __('Unpin highlight') : '📌 ' . __('Pin in every brand channel') }}</button>
+                <button type="submit">{{ $post->isPinned() ? '✖️ ' . __('Unpin highlight') : '📌 ' . __('Pin on the tenant page and its channels') }}</button>
             </form>
-            <a href="{{ route('organizations.brands.posts.edit', [$mBrand->organization_id, $mBrand->id, $post->id]) }}">✏️ {{ __('Edit post') }}</a>
-            <form action="{{ route('organizations.brands.posts.destroy', [$mBrand->organization_id, $mBrand->id, $post->id]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this post from every brand channel? This cannot be undone.') }}')">
+            <a href="{{ route('organizations.posts.edit', $post->id) }}">✏️ {{ __('Edit post') }}</a>
+            <form action="{{ route('organizations.posts.destroy', $post->id) }}" method="POST" onsubmit="return confirm('{{ __('Delete this post everywhere it appears? This cannot be undone.') }}')">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="pm-danger">🗑️ {{ __('Delete post') }}</button>

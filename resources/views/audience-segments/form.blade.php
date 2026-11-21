@@ -32,7 +32,6 @@
     $ruleFields = [
         [0, 'language', __('Language'), __('— All Languages —'), ['en' => __('English'), 'ar' => __('Arabic')]],
         [1, 'role', __('User Role'), __('— All Roles —'), ['organization_admin' => __('Organization Admin'), 'manager' => __('Manager'), 'moderator' => __('Moderator'), 'staff' => __('Staff')]],
-        [2, 'brand_id', __('Brand'), __('— All Brands —'), collect($org?->brands ?? [])->pluck('name', 'id')->all()],
         [3, 'location_id', __('Location'), __('— All Locations —'), collect($org?->locations ?? [])->pluck('name', 'id')->all()],
         [4, 'department_id', __('Department'), __('— All Departments —'), collect($org?->departments ?? [])->pluck('name', 'id')->all()],
     ];

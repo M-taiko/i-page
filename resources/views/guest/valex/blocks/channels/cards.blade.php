@@ -1,4 +1,4 @@
-{{-- Channel cards grouped by brand (Valex "cards"). --}}
+{{-- Channel cards by group (Valex "cards"). --}}
 @forelse ($channelGroups as $group)
     <h5 class="mb-3 mt-4"><span class="avatar avatar-sm brround bg-primary mx-2">{{ mb_substr($group['title'], 0, 1) }}</span>{{ $group['title'] }}</h5>
     <div class="row row-sm">

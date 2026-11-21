@@ -18,7 +18,6 @@ class Location extends Model
 
     protected $fillable = [
         'organization_id',
-        'brand_id',
         'name',
         'city',
         'country',
@@ -38,10 +37,6 @@ class Location extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
-    }
 
     public function users(): HasMany
     {

@@ -353,10 +353,6 @@
                     <span>{{ __('Channels') }}</span>
                 </a>
                 @if($sidebarOrg)
-                    <a href="{{ route('organizations.brands.index', $sidebarOrg) }}" @class(['sidebar-item', 'active' => request()->routeIs('organizations.brands.*')])>
-                        <i class="bi bi-bookmark-star"></i>
-                        <span>{{ __('Brands') }}</span>
-                    </a>
                     @can('user.manage')
                         <a href="{{ route('dashboard.users.index', $sidebarOrg) }}" @class(['sidebar-item', 'active' => request()->routeIs('dashboard.users.*')])>
                             <i class="bi bi-people"></i>

@@ -83,7 +83,7 @@
         $avatarPalette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777'];
         $colorFor = fn($seed) => $avatarPalette[crc32($seed) % count($avatarPalette)];
         $displayName = $post->sourceName() ?? $post->organization->name ?? __('i-Page');
-        $subtitle = ($post->isBrandPost() ? __('Brand post') : $post->channel?->brand?->name) ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
+        $subtitle = ($post->isTenantPost() ? __('Official post') : $post->channel?->organization?->name) ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
         $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
         $likeCount = $post->reactions()->where('type', 'like')->count();
         $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();

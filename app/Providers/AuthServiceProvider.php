@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Models\AudienceSegment;
-use App\Models\Brand;
 use App\Models\Channel;
 use App\Models\Group;
 use App\Models\Location;
@@ -14,7 +13,6 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Models\UserCollection;
 use App\Policies\AudienceSegmentPolicy;
-use App\Policies\BrandPolicy;
 use App\Policies\ChannelPolicy;
 use App\Policies\GroupPolicy;
 use App\Policies\LocationPolicy;
@@ -31,7 +29,6 @@ class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         AudienceSegment::class => AudienceSegmentPolicy::class,
-        Brand::class => BrandPolicy::class,
         Channel::class => ChannelPolicy::class,
         Group::class => GroupPolicy::class,
         Location::class => LocationPolicy::class,

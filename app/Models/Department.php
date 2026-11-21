@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Department extends Model
 {
     use Auditable, SoftDeletes;
-    protected $fillable = ['organization_id', 'location_id', 'brand_id', 'parent_department_id', 'name', 'description', 'slug'];
+    protected $fillable = ['organization_id', 'location_id', 'parent_department_id', 'name', 'description', 'slug'];
 
     public function organization(): BelongsTo
     {
@@ -23,10 +23,6 @@ class Department extends Model
         return $this->belongsTo(Location::class, 'location_id');
     }
 
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
-    }
 
     public function parentDepartment(): BelongsTo
     {

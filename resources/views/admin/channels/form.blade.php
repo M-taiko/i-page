@@ -20,10 +20,6 @@
                 @csrf
                 @if (isset($channel)) @method('PUT') @endif
 
-                <x-valex.select name="brand_id" :label="__('Brand')" required :placeholder="__('Select a brand')"
-                    :options="$brands->pluck('name', 'id')->all()" :value="$channel->brand_id ?? null"
-                    :help="$brands->isEmpty() ? __('This organization has no active brands yet. Create a brand first.') : null" />
-
                 <x-valex.input name="name" :label="__('Channel Name')" :value="$channel->name ?? ''" required />
 
                 <x-valex.select name="parent_channel_id" :label="__('Parent Channel (optional)')"

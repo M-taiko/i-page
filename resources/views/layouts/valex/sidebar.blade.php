@@ -93,8 +93,18 @@
                 </li>
                 @if ($sidebarOrg)
                     <li class="slide">
-                        <a @class(['side-menu__item', 'active' => request()->routeIs('organizations.brands.*')]) href="{{ route('organizations.brands.index', $sidebarOrg) }}">
-                            <i class="side-menu__icon fe fe-bookmark"></i><span class="side-menu__label">{{ __('Brands') }}</span>
+                        <a @class(['side-menu__item', 'active' => request()->routeIs('organizations.posts.*')]) href="{{ route('organizations.posts.index') }}">
+                            <i class="side-menu__icon fe fe-send"></i><span class="side-menu__label">{{ __('Tenant posts') }}</span>
+                        </a>
+                    </li>
+                    <li class="slide">
+                        <a @class(['side-menu__item', 'active' => request()->routeIs('organizations.channel-managers.*')]) href="{{ route('organizations.channel-managers.index') }}">
+                            <i class="side-menu__icon fe fe-shield"></i><span class="side-menu__label">{{ __('Channel managers') }}</span>
+                        </a>
+                    </li>
+                    <li class="slide">
+                        <a @class(['side-menu__item', 'active' => request()->routeIs('organizations.people')]) href="{{ route('organizations.people') }}">
+                            <i class="side-menu__icon fe fe-users"></i><span class="side-menu__label">{{ __('People') }}</span>
                         </a>
                     </li>
                     @can('user.manage')

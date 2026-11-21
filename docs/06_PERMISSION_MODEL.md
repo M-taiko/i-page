@@ -500,19 +500,18 @@ $publicChannels = Channel::where('type', 'public')
 
 ---
 
-## Brand and Channel Scopes (ADR-014, ADR-015)
+## Tenant and Channel Scopes (ADR-014, ADR-016)
 
 | Who | Scope | Can |
 |---|---|---|
 | Super admin | Platform | Everything (oversight) |
-| Organization admin / manager | Organization | Manage every brand and channel; assign brand managers |
-| Brand admin (`brand_user.role = admin`) | One brand | Publish brand posts; post / edit / delete / pin in every channel of the brand; manage members; brand dashboard, people and statistics |
-| Brand moderator (`brand_user.role = moderator`) | One brand | Edit, delete and pin posts in the brand's channels |
-| Channel admin (`channels.admin_user_id`) | One channel | All post permissions in that channel |
-| Channel member (`channel_user`) | One channel | Only the granted `can_post`, `can_edit`, `can_delete` |
-| Staff / visitor | Their channels | See members only of channels they are an approved member of |
+| Organization admin / manager | Tenant | Every channel and person; publish tenant posts; assign channel managers |
+| Channel admin (`channel_user.role = admin`, or `channels.admin_user_id`) | The channel **and all its sub-channels** | Settings, members, QR codes, post / edit / delete / pin |
+| Channel moderator (`channel_user.role = moderator`) | The channel and all its sub-channels | Edit, delete and pin posts; see members |
+| Channel member (`channel_user.role = member`) | One channel | Only the granted `can_post`, `can_edit`, `can_delete` |
+| Staff / visitor | Their channels | See only channels they belong to and those channels' members |
 
-All checks go through `Brand::isManagedBy()`, `Channel::isManagedBy()`, `Channel::userCan()` and `Channel::membersVisibleTo()`.
+All checks go through `Channel::roleFor()`, `Channel::isManagedBy()`, `Channel::userCan()`, `Channel::membersVisibleTo()` and `Channel::scopeVisibleTo()`.
 
 ## Related Documents
 

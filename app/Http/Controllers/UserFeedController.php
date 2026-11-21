@@ -37,16 +37,14 @@ class UserFeedController extends Controller
 
         $subscribedChannelIds = $user->channels()->pluck('channels.id')->toArray();
         $followedOrgIds = $user->followedOrganizations()->pluck('organization_id')->toArray();
-        $followedBrandIds = $user->followedBrands()->pluck('brand_id')->toArray();
-        $followedBrandChannelIds = Channel::whereIn('brand_id', $followedBrandIds)->pluck('id')->toArray();
-        $followingChannelIds = array_values(array_unique(array_merge($subscribedChannelIds, $followedBrandChannelIds)));
+        $followingChannelIds = $subscribedChannelIds;
 
         // Parent channels whose posts cascade into the channels this user follows (ADR-014).
         $cascadeSourceIds = Channel::whereIn('id', $followingChannelIds)->get()
             ->flatMap(fn (Channel $c) => $c->inheritableAncestorIds())
             ->unique()->diff($followingChannelIds)->values()->all();
 
-        $query = Post::where('status', 'published')->with('author', 'channel.brand', 'channel.organization', 'organization');
+        $query = Post::where('status', 'published')->with('author', 'channel.organization', 'organization');
 
         switch ($tab) {
             case 'following':
@@ -125,7 +123,7 @@ class UserFeedController extends Controller
                 $q->where('type', 'public')
                   ->orWhereIn('id', $subscribedChannelIds);
             })
-            ->with('organization', 'brand')
+            ->with('organization')
             ->withCount('users', 'posts')
             ->latest('created_at')
             ->paginate(20);

@@ -627,7 +627,7 @@
             @php
                 $displayName = $post->channel->name ?? $post->organization->name ?? __('i-Page');
                 $subtitle = $post->channel
-                    ? ($post->channel->brand->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update')))
+                    ? ($post->channel?->organization?->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update')))
                     : ucfirst(str_replace('_', ' ', $post->post_type ?? 'announcement'));
                 $isPublic = !$post->channel || $post->channel->type === 'public';
                 $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();

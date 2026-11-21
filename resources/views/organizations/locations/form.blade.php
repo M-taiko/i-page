@@ -19,7 +19,6 @@
 
             <x-valex.card :title="__('Basic Information')">
                 <x-valex.input name="name" :label="__('Location Name')" :value="$location->name ?? ''" required />
-                <x-valex.select name="brand_id" :label="__('Brand')" :placeholder="__('-- None --')" :options="$organization->brands->pluck('name', 'id')->all()" :value="$location->brand_id ?? null" />
                 <x-valex.textarea name="description" :label="__('Description')" rows="3" :value="$location->description ?? ''" />
             </x-valex.card>
 

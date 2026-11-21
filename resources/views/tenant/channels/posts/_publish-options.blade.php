@@ -1,40 +1,91 @@
-{{-- Where the post appears and whether it is a highlight (ADR-014/015).
-     Channel posts: expects $channel. Brand posts: expects $brand (audience selector instead of cascade). Optional $post when editing. --}}
+{{-- Where the post appears and whether it is a highlight (ADR-014/016).
+     Channel posts: expects $channel. Tenant posts: expects $tenant (Organization) and $channelTree (placement picker instead of cascade). Optional $post when editing. --}}
 @php
     $post = $post ?? null;
-    $brand = $brand ?? null;
-    $children = $brand ? collect() : $channel->childChannels()->pluck('name');
+    $tenant = $tenant ?? null;
+    $children = $tenant ? collect() : $channel->childChannels()->pluck('name');
     $pinned = old('pinned', $post?->isPinned() ? 1 : 0);
     $pinUntil = old('pinned_until', $post && $post->isPinned() && $post->pinned_until->lt(now()->addYears(5)) ? $post->pinned_until->format('Y-m-d\TH:i') : '');
     $pinThumb = $post?->option('pin_thumb');
 @endphp
 <x-valex.card :title="__('Publishing')">
-    @if ($brand)
+    @if ($tenant)
     @php
-        $audience = old('brand_audience', $post?->brand_audience ?? 'all');
-        $counts = $brand->channels()->selectRaw('type, count(*) c')->groupBy('type')->pluck('c', 'type');
-        $audiences = [
-            'all' => ['globe', __('All brand channels'), __(':n channels, at every level', ['n' => $counts->sum()])],
-            'public' => ['users', __('Public channels only'), __(':n channels visitors can see', ['n' => $counts['public'] ?? 0])],
-            'private' => ['lock', __('Private (staff) channels only'), __(':n internal channels — never shown publicly', ['n' => $counts['private'] ?? 0])],
+        $placement = old('placement', $post?->placement ?? 'selected');
+        $chosen = collect(old('channel_ids', $post ? $post->targetChannels->pluck('id')->all() : []))->map(fn ($id) => (int) $id)->all();
+        $placements = [
+            'page' => ['home', __('Tenant page only'), __('Shown on the public page of :name.', ['name' => $tenant->name])],
+            'all' => ['globe', __('Every channel'), __('Every channel and sub-channel of :name.', ['name' => $tenant->name])],
+            'selected' => ['check-square', __('Choose channels'), __('Pick any channels or sub-channels below.')],
         ];
     @endphp
-    <label class="d-block font-weight-bold">{{ __('Who receives this post?') }}</label>
+    <label class="d-block font-weight-bold">{{ __('Where does this post appear?') }}</label>
     <div class="row mb-2">
-        @foreach ($audiences as $key => [$icon, $label, $hint])
+        @foreach ($placements as $key => [$icon, $label, $hint])
             <div class="col-md-4 mb-2">
                 <label class="card h-100 mb-0 p-3" style="cursor:pointer">
                     <div class="custom-control custom-radio">
-                        <input type="radio" class="custom-control-input" id="aud_{{ $key }}" name="brand_audience" value="{{ $key }}" @checked($audience === $key)>
-                        <label class="custom-control-label" for="aud_{{ $key }}"><i class="fe fe-{{ $icon }}"></i> <strong>{{ $label }}</strong></label>
+                        <input type="radio" class="custom-control-input js-placement" id="placement_{{ $key }}" name="placement" value="{{ $key }}" @checked($placement === $key)>
+                        <label class="custom-control-label" for="placement_{{ $key }}"><i class="fe fe-{{ $icon }}"></i> <strong>{{ $label }}</strong></label>
                     </div>
                     <small class="text-muted mt-1">{{ $hint }}</small>
                 </label>
             </div>
         @endforeach
     </div>
-    @error('brand_audience')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+    @error('placement')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+
+    <div id="targetPicker" class="border rounded p-3 mb-3" style="{{ $placement === 'selected' ? '' : 'display:none' }}">
+        <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 8px;">
+            <strong class="flex-grow-1">{{ __('Channels') }}</strong>
+            <button type="button" class="btn btn-sm btn-light js-target-all">{{ __('Select all') }}</button>
+            <button type="button" class="btn btn-sm btn-light js-target-none">{{ __('Clear') }}</button>
+        </div>
+        @if ($channelTree)
+            <ul class="list-unstyled mb-0 target-tree">
+                @foreach ($channelTree as $node)
+                    @include('organizations.hub._target-node', ['node' => $node, 'chosen' => $chosen])
+                @endforeach
+            </ul>
+        @else
+            <p class="text-muted small mb-0">{{ __('No channels yet.') }}</p>
+        @endif
+        @error('channel_ids')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+        <div class="custom-control custom-switch mt-3">
+            <input type="hidden" name="cascade" value="0">
+            <input type="checkbox" class="custom-control-input" id="cascade" name="cascade" value="1" @checked(old('cascade', $post?->cascade ?? false))>
+            <label class="custom-control-label" for="cascade"><strong>{{ __('Also show in their sub-channels') }}</strong> <span class="text-muted small">— {{ __('public sub-channels never show posts placed in a private channel') }}</span></label>
+        </div>
+    </div>
+
+    <div id="showOnPageBox" class="custom-control custom-switch mb-2" style="{{ $placement === 'page' ? 'display:none' : '' }}">
+        <input type="hidden" name="show_on_page" value="0">
+        <input type="checkbox" class="custom-control-input" id="show_on_page" name="show_on_page" value="1" @checked(old('show_on_page', $post?->show_on_page ?? true))>
+        <label class="custom-control-label" for="show_on_page"><strong>{{ __('Also show on the public tenant page') }}</strong> <span class="text-muted small">— {{ __('turn off for staff-only posts') }}</span></label>
+    </div>
     <p class="small text-muted mb-4">{{ __('Channel admins, moderators and every subscriber of the receiving channels are notified.') }}</p>
+    @push('scripts')
+    <script>
+        jQuery(function ($) {
+            $('.js-placement').on('change', function () {
+                $('#targetPicker').toggle(this.value === 'selected');
+                $('#showOnPageBox').toggle(this.value !== 'page');
+            });
+            $('.js-target-all').on('click', function () { $('#targetPicker input[name="channel_ids[]"]').prop('checked', true); });
+            $('.js-target-none').on('click', function () { $('#targetPicker input[name="channel_ids[]"]').prop('checked', false); });
+            // Ticking a channel ticks its sub-channels too (they can be unticked one by one).
+            $('#targetPicker').on('change', 'input[name="channel_ids[]"]', function () {
+                $(this).closest('li').find('ul input[name="channel_ids[]"]').prop('checked', this.checked);
+            });
+        });
+    </script>
+    @endpush
+    @push('styles')
+    <style>
+        .target-tree ul { list-style: none; padding-inline-start: 22px; margin: 0; border-inline-start: 2px dashed rgba(100,116,139,.25); margin-inline-start: 9px; }
+        .target-tree .custom-control { padding-top: 4px; padding-bottom: 4px; }
+    </style>
+    @endpush
     @else
     {{-- Cascade to sub-channels --}}
     <div class="d-flex align-items-start p-3 rounded bg-primary-transparent mb-3">
@@ -64,8 +115,8 @@
     </div>
 
     <div id="pinFields" class="border rounded p-3 mt-2" style="{{ $pinned ? '' : 'display:none' }}">
-        @if ($brand)
-        <p class="small text-muted">{{ __('A brand highlight appears at the top of every channel that receives the post.') }}</p>
+        @if ($tenant)
+        <p class="small text-muted">{{ __('A tenant highlight appears at the top of the tenant page and of every channel that receives the post.') }}</p>
         @else
         @php $scope = old('pin_scope', $post?->pinScope() ?? 'all'); @endphp
         <label class="d-block font-weight-bold">{{ __('Where should it be pinned?') }}</label>

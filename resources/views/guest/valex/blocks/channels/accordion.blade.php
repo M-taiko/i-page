@@ -1,4 +1,4 @@
-{{-- One collapsible panel per brand (Valex "accordion", Bootstrap 4 collapse). --}}
+{{-- One collapsible panel per channel group (Valex "accordion", Bootstrap 4 collapse). --}}
 <h5 class="mb-3 mt-4">{{ __('Channels') }}</h5>
 @if ($channelGroups->isEmpty())
     <div class="card"><div class="card-body text-center text-muted py-5">{{ __('No public channels available') }}</div></div>

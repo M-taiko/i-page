@@ -30,7 +30,7 @@ class TenantChannelController extends Controller
 
         // Staff only see the channels they belong to (ADR-015).
         $channels = Channel::visibleTo(auth()->user(), $organization->id)
-            ->with('brand', 'childChannels')
+            ->with('childChannels')
             ->withCount('users', 'posts')
             ->paginate(10);
 
@@ -63,7 +63,6 @@ class TenantChannelController extends Controller
                 ->with('error', __('You have reached the maximum number of channels'));
         }
 
-        $brands = $organization->brands()->where('is_active', true)->get();
         $parentOptions = Channel::where('organization_id', $organization->id)->orderBy('name')->get();
 
         // Deep-link from the channels index "Add Sub-Channel" button —
@@ -72,7 +71,7 @@ class TenantChannelController extends Controller
             ? (int) $request->query('parent')
             : null;
 
-        return view('tenant.channels.create', compact('organization', 'brands', 'parentOptions', 'preselectedParentId'));
+        return view('tenant.channels.create', compact('organization', 'parentOptions', 'preselectedParentId'));
     }
 
     public function store(Request $request)
@@ -91,11 +90,6 @@ class TenantChannelController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:120',
             'type' => 'required|in:public,private',
-            'brand_id' => [
-                'required',
-                'integer',
-                \Illuminate\Validation\Rule::exists('brands', 'id')->where('organization_id', $organization->id),
-            ],
             'parent_channel_id' => [
                 'nullable',
                 'integer',
@@ -107,7 +101,6 @@ class TenantChannelController extends Controller
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']) . '-' . Str::random(6),
             'type' => $validated['type'],
-            'brand_id' => $validated['brand_id'],
             'organization_id' => $organization->id,
             'status' => 'active',
             'admin_user_id' => auth()->id(),
@@ -165,14 +158,13 @@ class TenantChannelController extends Controller
         }
         abort_unless($channel->canAdminister(auth()->user()), 403);
 
-        $brands = $organization->brands()->where('is_active', true)->get();
         $parentOptions = Channel::where('organization_id', $organization->id)
             ->where('id', '!=', $channel->id)
             ->orderBy('name')
             ->get();
         $currentParentId = $channel->parentChannels()->first()?->id;
 
-        return view('tenant.channels.edit', compact('channel', 'organization', 'brands', 'parentOptions', 'currentParentId'));
+        return view('tenant.channels.edit', compact('channel', 'organization', 'parentOptions', 'currentParentId'));
     }
 
     public function update(Request $request, Channel $channel)
@@ -186,11 +178,6 @@ class TenantChannelController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:120',
             'type' => 'required|in:public,private',
-            'brand_id' => [
-                'required',
-                'integer',
-                \Illuminate\Validation\Rule::exists('brands', 'id')->where('organization_id', $organization->id),
-            ],
             'parent_channel_id' => [
                 'nullable',
                 'integer',
@@ -202,7 +189,6 @@ class TenantChannelController extends Controller
         $channel->update([
             'name' => $validated['name'],
             'type' => $validated['type'],
-            'brand_id' => $validated['brand_id'],
         ] + \App\Support\Designs::channelAttributes($validated, $channel));
 
         $channel->parentChannels()->sync(

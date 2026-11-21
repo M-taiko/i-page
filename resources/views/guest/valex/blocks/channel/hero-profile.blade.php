@@ -7,7 +7,7 @@
         </div>
         <span class="avatar avatar-xxl brround bg-primary d-inline-flex align-items-center justify-content-center mb-2"><i class="fe fe-message-circle tx-30"></i></span>
         <h4 class="mb-1">{{ $channel->name }}</h4>
-        <p class="text-muted mb-3">{{ $channel->users_count }} {{ __('members') }}@if ($channel->brand) · {{ $channel->brand->name }}@endif</p>
+        <p class="text-muted mb-3">{{ $channel->users_count }} {{ __('members') }} · {{ $channel->organization?->name }}</p>
         @include('guest.valex.blocks._channel-actions')
     </div>
 </div>

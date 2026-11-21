@@ -14,7 +14,6 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\TenantDashboardController;
 use App\Http\Controllers\TenantChannelController;
 use App\Http\Controllers\TenantOrganizationController;
-use App\Http\Controllers\BrandController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\SlaRuleController;
 use App\Http\Controllers\AudienceSegmentController;
@@ -110,16 +109,12 @@ Route::middleware('auth')->prefix('posts')->name('posts.')->group(function () {
     Route::post('{post}/rate', [\App\Http\Controllers\PostInteractionController::class, 'rate'])->name('rate');
 });
 
-// Follow Routes (organizations + brands)
+// Follow Routes (organizations)
 Route::middleware('auth')->prefix('organizations')->name('organizations.')->group(function () {
     Route::post('{organization}/follow', [\App\Http\Controllers\FollowController::class, 'follow'])->name('follow');
     Route::post('{organization}/unfollow', [\App\Http\Controllers\FollowController::class, 'unfollow'])->name('unfollow');
 });
 
-Route::middleware('auth')->prefix('brands')->name('brands.')->group(function () {
-    Route::post('{brand}/follow', [\App\Http\Controllers\FollowController::class, 'followBrand'])->name('follow');
-    Route::post('{brand}/unfollow', [\App\Http\Controllers\FollowController::class, 'unfollowBrand'])->name('unfollow');
-});
 
 // Collections (personal folders of subscribed channels)
 Route::middleware('auth')->prefix('collections')->name('collections.')->group(function () {
@@ -134,7 +129,6 @@ Route::middleware('auth')->prefix('collections')->name('collections.')->group(fu
     Route::post('{collection}/channels/{channel}', [\App\Http\Controllers\CollectionController::class, 'addChannel'])->name('channels.add');
     Route::delete('{collection}/channels/{channel}', [\App\Http\Controllers\CollectionController::class, 'removeChannel'])->name('channels.remove');
     Route::post('{collection}/organizations/{organization}', [\App\Http\Controllers\CollectionController::class, 'addOrganization'])->name('organizations.add');
-    Route::post('{collection}/brands/{brand}', [\App\Http\Controllers\CollectionController::class, 'addBrand'])->name('brands.add');
     Route::post('favorite/{channel}', [\App\Http\Controllers\CollectionController::class, 'toggleFavorite'])->name('favorite');
 });
 
@@ -182,12 +176,6 @@ Route::middleware(['auth', 'verified', 'CheckRole:super_admin'])->prefix('admin'
     Route::post('organizations/{organization}/activate', [OrganizationController::class, 'activate'])->name('organizations.activate');
     Route::post('organizations/{organization}/cancel', [OrganizationController::class, 'cancel'])->name('organizations.cancel');
 
-    // Manage any organization's brands
-    Route::get('organizations/{organization}/brands/create', [BrandController::class, 'create'])->name('organizations.brands.create');
-    Route::post('organizations/{organization}/brands', [BrandController::class, 'store'])->name('organizations.brands.store');
-    Route::get('organizations/{organization}/brands/{brand}/edit', [BrandController::class, 'edit'])->name('organizations.brands.edit');
-    Route::put('organizations/{organization}/brands/{brand}', [BrandController::class, 'update'])->name('organizations.brands.update');
-    Route::delete('organizations/{organization}/brands/{brand}', [BrandController::class, 'destroy'])->name('organizations.brands.destroy');
 
     // Manage any organization's channels
     Route::get('organizations/{organization}/channels/create', [\App\Http\Controllers\AdminChannelController::class, 'create'])->name('organizations.channels.create');
@@ -279,24 +267,19 @@ Route::middleware(['auth', 'verified', 'organization.active'])->prefix('organiza
     Route::put('{organization}', [\App\Http\Controllers\TenantOrganizationController::class, 'update'])->name('update');
     Route::put('{organization}/design', [\App\Http\Controllers\TenantOrganizationController::class, 'updateDesign'])->name('design.update');
 
-    // Brand Management
-    Route::get('{organization}/brands', [\App\Http\Controllers\BrandController::class, 'index'])->name('brands.index');
-    Route::get('{organization}/brands/create', [\App\Http\Controllers\BrandController::class, 'create'])->name('brands.create');
-    Route::post('{organization}/brands', [\App\Http\Controllers\BrandController::class, 'store'])->name('brands.store');
-    Route::get('{organization}/brands/{brand}', [\App\Http\Controllers\BrandController::class, 'show'])->name('brands.show');
-    Route::get('{organization}/brands/{brand}/edit', [\App\Http\Controllers\BrandController::class, 'edit'])->name('brands.edit');
-    Route::put('{organization}/brands/{brand}', [\App\Http\Controllers\BrandController::class, 'update'])->name('brands.update');
-    Route::delete('{organization}/brands/{brand}', [\App\Http\Controllers\BrandController::class, 'destroy'])->name('brands.destroy');
+    // Tenant command center (ADR-016): tenant posts, channel managers, people
+    Route::get('posts', [\App\Http\Controllers\TenantPostController::class, 'index'])->name('posts.index');
+    Route::get('posts/create', [\App\Http\Controllers\TenantPostController::class, 'create'])->name('posts.create');
+    Route::post('posts', [\App\Http\Controllers\TenantPostController::class, 'store'])->name('posts.store');
+    Route::get('posts/{post}/edit', [\App\Http\Controllers\TenantPostController::class, 'edit'])->name('posts.edit');
+    Route::put('posts/{post}', [\App\Http\Controllers\TenantPostController::class, 'update'])->name('posts.update');
+    Route::delete('posts/{post}', [\App\Http\Controllers\TenantPostController::class, 'destroy'])->name('posts.destroy');
+    Route::post('posts/{post}/pin', [\App\Http\Controllers\TenantPostController::class, 'pin'])->name('posts.pin');
+    Route::get('channel-managers', [\App\Http\Controllers\ChannelManagerController::class, 'index'])->name('channel-managers.index');
+    Route::post('channel-managers', [\App\Http\Controllers\ChannelManagerController::class, 'store'])->name('channel-managers.store');
+    Route::delete('channel-managers/{channel}/{user}', [\App\Http\Controllers\ChannelManagerController::class, 'destroy'])->name('channel-managers.destroy');
+    Route::get('people', [\App\Http\Controllers\ChannelManagerController::class, 'people'])->name('people');
 
-    // Brand command center (ADR-015): brand posts and brand managers
-    Route::get('{organization}/brands/{brand}/posts/create', [\App\Http\Controllers\BrandPostController::class, 'create'])->name('brands.posts.create');
-    Route::post('{organization}/brands/{brand}/posts', [\App\Http\Controllers\BrandPostController::class, 'store'])->name('brands.posts.store');
-    Route::get('{organization}/brands/{brand}/posts/{post}/edit', [\App\Http\Controllers\BrandPostController::class, 'edit'])->name('brands.posts.edit');
-    Route::put('{organization}/brands/{brand}/posts/{post}', [\App\Http\Controllers\BrandPostController::class, 'update'])->name('brands.posts.update');
-    Route::delete('{organization}/brands/{brand}/posts/{post}', [\App\Http\Controllers\BrandPostController::class, 'destroy'])->name('brands.posts.destroy');
-    Route::post('{organization}/brands/{brand}/posts/{post}/pin', [\App\Http\Controllers\BrandPostController::class, 'pin'])->name('brands.posts.pin');
-    Route::post('{organization}/brands/{brand}/managers', [\App\Http\Controllers\BrandController::class, 'addManager'])->name('brands.managers.store');
-    Route::delete('{organization}/brands/{brand}/managers/{user}', [\App\Http\Controllers\BrandController::class, 'removeManager'])->name('brands.managers.destroy');
 
     // Location Management
     Route::get('{organization}/locations/create', [\App\Http\Controllers\LocationController::class, 'create'])->name('locations.create');

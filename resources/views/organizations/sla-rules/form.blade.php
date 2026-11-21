@@ -24,7 +24,6 @@
 
             <x-valex.card :title="__('Scope & Conditions')">
                 <p class="small text-muted">{{ __('Leave blank to match all tickets. Specify values to narrow the scope.') }}</p>
-                <x-valex.select name="brand_id" :label="__('Brand (Optional)')" :placeholder="__('-- Match All Brands --')" :options="$organization->brands->pluck('name', 'id')->all()" :value="$rule->brand_id ?? null" />
                 <x-valex.select name="location_id" :label="__('Location (Optional)')" :placeholder="__('-- Match All Locations --')" :options="$organization->locations->pluck('name', 'id')->all()" :value="$rule->location_id ?? null" />
                 <x-valex.select name="category_id" :label="__('Category (Optional)')" :placeholder="__('-- Match All Categories --')" :options="$organization->ticketCategories->pluck('name', 'id')->all()" :value="$rule->category_id ?? null" />
                 <x-valex.select name="priority" :label="__('Priority (Optional)')" :placeholder="__('-- Match All Priorities --')" :value="$rule->priority ?? ''"

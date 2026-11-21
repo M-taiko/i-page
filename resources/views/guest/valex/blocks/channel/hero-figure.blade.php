@@ -10,7 +10,7 @@
                 @if ($parentChannel) · <a href="{{ route('guest.channel-detail', [$organization, $parentChannel->slug]) }}" style="color: #fff !important;">{{ $parentChannel->name }}</a>@endif
             </div>
             <h3 class="text-white mb-1"><i class="fe fe-message-circle"></i> {{ $channel->name }}</h3>
-            <small>{{ $channel->users_count }} {{ __('members') }}@if ($channel->brand) · {{ $channel->brand->name }}@endif</small>
+            <small>{{ $channel->users_count }} {{ __('members') }} · {{ $channel->organization?->name }}</small>
         </div>
         <div class="mt-3 mt-md-0">@include('guest.valex.blocks._channel-actions')</div>
     </figcaption>

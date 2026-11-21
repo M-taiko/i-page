@@ -26,7 +26,7 @@
     .org-hero {
         background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
         color: white;
-        padding: var(--space-6) var(--space-4) var(--space-5);
+        padding: var(--space-6) var(--space-4) 1.25rem;
         text-align: center;
     }
 
@@ -72,197 +72,71 @@
         gap: var(--space-2);
     }
 
-    /* Tabs */
-    .feed-tabs {
-        display: flex;
-        background-color: var(--primary-100);
-        border: 1px solid var(--primary-400);
-        border-top: none;
-        border-bottom-left-radius: var(--radius-xl);
-        border-bottom-right-radius: var(--radius-xl);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        overflow: hidden;
+    /* Section headings */
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin: 0 var(--space-4) var(--space-3); }
+    .section-head h2 { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--text-base); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+    .section-head h2 i { color: var(--primary-600); }
+    .section-hint { font-size: var(--text-xs); color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 4px; }
+    [dir="rtl"] .rtl-flip { transform: scaleX(-1); display: inline-block; }
+
+    /* Channel spotlights */
+    .spot-section { padding: 1.25rem 0 var(--space-4); border-bottom: 8px solid var(--surface-bg-secondary); scroll-margin-top: 70px; }
+    .spot-strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px var(--space-4) 12px; scrollbar-width: none; scroll-padding-inline: var(--space-4); }
+    .spot-strip::-webkit-scrollbar { display: none; }
+    .spot { flex: 0 0 auto; width: 132px; scroll-snap-align: start; text-decoration: none !important; color: inherit; border-radius: 20px; }
+    .spot:focus-visible { outline: 3px solid var(--primary-500); outline-offset: 3px; }
+    .spot-tile {
+        position: relative; width: 132px; height: 184px; border-radius: 20px; overflow: hidden;
+        background: linear-gradient(160deg, var(--spot-tone) 0%, color-mix(in srgb, var(--spot-tone) 55%, #0f172a) 100%);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .16);
+        transition: transform .25s ease, box-shadow .25s ease;
     }
+    .spot:hover .spot-tile, .spot:focus-visible .spot-tile { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(15, 23, 42, .24); }
+    .spot:active .spot-tile { transform: scale(.97); }
+    .spot-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .spot-tile::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.72) 100%); }
+    .spot-letter { position: absolute; inset: 0 0 34%; display: flex; align-items: center; justify-content: center; font-size: 56px; font-weight: 800; color: rgba(255,255,255,.92); text-shadow: 0 4px 18px rgba(0,0,0,.18); }
+    .spot-badge { position: absolute; z-index: 2; top: 9px; inset-inline-start: 9px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.92); color: #0f172a; font-size: 11px; font-weight: 700; }
+    .spot-cap { position: absolute; z-index: 2; inset-inline: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 2px; color: #fff; }
+    .spot-name { font-size: 13px; font-weight: 800; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .spot-meta { font-size: 10.5px; opacity: .85; }
+    .spot-strip.nudge .spot-tile { animation: spotPulse 1.1s ease 2; }
+    @keyframes spotPulse { 0%, 100% { transform: none; } 40% { transform: translateY(-6px) scale(1.03); box-shadow: 0 16px 34px rgba(98, 89, 202, .35); } }
 
-    [data-theme="dark"] .feed-tabs {
-        background-color: #1b2559;
-        border-color: var(--primary-500);
+    /* Posts */
+    .posts-section { padding: 1.25rem 0 var(--space-4); }
+    .posts-section .feed-list { padding: 0 var(--space-4); }
+
+    /* Friendly empty states */
+    .soft-empty {
+        margin: 0 var(--space-4); padding: var(--space-6) 1.25rem; text-align: center;
+        border-radius: 20px; background: var(--surface-bg); border: 1px dashed var(--surface-border); color: var(--text-secondary);
     }
-
-    .feed-tab {
-        flex: 1;
-        text-align: center;
-        padding: var(--space-3) var(--space-2);
-        background: none;
-        border: none;
-        color: var(--text-tertiary);
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-semibold);
-        border-bottom: 2px solid transparent;
-        cursor: pointer;
+    .soft-empty-invite {
+        border-style: solid; border-color: var(--primary-200, var(--surface-border));
+        background: linear-gradient(160deg, var(--primary-50, var(--surface-bg)) 0%, var(--surface-bg) 70%);
     }
-
-    .feed-tab.active { color: var(--primary-600); border-bottom-color: var(--primary-600); }
-
-    /* Brand sections */
-    .brand-section { padding: var(--space-4); border-bottom: 8px solid var(--surface-bg-secondary); }
-    .brand-section-title {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-bold);
-        color: var(--text-primary);
-        margin-bottom: var(--space-3);
+    [data-theme="dark"] .soft-empty-invite { background: linear-gradient(160deg, rgba(98, 89, 202, .18) 0%, var(--surface-bg) 70%); border-color: rgba(98, 89, 202, .35); }
+    .soft-empty-icon { font-size: 40px; line-height: 1; margin-bottom: var(--space-3); }
+    .soft-empty-title { font-size: var(--text-lg); font-weight: var(--font-weight-bold); color: var(--text-primary); margin-bottom: var(--space-2); }
+    .soft-empty p { font-size: var(--text-sm); line-height: 1.7; margin: 0 auto var(--space-4); max-width: 420px; }
+    .soft-empty-btn {
+        display: inline-flex; align-items: center; gap: var(--space-2); border: 0; cursor: pointer;
+        padding: var(--space-3) 1.25rem; border-radius: 999px; background: var(--primary-600); color: #fff;
+        font-weight: var(--font-weight-semibold); font-size: var(--text-sm); box-shadow: 0 8px 20px rgba(69, 87, 245, .28);
     }
+    .soft-empty-btn:hover { background: var(--primary-700); }
+    .soft-empty-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-4); }
+    .soft-empty-chips .chip { padding: 6px 12px; border-radius: 999px; background: var(--surface-bg-secondary); color: var(--text-primary); font-size: var(--text-xs); font-weight: var(--font-weight-semibold); text-decoration: none; border: 1px solid var(--surface-border); }
+    .soft-empty-chips .chip:hover { border-color: var(--primary-500); color: var(--primary-600); }
 
-    .brand-add-btn {
-        border: none;
-        background: none;
-        color: var(--primary-600);
-        cursor: pointer;
-        padding: 4px;
-        font-size: var(--text-lg);
+    @media (min-width: 768px) {
+        .spot, .spot-tile { width: 150px; }
+        .spot-tile { height: 208px; }
     }
-
-    .brand-badge {
-        width: 28px;
-        height: 28px;
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: var(--text-xs);
-        font-weight: var(--font-weight-bold);
-        flex-shrink: 0;
-    }
-
-    .channels-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: var(--space-3);
-    }
-
-    .channel-card-wrap { position: relative; }
-
-    .channel-card {
-        background-color: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-3);
-        text-decoration: none;
-        color: inherit;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: var(--space-2);
-        position: relative;
-        width: 100%;
-    }
-
-    .channel-card:active { background-color: var(--surface-hover); }
-    .channel-card.popup-open { border-color: var(--primary-500); background-color: var(--primary-50); }
-
-    .channel-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: var(--radius-lg);
-        background-color: var(--primary-50);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary-600);
-        font-size: var(--text-lg);
-    }
-
-    .channel-card-name { font-weight: var(--font-weight-semibold); font-size: var(--text-xs); color: var(--text-primary); }
-    .channel-card-meta { font-size: 10px; color: var(--text-tertiary); }
-
-    .channel-subbadge {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        background-color: var(--primary-600);
-        color: white;
-        font-size: 9px;
-        font-weight: var(--font-weight-bold);
-        min-width: 16px;
-        height: 16px;
-        border-radius: var(--radius-full);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 4px;
-        gap: 2px;
-    }
-
-    /* Sub-channels popup — appears above/below the parent channel card */
-    .channel-subpopup {
-        display: none;
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 15;
-        width: max-content;
-        min-width: 180px;
-        max-width: 240px;
-        background-color: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-lg);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-        overflow: hidden;
-    }
-
-    .channel-subpopup.show { display: block; }
-
-    .channel-subpopup::before {
-        content: '';
-        position: absolute;
-        top: -6px;
-        left: 50%;
-        transform: translateX(-50%) rotate(45deg);
-        width: 12px;
-        height: 12px;
-        background-color: var(--surface-bg);
-        border-left: 1px solid var(--surface-border);
-        border-top: 1px solid var(--surface-border);
-    }
-
-    .subpopup-tooltip {
-        font-size: 10px;
-        color: var(--text-tertiary);
-        text-align: center;
-        padding: var(--space-2) var(--space-3);
-        border-bottom: 1px solid var(--surface-border);
-        background-color: var(--surface-bg-secondary);
-    }
-
-    .subpopup-list { display: flex; flex-direction: column; padding: var(--space-1) 0; }
-
-    .subpopup-item {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        padding: var(--space-2) var(--space-3);
-        text-decoration: none;
-        color: var(--text-primary);
-        font-size: var(--text-xs);
-        font-weight: var(--font-weight-medium);
-    }
-
-    .subpopup-item:active { background-color: var(--surface-hover); }
-    .subpopup-item i { color: var(--primary-600); font-size: var(--text-sm); }
-
-    .empty-state {
-        text-align: center;
-        padding: var(--space-8) var(--space-4);
-        color: var(--text-secondary);
-        font-size: var(--text-sm);
+    @media (prefers-reduced-motion: reduce) {
+        .spot-tile { transition: none; }
+        .spot-strip.nudge .spot-tile { animation: none; }
     }
 
     /* Post cards (shared style) */
@@ -319,7 +193,7 @@
     .signin-modal { background-color: var(--surface-bg); border-radius: var(--radius-xl); padding: var(--space-8) var(--space-6); max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
     .signin-modal i.lock-icon { font-size: 2.5rem; color: var(--primary-600); display: block; margin-bottom: var(--space-3); }
     .signin-modal h3 { font-size: var(--text-lg); margin-bottom: var(--space-2); color: var(--text-primary); }
-    .signin-modal p { color: var(--text-secondary); margin-bottom: var(--space-5); font-size: var(--text-sm); }
+    .signin-modal p { color: var(--text-secondary); margin-bottom: 1.25rem; font-size: var(--text-sm); }
     .signin-modal-actions { display: flex; gap: var(--space-3); }
     .signin-modal-actions button, .signin-modal-actions a { flex: 1; padding: var(--space-3); border-radius: var(--radius-md); font-weight: var(--font-weight-medium); text-decoration: none; font-size: var(--text-sm); cursor: pointer; border: none; }
     .signin-modal-actions .btn-cancel { background-color: var(--surface-hover); color: var(--text-primary); }
@@ -378,148 +252,164 @@
         </div>
     </div>
 
-    <!-- Tabs -->
-    <nav class="feed-tabs">
-        <button type="button" class="feed-tab active" id="tab-btn-channels" onclick="showOrgTab('channels')">
-            <i class="bi bi-chat-dots"></i> {{ __('Channels') }}
-        </button>
-        <button type="button" class="feed-tab" id="tab-btn-posts" onclick="showOrgTab('posts')">
-            <i class="bi bi-newspaper"></i> {{ __('Posts') }}
-        </button>
-    </nav>
-
-    <!-- Channels Tab -->
-    <div id="org-tab-channels">
-        @forelse($brands as $brand)
-            @if($brand->channels->count() > 0)
-                <div class="brand-section">
-                    <div class="brand-section-title">
-                        <span class="brand-badge" style="background-color: {{ $colorFor($brand->name) }};">{{ substr($brand->name, 0, 1) }}</span>
-                        <span style="flex: 1;">{{ $brand->name }}</span>
-                        @auth
-                            <button type="button" class="brand-add-btn" onclick="openAddToCollection('brand', {{ $brand->id }}, '{{ $brand->name }}')" title="{{ __('Add to Collection') }}">
-                                <i class="bi bi-folder-plus"></i>
-                            </button>
-                        @endauth
-                    </div>
-                    <div class="channels-grid">
-                        @foreach($brand->channels as $channel)
-                            @include('guest._channel-card', ['organization' => $organization, 'channel' => $channel])
-                        @endforeach
-                    </div>
-                </div>
+    {{-- Channels as spotlights: tall tiles in a swipeable strip (ADR-016 tenant page). --}}
+    <section class="spot-section" id="org-channels" aria-labelledby="spotTitle">
+        <div class="section-head">
+            <h2 id="spotTitle"><i class="bi bi-stars"></i> {{ __('Channels') }}</h2>
+            @if($channels->count() > 2)
+                <span class="section-hint">{{ __('Swipe to see all') }} <i class="bi bi-arrow-right rtl-flip"></i></span>
             @endif
-        @empty
-        @endforelse
+        </div>
 
-        @if($unbrandedChannels->count() > 0)
-            <div class="brand-section">
-                <div class="brand-section-title">
-                    <span class="brand-badge" style="background-color: var(--neutral-500);"><i class="bi bi-chat-dots"></i></span>
-                    {{ __('Other Channels') }}
-                </div>
-                <div class="channels-grid">
-                    @foreach($unbrandedChannels as $channel)
-                        @include('guest._channel-card', ['organization' => $organization, 'channel' => $channel])
+        @if($channels->isNotEmpty())
+            <div class="spot-strip" role="list">
+                @foreach($channels as $channel)
+                    @php
+                        $cover = \App\Support\Designs::coverPaths($channel->design_options ?? [])[0] ?? $channel->logo_path;
+                        $tone = $colorFor($channel->name);
+                        $subCount = $channel->childChannels->count();
+                    @endphp
+                    <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="spot" role="listitem"
+                       style="--spot-tone: {{ $tone }};" aria-label="{{ $channel->name }}">
+                        <div class="spot-tile">
+                            @if($cover)
+                                <img src="{{ \Illuminate\Support\Facades\Storage::url($cover) }}" alt="" loading="lazy">
+                            @else
+                                <span class="spot-letter" aria-hidden="true">{{ mb_substr($channel->name, 0, 1) }}</span>
+                            @endif
+                            @if($subCount)
+                                <span class="spot-badge"><i class="bi bi-diagram-3"></i> {{ $subCount }}</span>
+                            @endif
+                            <span class="spot-cap">
+                                <span class="spot-name">{{ $channel->name }}</span>
+                                <span class="spot-meta">{{ $channel->users_count }} {{ __('members') }} · {{ $channel->posts_count }} {{ __('posts') }}</span>
+                            </span>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        @else
+            <div class="soft-empty">
+                <div class="soft-empty-icon">🌱</div>
+                <div class="soft-empty-title">{{ __(':name is just getting started', ['name' => $organization->name]) }}</div>
+                <p>{{ __('Channels will appear here soon. Follow the page so you hear about them first.') }}</p>
+            </div>
+        @endif
+    </section>
+
+    {{-- Posts under the channels; a friendly nudge toward the channels when there are none. --}}
+    <section class="posts-section" aria-labelledby="postsTitle">
+        <div class="section-head">
+            <h2 id="postsTitle"><i class="bi bi-newspaper"></i> {{ __('Latest posts') }}</h2>
+        </div>
+
+        @if($posts->isNotEmpty())
+            <div class="feed-list">
+                @foreach($posts as $post)
+                    @php
+                        $displayName = $post->sourceName() ?? $organization->name;
+                        $subtitle = ($post->isTenantPost() ? __('Official post') : null) ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
+                        $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
+                        $likeCount = $post->reactions()->where('type', 'like')->count();
+                        $commentCount = $post->comments()->approved()->count();
+                        $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();
+                    @endphp
+                    <article class="post-card">
+                        <div class="post-header">
+                            <div class="post-avatar" style="background-color: {{ $colorFor($displayName) }};">
+                                {{ substr($displayName, 0, 1) }}
+                            </div>
+                            <div class="post-info">
+                                <div class="post-author">{{ $displayName }}</div>
+                                <div class="post-subtitle">{{ $subtitle }}</div>
+                                <div class="post-meta">
+                                    <span>{{ $post->published_at?->diffForHumans() }}</span>
+                                    <span>&middot;</span>
+                                    <i class="bi bi-globe2"></i>
+                                    <span>{{ __('Public') }}</span>
+                                </div>
+                            </div>
+                        </div>
+    
+                        @include('posts.partials._content', ['post' => $post, 'limit' => 280, 'url' => route('guest.post-detail', $post->id), 'showWidgets' => $post->hasWidgets()])
+    
+                        <div class="post-footer">
+                            @auth
+                                @unless ($post->hasWidgets())
+                                <form action="{{ route('posts.like', $post->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
+                                        <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
+                                        <span>{{ $likeCount }}</span>
+                                    </button>
+                                </form>
+                                @endunless
+                                <button type="button" class="post-action" onclick="toggleFeedComments(this)">
+                                    <i class="bi bi-chat"></i>
+                                    <span>{{ $commentCount }}</span>
+                                </button>
+                            @else
+                                <button type="button" class="post-action" onclick="requireSignIn()">
+                                    <i class="bi bi-hand-thumbs-up"></i>
+                                    <span>{{ $likeCount }}</span>
+                                </button>
+                                <button type="button" class="post-action" onclick="requireSignIn()">
+                                    <i class="bi bi-chat"></i>
+                                    <span>{{ $commentCount }}</span>
+                                </button>
+                            @endauth
+                            <div class="post-views">
+                                <i class="bi bi-eye"></i>
+                                <span>{{ $viewsCount }}</span>
+                            </div>
+                        </div>
+    
+                        @auth
+                            <div class="feed-comments">
+                                @foreach($post->comments()->approved()->latest()->take(3)->get() as $comment)
+                                    <div class="comment-item">
+                                        <strong style="color: var(--text-primary);">{{ $comment->user->full_name }}</strong>
+                                        <p style="margin-top: 2px; color: var(--text-secondary);">{{ $comment->body }}</p>
+                                    </div>
+                                @endforeach
+                                <form action="{{ route('posts.comments.store', $post->id) }}" method="POST" class="comment-form">
+                                    @csrf
+                                    <input type="text" name="body" placeholder="{{ __('Add a comment...') }}" required>
+                                    <button type="submit"><i class="bi bi-send"></i></button>
+                                </form>
+                            </div>
+                        @endauth
+                    </article>
+            @endforeach
+
+                @if($posts->hasPages())
+                    <div style="display: flex; justify-content: center; padding-top: var(--space-2);">
+                        {{ $posts->onEachSide(1)->links() }}
+                    </div>
+                @endif
+            </div>
+        @elseif($channels->isNotEmpty())
+            <div class="soft-empty soft-empty-invite">
+                <div class="soft-empty-icon">✨</div>
+                <div class="soft-empty-title">{{ __('The good stuff is inside the channels') }}</div>
+                <p>{{ __('No posts on this page yet — but every channel above has its own news, offers and updates. Tap one to look inside, and subscribe so you never miss a thing.') }}</p>
+                <button type="button" class="soft-empty-btn" onclick="spotlightChannels()">
+                    <i class="bi bi-hand-index-thumb"></i> {{ __('Explore the channels') }}
+                </button>
+                <div class="soft-empty-chips">
+                    @foreach($channels->take(4) as $channel)
+                        <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="chip">{{ $channel->name }}</a>
                     @endforeach
                 </div>
             </div>
+        @else
+            <div class="soft-empty">
+                <div class="soft-empty-icon">📬</div>
+                <div class="soft-empty-title">{{ __('Nothing here yet') }}</div>
+                <p>{{ __('Come back soon — news from :name will show up right here.', ['name' => $organization->name]) }}</p>
+            </div>
         @endif
-
-        @if($brands->every(fn($b) => $b->channels->isEmpty()) && $unbrandedChannels->isEmpty())
-            <div class="empty-state">{{ __('No public channels available') }}</div>
-        @endif
-    </div>
-
-    <!-- Posts Tab -->
-    <div id="org-tab-posts" style="display: none;">
-        <div class="feed-list">
-            @forelse($posts as $post)
-                @php
-                    $displayName = $post->channel->name ?? $organization->name;
-                    $subtitle = $post->channel->brand->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
-                    $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
-                    $likeCount = $post->reactions()->where('type', 'like')->count();
-                    $commentCount = $post->comments()->approved()->count();
-                    $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();
-                @endphp
-                <article class="post-card">
-                    <div class="post-header">
-                        <div class="post-avatar" style="background-color: {{ $colorFor($displayName) }};">
-                            {{ substr($displayName, 0, 1) }}
-                        </div>
-                        <div class="post-info">
-                            <div class="post-author">{{ $displayName }}</div>
-                            <div class="post-subtitle">{{ $subtitle }}</div>
-                            <div class="post-meta">
-                                <span>{{ $post->published_at?->diffForHumans() }}</span>
-                                <span>&middot;</span>
-                                <i class="bi bi-globe2"></i>
-                                <span>{{ __('Public') }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    @include('posts.partials._content', ['post' => $post, 'limit' => 280, 'url' => route('guest.post-detail', $post->id), 'showWidgets' => $post->hasWidgets()])
-
-                    <div class="post-footer">
-                        @auth
-                            @unless ($post->hasWidgets())
-                            <form action="{{ route('posts.like', $post->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
-                                    <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
-                                    <span>{{ $likeCount }}</span>
-                                </button>
-                            </form>
-                            @endunless
-                            <button type="button" class="post-action" onclick="toggleFeedComments(this)">
-                                <i class="bi bi-chat"></i>
-                                <span>{{ $commentCount }}</span>
-                            </button>
-                        @else
-                            <button type="button" class="post-action" onclick="requireSignIn()">
-                                <i class="bi bi-hand-thumbs-up"></i>
-                                <span>{{ $likeCount }}</span>
-                            </button>
-                            <button type="button" class="post-action" onclick="requireSignIn()">
-                                <i class="bi bi-chat"></i>
-                                <span>{{ $commentCount }}</span>
-                            </button>
-                        @endauth
-                        <div class="post-views">
-                            <i class="bi bi-eye"></i>
-                            <span>{{ $viewsCount }}</span>
-                        </div>
-                    </div>
-
-                    @auth
-                        <div class="feed-comments">
-                            @foreach($post->comments()->approved()->latest()->take(3)->get() as $comment)
-                                <div class="comment-item">
-                                    <strong style="color: var(--text-primary);">{{ $comment->user->full_name }}</strong>
-                                    <p style="margin-top: 2px; color: var(--text-secondary);">{{ $comment->body }}</p>
-                                </div>
-                            @endforeach
-                            <form action="{{ route('posts.comments.store', $post->id) }}" method="POST" class="comment-form">
-                                @csrf
-                                <input type="text" name="body" placeholder="{{ __('Add a comment...') }}" required>
-                                <button type="submit"><i class="bi bi-send"></i></button>
-                            </form>
-                        </div>
-                    @endauth
-                </article>
-            @empty
-                <div class="empty-state">{{ __('No posts yet') }}</div>
-            @endforelse
-
-            @if($posts->hasPages())
-                <div style="display: flex; justify-content: center; padding-top: var(--space-2);">
-                    {{ $posts->onEachSide(1)->links() }}
-                </div>
-            @endif
-        </div>
-    </div>
+    </section>
 @endsection
 
 @section('modals')
@@ -540,13 +430,6 @@
 
 @section('scripts')
 <script>
-    function showOrgTab(tab) {
-        document.getElementById('org-tab-channels').style.display = tab === 'channels' ? 'block' : 'none';
-        document.getElementById('org-tab-posts').style.display = tab === 'posts' ? 'block' : 'none';
-        document.getElementById('tab-btn-channels').classList.toggle('active', tab === 'channels');
-        document.getElementById('tab-btn-posts').classList.toggle('active', tab === 'posts');
-    }
-
     function toggleFeedComments(button) {
         const card = button.closest('.post-card');
         const section = card.querySelector('.feed-comments');
@@ -561,33 +444,16 @@
         document.getElementById('signinModal').classList.remove('show');
     }
 
-    /* Sub-channels popup: first tap on a channel that has sub-channels
-       previews them in a popup instead of navigating; a second tap on the
-       same (now-open) channel lets the click through to open it. */
-    function handleChannelCardClick(event, el) {
-        const popup = document.getElementById('subpopup-' + el.dataset.channelId);
-
-        if (el.classList.contains('popup-open')) {
-            closeAllChannelPopups();
-            return true;
+    /* Empty-state button: bring the channel spotlights into view and give them a little bounce. */
+    function spotlightChannels() {
+        const section = document.getElementById('org-channels');
+        const strip = section.querySelector('.spot-strip');
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (strip) {
+            strip.classList.remove('nudge');
+            void strip.offsetWidth;
+            strip.classList.add('nudge');
         }
-
-        event.preventDefault();
-        closeAllChannelPopups();
-        el.classList.add('popup-open');
-        popup.classList.add('show');
-        return false;
     }
-
-    function closeAllChannelPopups() {
-        document.querySelectorAll('.channel-card.popup-open').forEach(c => c.classList.remove('popup-open'));
-        document.querySelectorAll('.channel-subpopup.show').forEach(p => p.classList.remove('show'));
-    }
-
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.channel-card-wrap')) {
-            closeAllChannelPopups();
-        }
-    });
 </script>
 @endsection

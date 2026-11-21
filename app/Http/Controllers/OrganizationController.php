@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\OrganizationTemplate;
@@ -66,16 +65,8 @@ class OrganizationController extends Controller
             'status' => 'active',
         ]);
 
-        // Every organization starts with one default brand (channels live under brands).
-        $defaultBrand = Brand::create([
-            'organization_id' => $organization->id,
-            'name' => $organization->name,
-            'slug' => Str::slug($organization->name),
-            'is_active' => true,
-        ]);
-
         if ($template = OrganizationTemplate::find($validated['organization_template_id'] ?? null)) {
-            $this->templateService->applyToOrganization($organization, $template, $defaultBrand);
+            $this->templateService->applyToOrganization($organization, $template);
         }
 
         $owner = User::create([

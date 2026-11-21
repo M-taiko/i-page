@@ -27,20 +27,15 @@ class HomeController extends Controller
             ->withCount('users', 'posts')
             ->get();
 
-        // Get user's subscribed channels + followed brands (only if authenticated)
+        // The user's subscribed channels (only if authenticated)
         $subscribedChannelIds = [];
-        $followedBrandIds = [];
         if (auth()->check()) {
             $subscribedChannelIds = auth()->user()->subscribedChannels()
                 ->where('organization_id', $organization)
                 ->pluck('channels.id')
                 ->toArray();
-
-            $followedBrandIds = auth()->user()->followedBrands()->pluck('brand_id')->toArray();
         }
 
-        $brands = $organizationModel->brands()->where('is_active', true)->get();
-
-        return view('home.index-modern', compact('posts', 'organizationModel', 'subscribedChannelIds', 'channels', 'brands', 'followedBrandIds'));
+        return view('home.index-modern', compact('posts', 'organizationModel', 'subscribedChannelIds', 'channels'));
     }
 }

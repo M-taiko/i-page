@@ -1,4 +1,4 @@
-{{-- Plain directory list grouped by brand (Valex "list-group"). --}}
+{{-- Plain directory list of channels (Valex "list-group"). --}}
 <h5 class="mb-3 mt-4">{{ __('Channels') }}</h5>
 @forelse ($channelGroups as $group)
     <div class="card mb-3">

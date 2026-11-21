@@ -3,7 +3,7 @@
 @section('title', __('Organization Settings'))
 
 @section('page-header')
-    <x-valex.page-header :title="$organization->name" :subtitle="__('Manage your organization settings, team, brands, and more')" />
+    <x-valex.page-header :title="$organization->name" :subtitle="__('Manage your organization settings, team, channels, and more')" />
 @endsection
 
 @section('content')
@@ -17,7 +17,7 @@
 <div class="row row-sm">
     <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Members')" :value="$activeMemberships->count()" icon="users" variant="primary" /></div>
     <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Pending')" :value="$pendingCount" icon="clock" variant="warning" /></div>
-    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Brands')" :value="$organization->brands->count()" icon="package" variant="success" /></div>
+    <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Channels')" :value="$organization->channels()->count()" icon="message-circle" variant="success" /></div>
     <div class="col-sm-6 col-xl-3"><x-valex.stat-card :title="__('Locations')" :value="$organization->locations->count()" icon="map-pin" variant="info" /></div>
 </div>
 
@@ -31,7 +31,6 @@
                         @if ($pendingCount > 0)<x-valex.badge variant="danger">{{ $pendingCount }}</x-valex.badge>@endif
                     </a>
                 </li>
-                <li><a href="#tab-brands" data-toggle="tab"><i class="fe fe-package"></i> {{ __('Brands') }}</a></li>
                 <li><a href="#tab-locations" data-toggle="tab"><i class="fe fe-map-pin"></i> {{ __('Locations') }}</a></li>
                 <li><a href="#tab-sla" data-toggle="tab"><i class="fe fe-clock"></i> {{ __('SLA Rules') }}</a></li>
                 <li><a href="#tab-design" data-toggle="tab"><i class="fe fe-layout"></i> {{ __('Design') }}</a></li>
@@ -142,31 +141,6 @@
                         </li>
                     @empty
                         <li class="list-group-item text-center text-muted">{{ __('No members yet') }}</li>
-                    @endforelse
-                </ul>
-            </div>
-
-            {{-- Brands --}}
-            <div class="tab-pane" id="tab-brands">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0"><i class="fe fe-package"></i> {{ __('Brands') }}</h6>
-                    <a href="{{ route('organizations.brands.create', $organization) }}" class="btn btn-primary btn-sm"><i class="fe fe-plus"></i> {{ __('Add Brand') }}</a>
-                </div>
-                <ul class="list-group">
-                    @forelse ($organization->brands as $brand)
-                        <li class="list-group-item d-flex align-items-center">
-                            <span class="avatar avatar-md brround bg-primary-transparent text-primary mx-2"><i class="fe fe-package"></i></span>
-                            <div class="flex-grow-1 font-weight-bold">{{ $brand->name }}</div>
-                            <x-valex.badge :variant="$brand->is_active ? 'success' : 'secondary'" class="mx-1">{{ $brand->is_active ? __('Active') : __('Inactive') }}</x-valex.badge>
-                            <a href="{{ route('organizations.brands.edit', [$organization, $brand]) }}" class="btn btn-sm btn-outline-warning mx-1"><i class="fe fe-edit"></i></a>
-                            <form action="{{ route('organizations.brands.destroy', [$organization, $brand]) }}" method="POST" onsubmit="return confirm('{{ __('Delete this brand? Its channels will be affected.') }}')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i></button>
-                            </form>
-                        </li>
-                    @empty
-                        <li class="list-group-item text-center text-muted">{{ __('No brands yet') }}</li>
                     @endforelse
                 </ul>
             </div>

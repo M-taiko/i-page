@@ -82,9 +82,6 @@
                     <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">{{ __('Approved By') }}</span><strong>{{ $post->approver->full_name ?? __('Admin') }}</strong></li>
                 @endif
                 <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">{{ __('Needs Acknowledgment') }}</span><strong>{{ $post->requires_acknowledgment ? __('Yes') : __('No') }}</strong></li>
-                @if ($post->brand)
-                    <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">{{ __('Brand') }}</span><strong>{{ $post->brand->name }}</strong></li>
-                @endif
                 @if ($post->location)
                     <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">{{ __('Location') }}</span><strong>{{ $post->location->name }}</strong></li>
                 @endif

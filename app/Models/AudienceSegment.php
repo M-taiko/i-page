@@ -52,7 +52,6 @@ class AudienceSegment extends Model
             'language' => in_array($user->language ?? 'en', $values),
             'location', 'location_id' => $this->checkUserLocations($user, $values),
             'department', 'department_id' => $this->checkUserDepartments($user, $values),
-            'brand', 'brand_id' => $this->checkUserBrands($user, $values),
             default => false,
         };
     }
@@ -77,15 +76,6 @@ class AudienceSegment extends Model
         return $user->organizationMemberships()
             ->where('organization_id', $this->organization_id)
             ->whereIn('department_id', $departmentIds)
-            ->exists();
-    }
-
-    private function checkUserBrands(User $user, array $brandIds): bool
-    {
-        return $user->locationMemberships()
-            ->whereHas('location', function ($q) use ($brandIds) {
-                $q->whereIn('brand_id', $brandIds);
-            })
             ->exists();
     }
 }

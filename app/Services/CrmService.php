@@ -100,7 +100,6 @@ class CrmService
                 'openTickets' => $org->tickets()->where('status', '!=', 'closed')->count(),
                 'allTickets' => $org->tickets()->count(),
                 'qrScans' => (int) $org->qrCodes()->sum('scan_count'),
-                'brands' => $org->brands()->count(),
                 'locations' => $org->locations()->count(),
             ],
             // Skip memberships whose account was deleted.

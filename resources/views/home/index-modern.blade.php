@@ -147,42 +147,6 @@
     </div>
 </div>
 
-<!-- Brands Section -->
-@if($brands->count() > 0)
-<div style="margin-bottom: var(--space-8);">
-    <h2 style="font-size: var(--text-lg); font-weight: var(--font-weight-bold); margin-bottom: var(--space-4); color: var(--text-primary);">
-        <i class="bi bi-bookmark-star"></i> {{ __('Brands') }}
-    </h2>
-    <div style="display: flex; flex-wrap: wrap; gap: var(--space-3);">
-        @foreach($brands as $brand)
-            <div style="display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--surface-border); border-radius: var(--radius-full); background-color: var(--surface-bg);">
-                <span style="font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--text-primary);">{{ $brand->name }}</span>
-                @if(auth()->check())
-                    @if(in_array($brand->id, $followedBrandIds ?? []))
-                        <form action="{{ route('brands.unfollow', $brand->id) }}" method="POST" style="display: inline;">
-                            @csrf
-                            <button type="submit" style="border: none; background: none; cursor: pointer; color: var(--success-600); font-size: var(--text-xs); display: inline-flex; align-items: center; gap: 4px;">
-                                <i class="bi bi-check-circle-fill"></i> {{ __('Following') }}
-                            </button>
-                        </form>
-                    @else
-                        <form action="{{ route('brands.follow', $brand->id) }}" method="POST" style="display: inline;">
-                            @csrf
-                            <button type="submit" style="border: none; background: none; cursor: pointer; color: var(--primary-600); font-size: var(--text-xs); display: inline-flex; align-items: center; gap: 4px;">
-                                <i class="bi bi-plus-circle"></i> {{ __('Follow') }}
-                            </button>
-                        </form>
-                    @endif
-                @else
-                    <a href="{{ route('login') }}" style="color: var(--text-tertiary); font-size: var(--text-xs); text-decoration: none;">
-                        <i class="bi bi-lock"></i> {{ __('Follow') }}
-                    </a>
-                @endif
-            </div>
-        @endforeach
-    </div>
-</div>
-@endif
 
 <!-- Channels Section -->
 @if($channels->count() > 0)

@@ -13,7 +13,6 @@ class Ticket extends Model
 
     protected $fillable = [
         'organization_id',
-        'brand_id',
         'location_id',
         'category_id',
         'created_by',
@@ -46,10 +45,6 @@ class Ticket extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
-    }
 
     public function location(): BelongsTo
     {

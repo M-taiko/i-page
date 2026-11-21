@@ -53,7 +53,7 @@ return [
             'title' => 'ما هو موجود اليوم',
             'sub' => 'كل ده شغّال فعلاً في المنصة الحالية.',
             'items' => [
-                ['icon' => '🏢', 'title' => 'منظمات متعددة (Multi-tenant)', 'text' => 'كل منظمة معزولة بالكامل: علامات تجارية، مواقع، أقسام، قنوات وقنوات فرعية، وحدّ أقصى للقنوات لكل منظمة.', 'tag' => 'أساس'],
+                ['icon' => '🏢', 'title' => 'منظمات متعددة (Multi-tenant)', 'text' => 'كل منظمة معزولة بالكامل: قنوات وقنوات فرعية بأي عمق، مواقع وأقسام، وحدّ أقصى للقنوات لكل منظمة.', 'tag' => 'أساس'],
                 ['icon' => '🔳', 'title' => 'منصة QR', 'text' => 'أكواد QR لكل قناة مع رسالة ترحيب مخصصة، طباعة وتنزيل، ومتابعة عدد ونوع أجهزة المسح.', 'tag' => 'أساس'],
                 ['icon' => '📣', 'title' => 'نشر المحتوى', 'text' => 'بوستات بأولوية وبدج ومراجعة واعتماد، وجدولة، وجمهور مستهدف، وإيصالات تسليم وقراءة وإقرار.', 'tag' => 'محتوى'],
                 ['icon' => '🧩', 'title' => '5 أنواع بوستات تفاعلية', 'text' => 'بوست عادي، معرض صور بكاروسيل، استطلاع رأي، فعالية مع تأكيد حضور، وتقييم بالنجوم، مع تفاعلات (قلب، ضحك، إعجاب…) بدل اللايك.', 'tag' => 'جديد'],
@@ -62,7 +62,7 @@ return [
                 ['icon' => '📊', 'title' => 'لوحات تحليلات', 'text' => 'لوحة للسوبر أدمن ولوحة لكل منظمة: مؤشرات مع نسبة التغيّر، رسوم بيانية للنمو والـ QR والأجهزة وقمع التفاعل، بنطاق 7 / 30 / 90 يوم.', 'tag' => 'تحليلات'],
                 ['icon' => '🗂️', 'title' => 'CRM على مستويين', 'text' => 'CRM للمنصة (Organizations 360 وPeople وسجل المراجعة) وCRM لكل منظمة (جهات الاتصال وسجل النشاط) مع تقييم صحة المنظمة.', 'tag' => 'جديد'],
                 ['icon' => '🎫', 'title' => 'تذاكر الدعم', 'text' => 'شكاوى واقتراحات وطلبات بأولويات وتصنيفات وقواعد SLA وتتبع للردود والإغلاق.', 'tag' => 'دعم'],
-                ['icon' => '👥', 'title' => 'شرائح الجمهور', 'text' => 'استهدف البوستات حسب اللغة والدور والعلامة والموقع والقسم.', 'tag' => 'محتوى'],
+                ['icon' => '👥', 'title' => 'شرائح الجمهور', 'text' => 'استهدف البوستات حسب اللغة والدور والموقع والقسم.', 'tag' => 'محتوى'],
                 ['icon' => '🔐', 'title' => 'أدوار وصلاحيات دقيقة', 'text' => 'سوبر أدمن، أدمن منظمة، مدير، مشرف، موظف، وزائر، مع صلاحيات إضافية لكل عضو وسجل مراجعة لكل عملية.', 'tag' => 'أمان'],
                 ['icon' => '✅', 'title' => 'موافقات وتحقق', 'text' => 'رمز تحقق (OTP) عند التسجيل، ومحرك سير عمل لاعتماد الانضمام للقنوات الخاصة.', 'tag' => 'أمان'],
                 ['icon' => '🌍', 'title' => 'للجميع وعلى أي جهاز', 'text' => 'عربي وإنجليزي بدعم كامل لـ RTL، وضع داكن، تصميم للموبايل أولاً، وتطبيق ويب قابل للتثبيت (PWA).', 'tag' => 'تجربة'],
@@ -74,7 +74,7 @@ return [
             'sub' => 'السوبر أدمن مسؤول عن المنصة، وأدمن المنظمة عن منظمته فقط، والزائر عن تجربته.',
             'items' => [
                 ['icon' => '🛡️', 'title' => 'مالك المنصة (Super Admin)', 'points' => ['إنشاء المنظمات وإدارة اشتراكاتها (إيقاف / تفعيل / إلغاء)', 'لوحة تحليلات وCRM يرى كل ما يحدث على المنصة', 'سجل مراجعة كامل لكل العمليات', 'لا يتدخل في محتوى المنظمات اليومي']],
-                ['icon' => '🏢', 'title' => 'المنظمة (Admin / Manager / Moderator / Staff)', 'points' => ['القنوات والعلامات والمواقع والفريق', 'نشر البوستات بأنواعها وإدارة التذاكر والـ SLA', 'تصميم صفحتها العامة وألوانها وغلافها', 'CRM خاص بجهات الاتصال ونشاط المنظمة']],
+                ['icon' => '🏢', 'title' => 'المنظمة (Admin / Manager / Moderator / Staff)', 'points' => ['القنوات ومديريها والمواقع والفريق', 'نشر البوستات بأنواعها وإدارة التذاكر والـ SLA', 'تصميم صفحتها العامة وألوانها وغلافها', 'CRM خاص بجهات الاتصال ونشاط المنظمة']],
                 ['icon' => '🙋', 'title' => 'الزائر / العضو', 'points' => ['تصفّح بلا تسجيل، وتسجيل سريع عند الحاجة', 'متابعة المنظمات والاشتراك في القنوات', 'التصويت والتقييم وتأكيد الحضور والتفاعل', 'مجموعات ومفضلة وإشعارات']],
             ],
         ],
@@ -155,7 +155,7 @@ return [
             'title' => 'What exists today',
             'sub' => 'All of this already works in the current platform.',
             'items' => [
-                ['icon' => '🏢', 'title' => 'Multi-tenant organizations', 'text' => 'Every organization is fully isolated: brands, locations, departments, channels and sub-channels, with a channel limit per organization.', 'tag' => 'Core'],
+                ['icon' => '🏢', 'title' => 'Multi-tenant organizations', 'text' => 'Every organization is fully isolated: channels and sub-channels at any depth, locations and departments, with a channel limit per organization.', 'tag' => 'Core'],
                 ['icon' => '🔳', 'title' => 'QR platform', 'text' => 'A QR code per channel with a custom welcome message, print and download, and tracking of scan counts and device types.', 'tag' => 'Core'],
                 ['icon' => '📣', 'title' => 'Content publishing', 'text' => 'Posts with priority, badges, review and approval, scheduling, targeted audiences, and delivery / read / acknowledgment receipts.', 'tag' => 'Content'],
                 ['icon' => '🧩', 'title' => '5 interactive post formats', 'text' => 'Standard, photo gallery carousel, poll, event with RSVP, and star rating, plus reactions (love, haha, like...) instead of a single like.', 'tag' => 'New'],
@@ -164,7 +164,7 @@ return [
                 ['icon' => '📊', 'title' => 'Analytics dashboards', 'text' => 'A super admin dashboard and one per organization: KPIs with change vs. the previous period, charts for growth, QR, devices and the engagement funnel, over 7 / 30 / 90 days.', 'tag' => 'Analytics'],
                 ['icon' => '🗂️', 'title' => 'Two-level CRM', 'text' => 'Platform CRM (Organizations 360, People, audit log) and a CRM per organization (contacts and activity), with an organization health score.', 'tag' => 'New'],
                 ['icon' => '🎫', 'title' => 'Support tickets', 'text' => 'Complaints, suggestions and requests with priorities, categories, SLA rules, and tracking of replies and closure.', 'tag' => 'Support'],
-                ['icon' => '👥', 'title' => 'Audience segments', 'text' => 'Target posts by language, role, brand, location and department.', 'tag' => 'Content'],
+                ['icon' => '👥', 'title' => 'Audience segments', 'text' => 'Target posts by language, role, location and department.', 'tag' => 'Content'],
                 ['icon' => '🔐', 'title' => 'Precise roles and permissions', 'text' => 'Super admin, organization admin, manager, moderator, staff and visitor, with extra per-member permissions and an audit log for every action.', 'tag' => 'Security'],
                 ['icon' => '✅', 'title' => 'Approvals and verification', 'text' => 'OTP verification at sign-up and a workflow engine for approving joins to private channels.', 'tag' => 'Security'],
                 ['icon' => '🌍', 'title' => 'For everyone, on any device', 'text' => 'Arabic and English with full RTL, dark mode, mobile-first design and an installable web app (PWA).', 'tag' => 'Experience'],
@@ -176,7 +176,7 @@ return [
             'sub' => 'The super admin runs the platform, an organization admin runs only their organization, and a visitor owns their own experience.',
             'items' => [
                 ['icon' => '🛡️', 'title' => 'Platform owner (Super Admin)', 'points' => ['Create organizations and manage subscriptions (suspend / activate / cancel)', 'Analytics and CRM showing everything that happens on the platform', 'A full audit trail of every action', 'Stays out of organizations\' day-to-day content']],
-                ['icon' => '🏢', 'title' => 'Organization (Admin / Manager / Moderator / Staff)', 'points' => ['Channels, brands, locations and team', 'Publish every post format, handle tickets and SLA', 'Design the public page, colors and cover', 'A CRM for the organization\'s contacts and activity']],
+                ['icon' => '🏢', 'title' => 'Organization (Admin / Manager / Moderator / Staff)', 'points' => ['Channels, channel managers, locations and team', 'Publish every post format, handle tickets and SLA', 'Design the public page, colors and cover', 'A CRM for the organization\'s contacts and activity']],
                 ['icon' => '🙋', 'title' => 'Visitor / Member', 'points' => ['Browse without signing in, quick sign-up when needed', 'Follow organizations and subscribe to channels', 'Vote, rate, RSVP and react', 'Collections, favorites and notifications']],
             ],
         ],

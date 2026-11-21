@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Models\Brand;
 use App\Models\Location;
 use App\Models\Department;
 use Illuminate\Database\Eloquent\Model;

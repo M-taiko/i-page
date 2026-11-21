@@ -1,5 +1,5 @@
 {{-- Reusable Add-to-Collection modal. Include on any authenticated page.
-     Call openAddToCollection('channel'|'organization'|'brand', id, name) to open it. --}}
+     Call openAddToCollection('channel'|'organization', id, name) to open it. --}}
 @auth
 <style>
     .atc-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center; padding: var(--space-4); }
@@ -57,7 +57,7 @@
                 const memberships = atcChannelMap[id] || [];
                 cb.checked = memberships.includes(Number(cb.dataset.collectionId));
             } else {
-                // Organization/Brand bulk-add is a one-way action; reset to unchecked each open.
+                // Organization bulk-add is a one-way action; reset to unchecked each open.
                 cb.checked = false;
             }
         });
@@ -71,7 +71,7 @@
 
     async function atcToggle(checkbox) {
         const collectionId = checkbox.dataset.collectionId;
-        const endpointType = atcTarget.type === 'organization' ? 'organizations' : (atcTarget.type === 'brand' ? 'brands' : 'channels');
+        const endpointType = atcTarget.type === 'organization' ? 'organizations' : 'channels';
         const url = `${atcBaseUrl}/${collectionId}/${endpointType}/${atcTarget.id}`;
 
         const fd = new FormData();

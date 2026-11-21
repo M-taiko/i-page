@@ -1,4 +1,4 @@
-{{-- Post type, content and appearance fields shared by channel and brand post forms (ADR-013/015).
+{{-- Post type, content and appearance fields shared by channel and tenant post forms (ADR-013/016).
      Expects $targetName, $targetDescription, optional $targetIcon. --}}
 @php
     $formats = config('posts.formats');

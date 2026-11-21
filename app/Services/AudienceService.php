@@ -88,7 +88,6 @@ class AudienceService
                     'role' => 'Role: ' . implode(', ', (array)$value),
                     'location' => 'Location ID: ' . implode(', ', (array)$value),
                     'department' => 'Department ID: ' . implode(', ', (array)$value),
-                    'brand' => 'Brand ID: ' . implode(', ', (array)$value),
                     default => null,
                 };
             }

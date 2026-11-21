@@ -416,8 +416,8 @@
     <div class="feed-list">
         @forelse($posts as $post)
             @php
-                $displayName = $post->channel->name ?? __('i-Page');
-                $subtitle = $post->channel->brand->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
+                $displayName = $post->sourceName() ?? __('i-Page');
+                $subtitle = ($post->isTenantPost() ? __('Official post') : $post->channel?->organization?->name) ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
                 $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
                 $likeCount = $post->reactions()->where('type', 'like')->count();
                 $commentCount = $post->comments()->approved()->count();
@@ -425,7 +425,7 @@
             @endphp
             <article class="post-card">
                 <div class="post-header">
-                    <a href="{{ route('guest.organization-detail', $post->channel->organization_id) }}" style="text-decoration:none;">
+                    <a href="{{ route('guest.organization-detail', ($post->organization_id ?? $post->channel?->organization_id)) }}" style="text-decoration:none;">
                         <div class="post-avatar" style="background-color: {{ $colorFor($displayName) }};">
                             {{ substr($displayName, 0, 1) }}
                         </div>
@@ -469,7 +469,7 @@
                             <span>{{ $commentCount }}</span>
                         </button>
                     @endauth
-                    <button type="button" class="post-action" onclick="copyPostLink('{{ route('guest.organization-detail', $post->channel->organization_id) }}')">
+                    <button type="button" class="post-action" onclick="copyPostLink('{{ route('guest.organization-detail', ($post->organization_id ?? $post->channel?->organization_id)) }}')">
                         <i class="bi bi-share"></i>
                     </button>
                     <div class="post-views">

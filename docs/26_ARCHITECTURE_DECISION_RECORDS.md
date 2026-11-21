@@ -474,6 +474,8 @@ Columns updated on model changes (observer or event listener). Detailed analytic
 
 ## ADR-015: Brand as a command center
 
+> **Superseded by ADR-016** — brands were removed; the tenant is the command center.
+
 **Date**: 2026-11-15
 
 **Title**: Brand posts, brand managers, brand-scoped statistics, post notifications and member visibility
@@ -489,6 +491,31 @@ Columns updated on model changes (observer or event listener). Detailed analytic
 **Rationale**: Read-time resolution keeps one post row (one set of reactions, comments and receipts) regardless of how many channels show it. A pivot table for brand roles keeps organization roles untouched.
 
 **Consequences**: Feed queries gain one more OR branch (indexed on `brand_id`). Every place that lists channel members must use `Channel::membersVisibleTo()`. Dashboard channel lists use `Channel::scopeVisibleTo()`; channel settings, member management and QR codes require `Channel::canAdminister()` (managers plus the channel's own admins), so plain staff can no longer edit channels they merely belong to. Private-channel and private-audience posts are now openable on the public post page by people with access (`Post::isVisibleTo()`), so notification links never dead-end for them.
+
+**Related**: ADR-014, [[06_PERMISSION_MODEL.md]], [[27_FEATURE_SPECIFICATIONS.md]]
+
+---
+
+## ADR-016: Brand removed — the tenant is the command center
+
+**Status**: Accepted (2026-11-20). Supersedes ADR-015.
+
+**Context**: The brand layer (Organization → Brand → Channels) duplicated what the tenant and the channel tree already express. Owners think in "Hilton → Hilton Cairo → Front Desk / Restaurants → KFC", which is tenant → channel → sub-channel. A second management tier made permissions, statistics and posting harder to explain.
+
+**Decision**:
+1. **No brands.** The `brands`, `brand_user` and `brand_followers` tables and every `brand_id` column are dropped. Hierarchy: **Tenant (organization) → Channel → Sub-channel (any depth)**.
+2. **Tenant posts**: a post with `organization_id` set and `channel_id NULL`. `posts.placement` decides where it appears:
+   - `page`: only on the public tenant page;
+   - `all`: every channel of the tenant (public channels only receive it when it is not marked staff-only);
+   - `selected`: the channels listed in the `post_channel` pivot; with `cascade` on, also their sub-channels at any depth.
+   `posts.show_on_page` controls whether it also appears on the public tenant page. Resolution happens at read time in `Channel::feedQuery()` and `highlights()`; private ancestors never leak into public sub-channels (`inheritableAncestorIds()`).
+3. **Inherited channel roles**: an approved `channel_user` role of `admin` or `moderator` applies to the channel **and every sub-channel below it**. `Channel::roleFor()` resolves the strongest own or inherited role. Admin: everything in the subtree (settings, members, QR, post/edit/delete). Moderator: edit/delete/pin. Member: only the granted `can_post/can_edit/can_delete`.
+4. **The tenant assigns channel managers** from Organization → Channel managers (org admins/managers only).
+5. **Visibility**: org admins/managers see every channel and person; channel admins/moderators see their subtree and its members; staff and visitors only the channels they belong to (`Channel::scopeVisibleTo()`, `membersVisibleTo()`).
+
+**Rationale**: One management tier fewer, the same capabilities (one post, many channels; delegated managers; scoped visibility) with fewer concepts. Generic for any industry: a school (faculty → department), a retailer (branch → section) or a hotel group (hotel → department).
+
+**Consequences**: Irreversible data removal for existing brands (no production data depended on them yet). Notifications (`PostNotificationService`) resolve tenant-post channels from placement. Every brand UI, route and policy is removed.
 
 **Related**: ADR-014, [[06_PERMISSION_MODEL.md]], [[27_FEATURE_SPECIFICATIONS.md]]
 

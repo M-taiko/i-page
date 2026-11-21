@@ -58,7 +58,7 @@
                                 __('Email') => $organization->email, __('Phone') => $organization->phone, __('Address') => $organization->address,
                                 __('City') => $organization->city, __('Country') => $organization->country,
                                 __('Channel limit') => $stats['channels'] . ' / ' . $organization->max_channels,
-                                __('Brands') => $stats['brands'], __('Locations') => $stats['locations'],
+                                __('Locations') => $stats['locations'],
                                 __('Created') => $organization->created_at->format('M d, Y'),
                             ] as $k => $v)
                                 <dt class="col-sm-4 text-muted font-weight-normal">{{ $k }}</dt><dd class="col-sm-8">{{ $v ?: '—' }}</dd>

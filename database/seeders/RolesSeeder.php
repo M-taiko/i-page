@@ -16,7 +16,6 @@ class RolesSeeder extends Seeder
             'channel.update',
             'channel.delete',
             'channel.post',
-            'brand.manage',
             'user.manage',
             'group.manage',
             'feed.publish',

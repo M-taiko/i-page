@@ -14,7 +14,6 @@ class SlaRule extends Model
         'organization_id',
         'name',
         'description',
-        'brand_id',
         'location_id',
         'category_id',
         'priority',
@@ -33,10 +32,6 @@ class SlaRule extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
-    }
 
     public function location(): BelongsTo
     {
@@ -51,10 +46,6 @@ class SlaRule extends Model
     public function appliesToTicket(Ticket $ticket): bool
     {
         if (!$this->is_active || $this->organization_id !== $ticket->organization_id) {
-            return false;
-        }
-
-        if ($this->brand_id && $this->brand_id !== $ticket->brand_id) {
             return false;
         }
 

@@ -1,10 +1,18 @@
-{{-- Everyone in the brand's channels (ADR-015). Only brand admins/moderators and org managers reach this tab. --}}
+@extends('layouts.valex')
+
+@section('title', __('People'))
+
+@section('page-header')
+    <x-valex.page-header :title="__('People')" :subtitle="__('Every employee and subscriber in the channels of :name.', ['name' => $organization->name])" />
+@endsection
+
+@section('content')
+{{-- Everyone across the tenant's channels (ADR-016). Organization admins/managers only. --}}
 @php
     $roleLabels = ['admin' => __('Admin'), 'moderator' => __('Moderator'), 'member' => __('Member')];
 @endphp
-<x-valex.card :title="__('People')" :subtitle="__('Every employee and subscriber in the channels of :brand.', ['brand' => $brand->name])">
+<x-valex.card>
     <form method="GET" class="d-flex flex-wrap align-items-center mb-3" style="gap: 8px;">
-        <input type="hidden" name="tab" value="people">
         <input type="search" name="q" value="{{ $search }}" class="form-control" style="max-width: 280px;" placeholder="{{ __('Search name, email or mobile') }}">
         <div class="btn-group">
             @foreach ([null => __('Everyone'), 'staff' => __('Staff'), 'visitors' => __('Visitors')] as $k => $label)
@@ -53,3 +61,4 @@
     </div>
     <div class="mt-3">{{ $people->links() }}</div>
 </x-valex.card>
+@endsection

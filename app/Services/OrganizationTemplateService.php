@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Brand;
 use App\Models\Channel;
 use App\Models\Department;
 use App\Models\Organization;
@@ -20,7 +19,7 @@ class OrganizationTemplateService
      * organization's real owner doesn't exist yet at this point in the
      * creation flow, so the acting super admin is used as a placeholder.
      */
-    public function applyToOrganization(Organization $organization, OrganizationTemplate $template, ?Brand $defaultBrand = null, ?int $adminUserId = null): void
+    public function applyToOrganization(Organization $organization, OrganizationTemplate $template, ?int $adminUserId = null): void
     {
         $adminUserId ??= auth()->id();
         $organization->update(['organization_template_id' => $template->id]);
@@ -41,7 +40,6 @@ class OrganizationTemplateService
             ], [
                 'slug' => Str::slug($channelConfig['name']) . '-' . Str::random(6),
                 'type' => $channelConfig['type'] ?? 'public',
-                'brand_id' => $defaultBrand?->id,
                 'status' => 'active',
                 'admin_user_id' => $adminUserId,
             ]);

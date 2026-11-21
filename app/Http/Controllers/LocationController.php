@@ -21,7 +21,6 @@ class LocationController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'brand_id' => 'nullable|exists:brands,id',
             'description' => 'nullable|string|max:1000',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',
@@ -56,7 +55,6 @@ class LocationController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'brand_id' => 'nullable|exists:brands,id',
             'description' => 'nullable|string|max:1000',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',

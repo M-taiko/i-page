@@ -9,17 +9,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
- * Layer 1: Super Admin creates/manages channels for ANY organization,
- * scoped to one of that organization's brands.
+ * Layer 1: Super Admin creates/manages channels for ANY organization.
  */
 class AdminChannelController extends Controller
 {
     public function create(Organization $organization)
     {
-        $brands = $organization->brands()->where('is_active', true)->get();
         $parentOptions = Channel::where('organization_id', $organization->id)->orderBy('name')->get();
 
-        return view('admin.channels.form', compact('organization', 'brands', 'parentOptions'));
+        return view('admin.channels.form', compact('organization', 'parentOptions'));
     }
 
     public function store(Request $request, Organization $organization)
@@ -27,7 +25,6 @@ class AdminChannelController extends Controller
         $validated = $this->validateChannel($request, $organization);
 
         $channel = $organization->channels()->create([
-            'brand_id' => $validated['brand_id'],
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']) . '-' . Str::random(6),
             'type' => $validated['type'],
@@ -47,14 +44,13 @@ class AdminChannelController extends Controller
     {
         abort_unless($channel->organization_id === $organization->id, 404);
 
-        $brands = $organization->brands()->where('is_active', true)->get();
         $parentOptions = Channel::where('organization_id', $organization->id)
             ->where('id', '!=', $channel->id)
             ->orderBy('name')
             ->get();
         $currentParentId = $channel->parentChannels()->first()?->id;
 
-        return view('admin.channels.form', compact('organization', 'channel', 'brands', 'parentOptions', 'currentParentId'));
+        return view('admin.channels.form', compact('organization', 'channel', 'parentOptions', 'currentParentId'));
     }
 
     public function update(Request $request, Organization $organization, Channel $channel)
@@ -64,7 +60,6 @@ class AdminChannelController extends Controller
         $validated = $this->validateChannel($request, $organization, $channel);
 
         $channel->update([
-            'brand_id' => $validated['brand_id'],
             'name' => $validated['name'],
             'type' => $validated['type'],
         ] + Designs::channelAttributes($validated, $channel));
@@ -90,11 +85,6 @@ class AdminChannelController extends Controller
     private function validateChannel(Request $request, Organization $organization, ?Channel $channel = null): array
     {
         return $request->validate([
-            'brand_id' => [
-                'required',
-                'integer',
-                \Illuminate\Validation\Rule::exists('brands', 'id')->where('organization_id', $organization->id),
-            ],
             'name' => 'required|string|max:255',
             'type' => 'required|in:public,private',
             'parent_channel_id' => [

@@ -295,12 +295,6 @@ class User extends Authenticatable
         return $this->belongsToMany(Organization::class, 'organization_followers', 'user_id', 'organization_id');
     }
 
-    public function followedBrands()
-    {
-        return $this->belongsToMany(Brand::class, 'brand_followers', 'user_id', 'brand_id')
-            ->withTimestamps();
-    }
-
     public function collections()
     {
         return $this->hasMany(UserCollection::class);

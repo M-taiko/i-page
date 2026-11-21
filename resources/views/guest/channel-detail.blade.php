@@ -172,7 +172,7 @@
         <div class="channel-hero-name">{{ $channel->name }}</div>
         <div class="channel-hero-meta">
             {{ $channel->users_count }} {{ __('members') }}
-            @if($channel->brand) · {{ $channel->brand->name }} @endif
+            · {{ $organization->name }}
         </div>
 
         @auth
@@ -275,8 +275,8 @@
                             @if ($post->isPinned())<span class="post-pinned">📌 {{ __('Pinned') }}</span>@endif
                             @if ($inherited && $post->channel)
                                 <a class="post-from" href="{{ route('guest.channel-detail', [$organization, $post->channel->slug]) }}">↳ {{ __('From :channel', ['channel' => $post->channel->name]) }}</a>
-                            @elseif ($post->isBrandPost() && $post->brand)
-                                <span class="post-from">🏷️ {{ __('From :brand', ['brand' => $post->brand->name]) }}</span>
+                            @elseif ($post->isTenantPost())
+                                <span class="post-from">🏢 {{ __('From :tenant', ['tenant' => $post->organization?->name]) }}</span>
                             @endif
                         </div>
                     </div>

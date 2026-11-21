@@ -89,34 +89,22 @@
             {{ $organization->created_at->format('d M Y, H:i') }}
         </x-valex.card>
 
-        <x-valex.card :title="__('Brands & Channels')">
+        <x-valex.card :title="__('Channels')">
             <x-slot:actions>
-                <a href="{{ route('admin.organizations.brands.create', $organization) }}" class="btn btn-sm btn-outline-primary mx-1"><i class="fe fe-plus"></i> {{ __('Brand') }}</a>
                 <a href="{{ route('admin.organizations.channels.create', $organization) }}" class="btn btn-sm btn-primary"><i class="fe fe-plus"></i> {{ __('Channel') }}</a>
             </x-slot:actions>
 
-            @forelse ($organization->brands as $brand)
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-1">
-                        <i class="fe fe-bookmark text-purple mx-2"></i>
-                        <strong>{{ $brand->name }}</strong>
-                        <a href="{{ route('admin.organizations.brands.edit', [$organization, $brand]) }}" class="small mx-2">{{ __('edit') }}</a>
-                    </div>
-                    <ul class="list-unstyled mb-0 mx-4">
-                        @forelse ($brand->channels as $channel)
-                            <li class="d-flex align-items-center small py-1">
-                                <i class="fe fe-{{ $channel->type === 'public' ? 'globe' : 'lock' }} text-muted mx-2"></i>
-                                {{ $channel->name }} <span class="text-muted mx-1">({{ $channel->type }})</span>
-                                <a href="{{ route('admin.organizations.channels.edit', [$organization, $channel]) }}" class="ml-auto">{{ __('edit') }}</a>
-                            </li>
-                        @empty
-                            <li class="small text-muted">{{ __('No channels yet') }}</li>
-                        @endforelse
-                    </ul>
-                </div>
-            @empty
-                <p class="text-muted mb-0">{{ __('No brands yet. Create one to start adding channels.') }}</p>
-            @endforelse
+            <ul class="list-unstyled mb-0">
+                @forelse ($organization->channels()->orderBy('name')->get() as $channel)
+                    <li class="d-flex align-items-center small py-1">
+                        <i class="fe fe-{{ $channel->type === 'public' ? 'globe' : 'lock' }} text-muted mx-2"></i>
+                        {{ $channel->name }} <span class="text-muted mx-1">({{ $channel->type }})</span>
+                        <a href="{{ route('admin.organizations.channels.edit', [$organization, $channel]) }}" class="ml-auto">{{ __('edit') }}</a>
+                    </li>
+                @empty
+                    <li class="small text-muted">{{ __('No channels yet') }}</li>
+                @endforelse
+            </ul>
         </x-valex.card>
     </div>
 
