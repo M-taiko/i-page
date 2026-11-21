@@ -114,7 +114,7 @@
             </div>
         @empty
             <div class="empty-collections">
-                <i class="bi bi-folder2-open" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="collection" size="150" style="margin-bottom: var(--space-3);" />
                 <p style="margin-bottom: var(--space-3);">{{ __('No collections yet') }}</p>
                 <button type="button" onclick="openCreateModal()" style="background-color: var(--primary-600); color: white; border: none; border-radius: var(--radius-full); padding: var(--space-2) var(--space-5); font-weight: var(--font-weight-medium); cursor: pointer;">
                     {{ __('Create your first Collection') }}

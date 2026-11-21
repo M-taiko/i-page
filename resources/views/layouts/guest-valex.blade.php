@@ -52,6 +52,7 @@
         .org-card-link:hover .card { box-shadow: 0 8px 24px rgba(0,0,0,.12); transform: translateY(-2px); }
         .org-card-link .card { transition: all .2s ease; }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
 </head>
 
 <body class="main-body org-public">

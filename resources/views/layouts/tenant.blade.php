@@ -160,6 +160,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
 </head>
 <body>
     <!-- Sidebar -->

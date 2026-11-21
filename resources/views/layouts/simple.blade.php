@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
 </head>
 <body style="background-color: var(--surface-bg); color: var(--text-primary);">
     <main style="min-height: 100vh; padding: var(--space-8) var(--space-4);">

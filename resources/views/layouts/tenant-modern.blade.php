@@ -144,6 +144,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
 </head>
 <body>
     <div class="tenant-sidebar">

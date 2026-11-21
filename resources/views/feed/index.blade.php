@@ -723,7 +723,7 @@
             </article>
         @empty
             <div class="empty-feed">
-                <i class="bi bi-inbox" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="feed" size="150" style="margin-bottom: var(--space-3);" />
                 <p style="margin-bottom: var(--space-3);">{{ __('Nothing here yet') }}</p>
                 <a href="{{ route('user.explore-organizations') }}" style="color: var(--primary-600); text-decoration: none; font-weight: 500;">
                     {{ __('Discover Organizations') }} →

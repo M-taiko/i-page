@@ -699,6 +699,28 @@ Define complete specifications for each feature **before** implementation. This 
 
 ---
 
+### Feature: Personal Browse Feed & Animated Illustrations
+
+**Status**: Implemented
+
+**Business Rules**:
+- `/browse` is the home feed for guests and members.
+  - **For you** (default when the visitor is an approved member of at least one channel): posts of the channels they joined, including posts cascading from parent channels and tenant posts placed in those channels (same rules as `Channel::feedQuery()`), newest first.
+  - **Discover** (default for guests and visitors without channels; always available as a tab): public channel posts and tenant posts shown on tenant pages, in random order. The order is seeded once per visit (session) so infinite scroll never repeats or skips posts.
+- Infinite scroll: 10 posts per batch, loaded as server-rendered HTML when the end of the list comes into view, with skeleton placeholders, a retry on error and an animated "all caught up" end state. A "Load more" button is the fallback without IntersectionObserver / JavaScript.
+- Organizations strip and suggested channels help visitors with no channels start following.
+- **Illustrations**: a reusable `<x-illustration name="…" />` component renders inline SVG scenes (discover, feed, caught-up, empty, channels, search, notifications, collection) that animate gently (float, twinkle, draw). Colors come from CSS variables, so they follow light/dark mode and tenant colors; animation stops under `prefers-reduced-motion`. Used for headers and empty states on every public page and in the dashboard's `<x-valex.empty-state>`.
+
+**Acceptance Criteria**:
+- [x] Member with channels sees only posts from their channels (and cascades / tenant placements); private channel posts only for members
+- [x] Guest / member without channels sees random public posts; scrolling loads more without duplicates
+- [x] Infinite scroll works on mobile; graceful fallback without JS
+- [x] Illustrations animate, respect reduced motion and dark mode, and appear across public pages and dashboard empty states
+
+**Implementation**: `GuestController::home()` (tabs for-you / discover, `?partial=1` JSON batches, discover seed in session), `Channel::feedQueryFor()`, `guest/partials/_feed-cards`, `<x-illustration>` + `public/css/illustrations.css` (loaded by every layout), illustrated empty states in public pages, member feed, collections, notifications, Valex design blocks, login/register and the shared `x-valex.empty-state` / `x-empty-state` / `x-empty-state-modern` components.
+
+---
+
 ## FUTURE FEATURES (Planned, Beyond Initial Release)
 
 ---

@@ -1,0 +1,65 @@
+/* Animated SVG illustrations (<x-illustration>). Decorative only; colors follow the theme. */
+:root {
+    --ill-primary: var(--primary-600, #6259ca);
+    --ill-accent: #f472b6;
+    --ill-warm: #fbbf24;
+    --ill-green: #34d399;
+    --ill-soft: color-mix(in srgb, var(--ill-primary) 13%, transparent);
+    --ill-softer: color-mix(in srgb, var(--ill-primary) 7%, transparent);
+    --ill-ink: #1e293b;
+    --ill-paper: #ffffff;
+    --ill-line: #cbd5e1;
+}
+[data-theme="dark"], .dark-theme {
+    --ill-ink: #e2e8f0;
+    --ill-paper: #1e2740;
+    --ill-line: #475569;
+    --ill-soft: color-mix(in srgb, var(--ill-primary) 26%, transparent);
+    --ill-softer: color-mix(in srgb, var(--ill-primary) 14%, transparent);
+}
+
+.ill { display: block; max-width: 100%; height: auto; margin-inline: auto; overflow: visible; }
+.ill * { transform-box: fill-box; transform-origin: center; }
+
+.ill-float { animation: illFloat 4.5s ease-in-out infinite; }
+.ill-float-slow { animation: illFloat 7s ease-in-out infinite; }
+.ill-float-delay { animation: illFloat 5s ease-in-out .8s infinite; }
+.ill-twinkle { animation: illTwinkle 2.6s ease-in-out infinite; }
+.ill-twinkle-2 { animation: illTwinkle 3.2s ease-in-out .9s infinite; }
+.ill-twinkle-3 { animation: illTwinkle 2.2s ease-in-out 1.6s infinite; }
+.ill-draw { stroke-dasharray: 120; stroke-dashoffset: 120; animation: illDraw 1.4s .3s cubic-bezier(.65, 0, .35, 1) forwards; }
+.ill-pop { animation: illPop .7s cubic-bezier(.34, 1.56, .64, 1) both; }
+.ill-pop-2 { animation: illPop .7s .15s cubic-bezier(.34, 1.56, .64, 1) both; }
+.ill-pop-3 { animation: illPop .7s .3s cubic-bezier(.34, 1.56, .64, 1) both; }
+.ill-spin-slow { animation: illSpin 18s linear infinite; }
+.ill-wiggle { animation: illWiggle 2.8s ease-in-out infinite; transform-origin: 50% 8%; }
+.ill-rise { animation: illRise 3.6s ease-in infinite; }
+.ill-rise-2 { animation: illRise 3.6s ease-in 1.2s infinite; }
+.ill-rise-3 { animation: illRise 3.6s ease-in 2.4s infinite; }
+.ill-sweep { animation: illSweep 5s ease-in-out infinite; }
+.ill-pulse { animation: illPulse 2.4s ease-out infinite; }
+.ill-pulse-2 { animation: illPulse 2.4s ease-out 1.2s infinite; }
+.ill-blink { animation: illBlink 1.4s ease-in-out infinite; }
+.ill-blink-2 { animation: illBlink 1.4s ease-in-out .2s infinite; }
+.ill-blink-3 { animation: illBlink 1.4s ease-in-out .4s infinite; }
+
+@keyframes illFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes illTwinkle { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes illDraw { to { stroke-dashoffset: 0; } }
+@keyframes illPop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes illSpin { to { transform: rotate(360deg); } }
+@keyframes illWiggle { 0%, 70%, 100% { transform: rotate(0); } 75% { transform: rotate(12deg); } 82% { transform: rotate(-10deg); } 89% { transform: rotate(6deg); } 95% { transform: rotate(-3deg); } }
+@keyframes illRise { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-38px) scale(1); } }
+@keyframes illSweep { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(18px, -6px) rotate(8deg); } 50% { transform: translate(6px, 10px) rotate(-4deg); } 75% { transform: translate(-14px, 2px) rotate(-8deg); } }
+@keyframes illPulse { 0% { opacity: .55; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes illBlink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* Scroll-in reveal: only hidden once the page script is running (html.js-reveal), so content never stays invisible without JS. */
+.js-reveal .reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+.js-reveal .reveal.is-visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .ill *, .ill { animation: none !important; }
+    .ill-draw { stroke-dashoffset: 0; }
+    .js-reveal .reveal { opacity: 1; transform: none; transition: none; }
+}

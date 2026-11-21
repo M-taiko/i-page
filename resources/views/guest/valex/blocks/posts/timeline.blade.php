@@ -1,7 +1,7 @@
 {{-- Latest news as a vertical timeline (Valex "timeline"). --}}
 <h5 class="mb-3 mt-4">{{ __('Latest updates') }}</h5>
 @if ($posts->isEmpty())
-    <div class="card"><div class="card-body text-center text-muted py-5">{{ __('No posts yet') }}</div></div>
+    <div class="card"><div class="card-body text-center text-muted py-5"><x-illustration name="feed" size="150" /><div class="mt-3">{{ __('No posts yet') }}</div></div></div>
 @else
     <div class="card"><div class="card-body">
         <div class="vtimeline">

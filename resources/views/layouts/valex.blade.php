@@ -20,6 +20,7 @@
     <link href="{{ $assets($cssDir . '/sidemenu.css') }}" rel="stylesheet">
     @yield('css')
     <link href="{{ $assets($cssDir . '/style.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/illustrations.css') }}" rel="stylesheet">
     <link href="{{ $assets($cssDir . '/style-dark.css') }}" rel="stylesheet">
     <link href="{{ $assets($cssDir . '/skin-modes.css') }}" rel="stylesheet">
     @stack('styles')

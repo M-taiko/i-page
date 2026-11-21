@@ -2,7 +2,7 @@
 @php $allChannels = $channelGroups->flatMap(fn ($g) => $g['channels']); $slides = $allChannels->chunk(3); @endphp
 <h5 class="mb-3 mt-4">{{ __('Channels') }}</h5>
 @if ($allChannels->isEmpty())
-    <div class="card"><div class="card-body text-center text-muted py-5">{{ __('No public channels available') }}</div></div>
+    <div class="card"><div class="card-body text-center text-muted py-5"><x-illustration name="channels" size="150" /><div class="mt-3">{{ __('No public channels available') }}</div></div></div>
 @else
     <div id="channelsCarousel" class="carousel slide" data-ride="carousel" data-interval="6000">
         @if ($slides->count() > 1)

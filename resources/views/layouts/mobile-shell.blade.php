@@ -16,6 +16,7 @@
 
     <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -381,6 +382,19 @@
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('theme', next);
         }
+    </script>
+    <script>
+        // Scroll-in reveal for .reveal elements; call window.ipReveal(container) after adding content.
+        document.documentElement.classList.add('js-reveal');
+        (function () {
+            const io = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); } });
+            }, { rootMargin: '0px 0px -40px 0px' }) : null;
+            window.ipReveal = function (root) {
+                (root || document).querySelectorAll('.reveal:not(.is-visible)').forEach(function (el) { io ? io.observe(el) : el.classList.add('is-visible'); });
+            };
+            document.addEventListener('DOMContentLoaded', function () { window.ipReveal(); });
+        })();
     </script>
     @yield('scripts')
     <script>

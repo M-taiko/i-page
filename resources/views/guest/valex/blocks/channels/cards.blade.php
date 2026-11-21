@@ -20,5 +20,5 @@
         @endforeach
     </div>
 @empty
-    <div class="card"><div class="card-body text-center text-muted py-5">{{ __('No public channels available') }}</div></div>
+    <div class="card"><div class="card-body text-center text-muted py-5"><x-illustration name="channels" size="150" /><div class="mt-3">{{ __('No public channels available') }}</div></div></div>
 @endforelse

@@ -158,6 +158,40 @@ class Channel extends Model
     }
 
     /**
+     * Posts shown in any of $channels — the union of their feedQuery() results in one query:
+     * their own posts, cascading posts of their inheritable ancestors, and tenant posts placed
+     * in them (placement "all", or "selected" directly / through a cascading ancestor).
+     */
+    public static function feedQueryFor(iterable $channels): \Illuminate\Database\Eloquent\Builder
+    {
+        $ids = $inherited = $orgIds = [];
+        foreach ($channels as $channel) {
+            $ids[] = $channel->id;
+            $orgIds[] = $channel->organization_id;
+            $inherited = array_merge($inherited, $channel->inheritableAncestorIds());
+        }
+        if (! $ids) {
+            return Post::query()->whereRaw('1 = 0');
+        }
+        $inherited = array_values(array_unique($inherited));
+        $orgIds = array_values(array_unique($orgIds));
+        $targetedIn = fn (array $channelIds) => fn ($e) => $e->selectRaw(1)->from('post_channel')
+            ->whereColumn('post_channel.post_id', 'posts.id')->whereIn('post_channel.channel_id', $channelIds);
+
+        return Post::query()->where(function ($q) use ($ids, $inherited, $orgIds, $targetedIn) {
+            $q->whereIn('channel_id', $ids);
+            if ($inherited) {
+                $q->orWhere(fn ($w) => $w->whereIn('channel_id', $inherited)->where('cascade', true));
+            }
+            $q->orWhere(fn ($w) => $w->whereNull('channel_id')->whereIn('organization_id', $orgIds)
+                ->where(fn ($p) => $p->where('placement', 'all')
+                    ->orWhere(fn ($s) => $s->where('placement', 'selected')
+                        ->where(fn ($t) => $t->whereExists($targetedIn($ids))
+                            ->when($inherited, fn ($c) => $c->orWhere(fn ($cc) => $cc->where('cascade', true)->whereExists($targetedIn($inherited))))))));
+        });
+    }
+
+    /**
      * Tenant posts reaching this channel (ADR-016): placement "all", or "selected" with this channel
      * chosen, or an inheritable ancestor chosen while the post cascades. Private ancestors never
      * reach public channels because $inherited already excludes them.

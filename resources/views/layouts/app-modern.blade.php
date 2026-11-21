@@ -328,6 +328,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
 </head>
 <body>
     <div class="app-container">

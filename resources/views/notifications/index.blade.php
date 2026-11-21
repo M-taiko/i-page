@@ -75,7 +75,7 @@
             </div>
         @empty
             <div style="text-align: center; padding: var(--space-8) var(--space-4); color: var(--text-secondary);">
-                <i class="bi bi-bell-slash" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="notifications" size="150" style="margin-bottom: var(--space-3);" />
                 <p>{{ __('No notifications yet') }}</p>
             </div>
         @endforelse

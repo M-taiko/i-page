@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Channel;
 use App\Models\Organization;
 use App\Models\Post;
 use App\Support\Designs;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -40,35 +42,83 @@ class GuestController extends Controller
         }
     }
 
-    public function home(Request $request): View
+    public const FEED_PAGE_SIZE = 10;
+
+    /**
+     * Home feed (docs/27 "Personal Browse Feed"). "for-you": posts of the channels the visitor
+     * joined (with cascades and tenant placements). "discover": random public posts, seeded once
+     * per visit so infinite scroll never repeats or skips. ?partial=1 returns the next batch as JSON.
+     */
+    public function home(Request $request): View|\Illuminate\Http\JsonResponse
     {
-        $tab = in_array($request->query('tab'), ['latest', 'trending']) ? $request->query('tab') : 'latest';
+        $user = $request->user();
+        $joined = $user
+            ? Channel::whereIn('id', DB::table('channel_user')->where('user_id', $user->id)->where('status', 'approved')->select('channel_id'))
+                ->where('status', 'active')->get()
+            : collect();
+        $hasFeed = $joined->isNotEmpty();
 
-        // Public channel posts plus tenant posts shown on their tenant page (ADR-016).
-        $query = Post::where(fn ($q) => $q->whereHas('channel', fn ($c) => $c->where('type', 'public'))
-                ->orWhere(fn ($t) => $t->whereNull('channel_id')->whereNotNull('placement')->where('show_on_page', true)))
-            ->where('status', 'published')
-            ->with('author', 'channel.organization', 'organization');
-
-        if ($tab === 'trending') {
-            $query->withCount(['reactions', 'comments'])
-                ->where('published_at', '>=', now()->subDays(14))
-                ->orderByRaw('(reactions_count + comments_count) desc');
-        } else {
-            $query->latest('published_at');
+        $tab = $request->query('tab');
+        if (! in_array($tab, ['for-you', 'discover'], true) || ($tab === 'for-you' && ! $hasFeed)) {
+            $tab = $hasFeed ? 'for-you' : 'discover';
         }
 
-        $posts = $query->paginate(20)->withQueryString();
+        if ($tab === 'for-you') {
+            $query = Channel::feedQueryFor($joined)->latest('published_at')->orderByDesc('id');
+        } else {
+            // A fresh shuffle on every new visit; the same order while scrolling.
+            $seed = (int) $request->session()->get('discover_seed', 0);
+            if (! $seed || (! $request->boolean('partial') && (int) $request->query('page', 1) <= 1)) {
+                $seed = random_int(1, 2_000_000_000);
+                $request->session()->put('discover_seed', $seed);
+            }
+            $query = Post::where(fn ($q) => $q
+                    ->whereHas('channel', fn ($c) => $c->where('type', 'public')->where('status', 'active'))
+                    ->orWhere(fn ($t) => $t->whereNull('channel_id')->whereNotNull('placement')->where('show_on_page', true)))
+                ->inRandomOrder($seed);
+        }
+
+        $posts = $query->where('status', 'published')
+            ->with(['author', 'channel.organization', 'organization', 'media', 'pollOptions'])
+            ->withCount([
+                'reactions as like_count',
+                'comments as comment_count' => fn ($c) => $c->where('status', 'approved'),
+                'receipts as views_count' => fn ($r) => $r->whereNotNull('first_viewed_at'),
+            ])
+            ->when($user, fn ($q) => $q->withExists(['reactions as user_liked' => fn ($r) => $r->where('user_id', $user->id)]))
+            ->simplePaginate(self::FEED_PAGE_SIZE)
+            ->appends(['tab' => $tab]);
         $this->recordViews($posts);
 
-        // Featured organizations for discovery
+        if ($request->boolean('partial')) {
+            return response()->json([
+                'html' => view('guest.partials._feed-cards', ['posts' => $posts])->render(),
+                'next' => $posts->nextPageUrl(),
+            ]);
+        }
+
         $organizations = Organization::where('is_active', true)
-            ->withCount('users', 'channels', 'posts')
-            ->latest('created_at')
-            ->limit(10)
+            ->withCount('channels')
+            ->inRandomOrder()
+            ->limit(12)
             ->get();
 
-        return view('guest.home', compact('posts', 'organizations', 'tab'));
+        // Channels to start with: popular public channels the visitor has not joined yet.
+        $suggested = Channel::where('type', 'public')->where('status', 'active')
+            ->whereNotIn('id', $joined->pluck('id'))
+            ->withCount(['users' => fn ($u) => $u->where('channel_user.status', 'approved')])
+            ->with('organization')
+            ->orderByDesc('users_count')
+            ->limit(30)->get()->shuffle()->take(8);
+
+        return view('guest.home', [
+            'posts' => $posts,
+            'organizations' => $organizations,
+            'suggested' => $suggested,
+            'tab' => $tab,
+            'hasFeed' => $hasFeed,
+            'joinedCount' => $joined->count(),
+        ]);
     }
 
     public function searchOrganizations(Request $request): View

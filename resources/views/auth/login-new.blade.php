@@ -236,6 +236,7 @@
             background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
         }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/illustrations.css') }}">
 </head>
 <body>
     <div class="auth-container">
@@ -247,6 +248,7 @@
                 </div>
                 <h1 class="auth-title">{{ __('i-Page') }}</h1>
                 <p class="auth-subtitle">{{ __('The Digital Front Door for Every Organization') }}</p>
+                <x-illustration name="discover" size="130" style="margin-top: 10px;" />
             </div>
 
             <!-- Session Status -->

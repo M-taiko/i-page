@@ -93,7 +93,7 @@
             @endif
         @else
             <div class="empty-state">
-                <i class="bi bi-building" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="discover" size="150" style="margin-bottom: var(--space-3);" />
                 <p>{{ __('No organizations available yet') }}</p>
             </div>
         @endif

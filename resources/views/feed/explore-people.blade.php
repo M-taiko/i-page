@@ -45,7 +45,7 @@
 
     <div id="peopleResults" class="people-results">
         <div class="empty-state">
-            <i class="bi bi-people" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+            <x-illustration name="search" size="150" style="margin-bottom: var(--space-3);" />
             <p>{{ __('Start typing a name or username to find people.') }}</p>
         </div>
     </div>
@@ -65,7 +65,7 @@
         }
 
         function emptyState(message) {
-            return `<div class="empty-state"><i class="bi bi-people" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i><p>${message}</p></div>`;
+            return `<div class="empty-state"><x-illustration name="search" size="150" style="margin-bottom: var(--space-3);" /><p>${message}</p></div>`;
         }
 
         input.addEventListener('input', function () {

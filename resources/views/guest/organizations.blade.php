@@ -136,7 +136,7 @@
             @endif
         @else
             <div class="empty-state">
-                <i class="bi bi-search" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="search" size="150" style="margin-bottom: var(--space-3);" />
                 @if ($search)
                     <p>{{ __('No organizations found for') }} "{{ $search }}"</p>
                 @else

@@ -92,7 +92,7 @@
             @endif
         @else
             <div class="empty-state">
-                <i class="bi bi-chat-dots" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="channels" size="150" style="margin-bottom: var(--space-3);" />
                 <p>{{ __('No channels available yet') }}</p>
             </div>
         @endif

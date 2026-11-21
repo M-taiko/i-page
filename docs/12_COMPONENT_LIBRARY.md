@@ -75,6 +75,14 @@ Shared by every page that renders a post, so formats look and behave the same ev
 
 Definitions (formats, card styles, badges, reactions, limits) live in `config/posts.php`.
 
+## Illustrations
+
+`<x-illustration name="discover|feed|caught-up|empty|channels|search|notifications|collection" size="160" />` renders an inline, decorative SVG scene (`aria-hidden`).
+
+- Colors: `--ill-primary`, `--ill-accent`, `--ill-soft`, `--ill-ink` (defaults derive from `--primary-600` / theme); override per page for tenant colors.
+- Motion: classes `ill-float`, `ill-float-slow`, `ill-twinkle`, `ill-draw`, `ill-pop`, `ill-spin-slow` from `public/css/illustrations.css`; all disabled under `prefers-reduced-motion`.
+- Use one illustration per empty state or page header; never inside repeated list items.
+- Dashboard: `<x-valex.empty-state illustration="empty" …>` shows the illustration instead of the icon (default `empty`).
 ## Examples
 
 ```blade

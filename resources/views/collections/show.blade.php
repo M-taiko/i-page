@@ -194,7 +194,7 @@
             </article>
         @empty
             <div class="empty-feed">
-                <i class="bi bi-inbox" style="font-size: 2.5rem; display: block; margin-bottom: var(--space-3); opacity: 0.5;"></i>
+                <x-illustration name="empty" size="150" style="margin-bottom: var(--space-3);" />
                 <p>{{ __('No posts from this collection yet') }}</p>
             </div>
         @endforelse

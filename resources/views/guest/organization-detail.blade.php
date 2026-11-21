@@ -290,7 +290,7 @@
             </div>
         @else
             <div class="soft-empty">
-                <div class="soft-empty-icon">🌱</div>
+                <x-illustration name="channels" size="150" />
                 <div class="soft-empty-title">{{ __(':name is just getting started', ['name' => $organization->name]) }}</div>
                 <p>{{ __('Channels will appear here soon. Follow the page so you hear about them first.') }}</p>
             </div>
@@ -390,7 +390,7 @@
             </div>
         @elseif($channels->isNotEmpty())
             <div class="soft-empty soft-empty-invite">
-                <div class="soft-empty-icon">✨</div>
+                <x-illustration name="feed" size="150" />
                 <div class="soft-empty-title">{{ __('The good stuff is inside the channels') }}</div>
                 <p>{{ __('No posts on this page yet — but every channel above has its own news, offers and updates. Tap one to look inside, and subscribe so you never miss a thing.') }}</p>
                 <button type="button" class="soft-empty-btn" onclick="spotlightChannels()">
@@ -404,7 +404,7 @@
             </div>
         @else
             <div class="soft-empty">
-                <div class="soft-empty-icon">📬</div>
+                <x-illustration name="empty" size="150" />
                 <div class="soft-empty-title">{{ __('Nothing here yet') }}</div>
                 <p>{{ __('Come back soon — news from :name will show up right here.', ['name' => $organization->name]) }}</p>
             </div>
