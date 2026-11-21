@@ -11,17 +11,9 @@
         i-Page
     </div>
     <div class="app-bar-actions">
-        <button type="button" class="app-bar-icon-btn" onclick="openQrModal()" aria-label="{{ __('Scan QR code') }}">
-            <i class="bi bi-qr-code-scan"></i>
-        </button>
         <a href="{{ route('guest.search-organizations') }}" class="app-bar-icon-btn" aria-label="{{ __('Search') }}">
             <i class="bi bi-search"></i>
         </a>
-        @guest
-            <a href="{{ route('login') }}" class="app-bar-icon-btn" aria-label="{{ __('Sign in') }}" style="color: var(--primary-600);">
-                <i class="bi bi-box-arrow-in-right"></i>
-            </a>
-        @endguest
     </div>
 @endsection
 
@@ -288,7 +280,6 @@
         @endguest
     </div>
 
-    @include('partials.qr-scan-modal')
 
     <div class="signin-modal-overlay" id="signinModal" onclick="if(event.target===this) closeSignInModal()">
         <div class="signin-modal">

@@ -284,6 +284,26 @@
         </div>
     @endif
 
+    <!-- Shortcuts (moved here from the bottom bar) -->
+    @php
+        $me = auth()->user();
+        $dashUrl = $me->hasRole('super_admin') ? route('admin.dashboard') : ($me->organizations()->exists() ? route('organizations.dashboard') : null);
+    @endphp
+    <div class="me-links">
+        @if ($dashUrl)
+            <a href="{{ $dashUrl }}" class="me-link"><span class="me-link-ic" style="--c: #4557f5;"><i class="bi bi-speedometer2"></i></span>{{ __('Dashboard') }}</a>
+        @endif
+        <a href="{{ route('collections.index') }}" class="me-link"><span class="me-link-ic" style="--c: #db2777;"><i class="bi bi-bookmark-heart"></i></span>{{ __('Collections') }}</a>
+        <a href="{{ route('guest.home') }}" class="me-link"><span class="me-link-ic" style="--c: #059669;"><i class="bi bi-house-heart"></i></span>{{ __('My feed') }}</a>
+        <button type="button" class="me-link" onclick="toggleShellTheme()"><span class="me-link-ic" style="--c: #d97706;"><i class="bi bi-circle-half"></i></span>{{ __('Theme') }}</button>
+    </div>
+    <style>
+        .me-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: var(--space-4); }
+        .me-link { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 16px; background: var(--surface-bg); border: 1px solid var(--surface-border); color: var(--text-primary); font: inherit; font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer; text-align: start; transition: transform .15s, box-shadow .15s; }
+        .me-link:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -16px rgba(15, 23, 42, .4); }
+        .me-link-ic { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 17px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); flex: 0 0 auto; }
+    </style>
+
     <!-- Profile Tier Status -->
     @php
         $currentLevel = $user->computeProfileLevel();

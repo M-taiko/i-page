@@ -20,9 +20,6 @@
                 <i class="bi bi-speedometer2"></i>
             </a>
         @endif
-        <button type="button" class="app-bar-icon-btn" onclick="openQrModal()" aria-label="{{ __('Scan QR code') }}">
-            <i class="bi bi-qr-code-scan"></i>
-        </button>
         <a href="{{ route('user.explore-organizations') }}" class="app-bar-icon-btn" aria-label="{{ __('Search') }}">
             <i class="bi bi-search"></i>
         </a>
@@ -740,7 +737,6 @@
 @endsection
 
 @section('modals')
-    @include('partials.qr-scan-modal')
 
     <!-- Slide-in Drawer -->
     <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
