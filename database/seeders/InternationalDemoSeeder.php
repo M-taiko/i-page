@@ -133,7 +133,7 @@ class InternationalDemoSeeder extends Seeder
             'name' => $t['name'], 'slug' => $key, 'description' => $t['description'],
             'email' => 'info@' . $domain, 'phone' => '+971-4-' . mt_rand(2000000, 4999999),
             'address' => $t['hq'][0] . ', ' . $t['hq'][1], 'city' => $t['hq'][0], 'country' => $t['hq'][1],
-            'is_active' => true, 'status' => 'active',
+            'is_active' => true, 'status' => 'active', 'max_channels' => 200,
         ]);
 
         $admin = $this->teamMember($org, 'admin@' . $domain, 'organization_admin', $t['hq'][1], [$t['name'], 'Admin']);

@@ -237,12 +237,16 @@
                 <form action="{{ $isFollowingOrg ? route('organizations.unfollow', $organization->id) : route('organizations.follow', $organization->id) }}" method="POST">
                     @csrf
                     <button type="submit" class="org-hero-follow" style="{{ $isFollowingOrg ? 'background-color: rgba(255,255,255,0.2); color: white;' : '' }}"
+                            @if ($isFollowingOrg) data-open-unfollow="{{ $organization->id }}" @endif
                             data-tip="{{ $isFollowingOrg ? __('Following') : __('Follow :name', ['name' => $organization->name]) }}"
-                            data-tip-sub="{{ $isFollowingOrg ? __('Unfollowing keeps the channels you joined yourself') : __('Adds its main channels to your feed, muted. Turn on a channel’s bell to be notified.') }}">
+                            data-tip-sub="{{ $isFollowingOrg ? __('Tap to unfollow') : __('Adds its main channels to your feed, muted. Turn on a channel’s bell to be notified.') }}">
                         <i class="bi {{ $isFollowingOrg ? 'bi-check-lg' : 'bi-plus-lg' }}"></i>
                         {{ $isFollowingOrg ? __('Following') : __('Follow') }}
                     </button>
                 </form>
+                @if ($isFollowingOrg)
+                    @include('organizations._unfollow-dialog')
+                @endif
                 <button type="button" class="org-hero-follow" style="background-color: rgba(255,255,255,0.2); color: white;" onclick="openAddToCollection('organization', {{ $organization->id }}, '{{ $organization->name }}')">
                     <i class="bi bi-folder-plus"></i>
                 </button>

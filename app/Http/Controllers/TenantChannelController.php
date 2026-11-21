@@ -110,6 +110,9 @@ class TenantChannelController extends Controller
             $channel->parentChannels()->sync([$validated['parent_channel_id']]);
         }
 
+        // Followers of the organization join new main channels silently (docs/27).
+        app(\App\Services\SubscriptionService::class)->syncFollowers($channel->fresh());
+
         // Generate QR code for this channel. No explicit $url here — generate()
         // builds it from its own freshly-generated $code, which is what keeps
         // the encoded link and the QrCode.code column (used by qr.redirect
@@ -195,6 +198,9 @@ class TenantChannelController extends Controller
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
         );
 
+        // Followers of the organization join new main channels silently (docs/27).
+        app(\App\Services\SubscriptionService::class)->syncFollowers($channel->fresh());
+
         return redirect()->route('tenant.channels.show', $channel->id)
             ->with('success', __('Channel updated successfully'));
     }
@@ -227,6 +233,7 @@ class TenantChannelController extends Controller
         $channel->update([
             'status' => $channel->status === 'active' ? 'archived' : 'active',
         ]);
+        app(\App\Services\SubscriptionService::class)->syncFollowers($channel);
 
         return back()->with('success', $channel->status === 'active'
             ? __('Channel resumed.')

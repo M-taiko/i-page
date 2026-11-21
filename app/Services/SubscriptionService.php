@@ -90,14 +90,47 @@ class SubscriptionService
         return count($rows);
     }
 
-    /** @return int number of channels removed */
-    public function unfollow(User $user, Organization $organization): int
+    /**
+     * Unfollow: always removes the memberships the follow created; with $leaveOwn also the channels the
+     * visitor joined themselves (they confirm this in the unfollow dialog). @return int channels removed
+     */
+    public function unfollow(User $user, Organization $organization, bool $leaveOwn = false): int
     {
         $user->followedOrganizations()->detach($organization->id);
 
-        return DB::table('channel_user')->where('user_id', $user->id)->where('source', 'follow')
+        return DB::table('channel_user')->where('user_id', $user->id)
             ->whereIn('channel_id', Channel::where('organization_id', $organization->id)->select('id'))
+            ->when(! $leaveOwn, fn ($q) => $q->where('source', 'follow'))
+            // Staff roles are managed by the organization, never removed by unfollowing.
+            ->where(fn ($q) => $q->where('role', 'member')->orWhereNull('role'))
             ->delete();
+    }
+
+    /**
+     * Keep followers in sync with a channel that was created or changed: a main public channel gets every
+     * follower of its organization (muted); a channel that is no longer main loses its "follow" members.
+     */
+    public function syncFollowers(Channel $channel): void
+    {
+        $isMain = $channel->type === 'public' && $channel->status === 'active' && ! $channel->parentChannels()->exists();
+
+        if (! $isMain) {
+            DB::table('channel_user')->where('channel_id', $channel->id)->where('source', 'follow')->delete();
+
+            return;
+        }
+
+        $already = DB::table('channel_user')->where('channel_id', $channel->id)->pluck('user_id')->all();
+        $now = now();
+        $rows = DB::table('organization_followers')->where('organization_id', $channel->organization_id)
+            ->whereNotIn('user_id', $already)->pluck('user_id')
+            ->map(fn ($userId) => [
+                'channel_id' => $channel->id, 'user_id' => $userId, 'role' => 'member', 'status' => 'approved', 'source' => 'follow',
+                'joined_at' => $now, 'muted_at' => $now, 'can_post' => false, 'can_edit' => false, 'can_delete' => false,
+            ])->all();
+        foreach (array_chunk($rows, 500) as $chunk) {
+            DB::table('channel_user')->insert($chunk);
+        }
     }
 
     /** Public, active, top-level channels of the organization. */

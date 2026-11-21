@@ -752,7 +752,9 @@ Define complete specifications for each feature **before** implementation. This 
 - **Joining a channel yourself** subscribes with notifications **on** and shows a bell next to "Subscribed"; one tap mutes/unmutes (`channel_user.muted_at`) without reloading. Notifications already skip muted memberships (`PostNotificationService`).
 - **Following an organization** subscribes the visitor to all of its **main** channels (public, active, top-level) as `source = follow` and **muted**: their posts appear in the feed, without notifications. Memberships the visitor created themselves are never touched.
 - Joining (or unmuting) a channel that came from a follow turns it into a `self` membership with notifications on.
-- **Unfollowing** removes only the `follow` memberships of that organization; channels joined by the visitor stay.
+- **Unfollowing** opens a confirmation that lists the channels the visitor joined themselves with "Also leave these channels" checked by default: confirmed, nothing from the organization stays in the feed; unchecked, only the `follow` memberships go. Staff/admin roles are never removed by unfollowing.
+- **New or changed channels**: when a channel becomes a main public channel (created, edited, resumed) every follower of the organization joins it muted; when it stops being one (moved under a parent, made private, paused) its `follow` members are removed (`SubscriptionService::syncFollowers`).
+- Followers from before this feature are backfilled by migration `2026_11_22_000002_backfill_follow_memberships`.
 - Private channels keep the existing request/approval flow.
 
 **Acceptance Criteria**:

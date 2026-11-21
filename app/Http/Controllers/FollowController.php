@@ -24,10 +24,13 @@ class FollowController extends Controller
             : __('Following :name.', ['name' => $organization->name]));
     }
 
-    public function unfollow(Organization $organization)
+    public function unfollow(\Illuminate\Http\Request $request, Organization $organization)
     {
-        $this->subscriptions->unfollow(auth()->user(), $organization);
+        $leaveOwn = $request->boolean('leave_own');
+        $this->subscriptions->unfollow($request->user(), $organization, $leaveOwn);
 
-        return back()->with('success', __('Unfollowed :name. Channels you joined yourself are kept.', ['name' => $organization->name]));
+        return back()->with('success', $leaveOwn
+            ? __('Unfollowed :name. Its posts are no longer in your feed.', ['name' => $organization->name])
+            : __('Unfollowed :name. Channels you joined yourself are kept.', ['name' => $organization->name]));
     }
 }

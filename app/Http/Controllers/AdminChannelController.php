@@ -36,6 +36,9 @@ class AdminChannelController extends Controller
             $channel->parentChannels()->sync([$validated['parent_channel_id']]);
         }
 
+        // Followers of the organization join new main channels silently (docs/27).
+        app(\App\Services\SubscriptionService::class)->syncFollowers($channel->fresh());
+
         return redirect()->route('admin.organizations.show', $organization)
             ->with('success', 'Channel created successfully.');
     }
@@ -67,6 +70,9 @@ class AdminChannelController extends Controller
         $channel->parentChannels()->sync(
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
         );
+
+        // Followers of the organization join new main channels silently (docs/27).
+        app(\App\Services\SubscriptionService::class)->syncFollowers($channel->fresh());
 
         return redirect()->route('admin.organizations.show', $organization)
             ->with('success', 'Channel updated successfully.');
