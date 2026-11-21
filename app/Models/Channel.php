@@ -49,7 +49,7 @@ class Channel extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'channel_user')
-            ->withPivot('role', 'status', 'joined_at', 'muted_at', 'can_post', 'can_edit', 'can_delete')
+            ->withPivot('role', 'status', 'source', 'joined_at', 'muted_at', 'can_post', 'can_edit', 'can_delete')
             ->using(ChannelUser::class);
     }
 

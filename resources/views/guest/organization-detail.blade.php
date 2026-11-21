@@ -236,7 +236,9 @@
                 @endphp
                 <form action="{{ $isFollowingOrg ? route('organizations.unfollow', $organization->id) : route('organizations.follow', $organization->id) }}" method="POST">
                     @csrf
-                    <button type="submit" class="org-hero-follow" style="{{ $isFollowingOrg ? 'background-color: rgba(255,255,255,0.2); color: white;' : '' }}">
+                    <button type="submit" class="org-hero-follow" style="{{ $isFollowingOrg ? 'background-color: rgba(255,255,255,0.2); color: white;' : '' }}"
+                            data-tip="{{ $isFollowingOrg ? __('Following') : __('Follow :name', ['name' => $organization->name]) }}"
+                            data-tip-sub="{{ $isFollowingOrg ? __('Unfollowing keeps the channels you joined yourself') : __('Adds its main channels to your feed, muted. Turn on a channel’s bell to be notified.') }}">
                         <i class="bi {{ $isFollowingOrg ? 'bi-check-lg' : 'bi-plus-lg' }}"></i>
                         {{ $isFollowingOrg ? __('Following') : __('Follow') }}
                     </button>

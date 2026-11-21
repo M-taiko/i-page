@@ -36,7 +36,7 @@
             icon="lock"
         >
             <x-slot:action>
-                <form action="{{ route('dashboard.channels.subscribe', [$organization->id, $channel->id]) }}" method="POST">
+                <form action="{{ route('subscriptions.store', $channel->id) }}" method="POST">
                     @csrf
                     <button type="submit" class="join-request-btn">
                         <i class="bi bi-person-plus"></i> {{ __('Request to Join') }}

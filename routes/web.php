@@ -117,6 +117,13 @@ Route::middleware('auth')->prefix('organizations')->name('organizations.')->grou
 });
 
 
+// Channel subscriptions for visitors: subscribe, unsubscribe and the notification bell (docs/27)
+Route::middleware('auth')->prefix('channels/{channel}')->name('subscriptions.')->group(function () {
+    Route::post('subscribe', [\App\Http\Controllers\ChannelSubscriptionController::class, 'store'])->name('store');
+    Route::post('unsubscribe', [\App\Http\Controllers\ChannelSubscriptionController::class, 'destroy'])->name('destroy');
+    Route::post('bell', [\App\Http\Controllers\ChannelSubscriptionController::class, 'bell'])->name('bell');
+});
+
 // Collections (personal folders of subscribed channels)
 Route::middleware('auth')->prefix('collections')->name('collections.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CollectionController::class, 'index'])->name('index');

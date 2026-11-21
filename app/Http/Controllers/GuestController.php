@@ -189,7 +189,14 @@ class GuestController extends Controller
         $postSettings = $channel->postSettings();
         view()->share(compact('highlights', 'postSettings'));
 
-        $isSubscribed = auth()->check() && auth()->user()->channels()->where('channel_id', $channel->id)->exists();
+        // Membership state for the subscribe button and the notification bell (docs/27).
+        $membership = auth()->check()
+            ? DB::table('channel_user')->where('user_id', auth()->id())->where('channel_id', $channel->id)->first()
+            : null;
+        $isSubscribed = $membership && $membership->status === 'approved';
+        $isPending = $membership && $membership->status === 'pending';
+        $bellOn = $isSubscribed && $membership->muted_at === null;
+        view()->share(compact('isPending', 'bellOn'));
         $isFavorited = auth()->check() && auth()->user()->collections()
             ->where('is_favorites', true)
             ->whereHas('channels', fn ($q) => $q->where('channels.id', $channel->id))

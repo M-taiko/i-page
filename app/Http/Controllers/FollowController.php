@@ -3,26 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
-use Illuminate\Http\Request;
+use App\Services\SubscriptionService;
 
+/**
+ * Following an organization also subscribes, silently, to its main public channels; unfollowing
+ * removes only those (docs/27 "Channel Bell & Organization Follow Subscriptions").
+ */
 class FollowController extends Controller
 {
+    public function __construct(private SubscriptionService $subscriptions)
+    {
+    }
+
     public function follow(Organization $organization)
     {
-        $user = auth()->user();
+        $added = $this->subscriptions->follow(auth()->user(), $organization);
 
-        if (!$user->followedOrganizations()->where('organization_id', $organization->id)->exists()) {
-            $user->followedOrganizations()->attach($organization->id);
-        }
-
-        return back()->with('success', 'Successfully followed ' . $organization->name);
+        return back()->with('success', $added
+            ? trans_choice('Following :name — you joined :count main channel silently. Turn on its bell to get notifications.|Following :name — you joined :count main channels silently. Turn on their bells to get notifications.', $added, ['name' => $organization->name, 'count' => $added])
+            : __('Following :name.', ['name' => $organization->name]));
     }
 
     public function unfollow(Organization $organization)
     {
-        auth()->user()->followedOrganizations()->detach($organization->id);
+        $this->subscriptions->unfollow(auth()->user(), $organization);
 
-        return back()->with('success', 'Unfollowed ' . $organization->name);
+        return back()->with('success', __('Unfollowed :name. Channels you joined yourself are kept.', ['name' => $organization->name]));
     }
-
 }

@@ -216,7 +216,7 @@ class User extends Authenticatable
     public function channels()
     {
         return $this->belongsToMany(Channel::class, 'channel_user')
-            ->withPivot('role', 'status', 'joined_at', 'muted_at')
+            ->withPivot('role', 'status', 'source', 'joined_at', 'muted_at')
             ->using(ChannelUser::class);
     }
 
@@ -281,7 +281,7 @@ class User extends Authenticatable
     public function subscribedChannels()
     {
         return $this->belongsToMany(Channel::class, 'channel_user')
-            ->withPivot('role', 'status', 'joined_at', 'muted_at')
+            ->withPivot('role', 'status', 'source', 'joined_at', 'muted_at')
             ->using(ChannelUser::class);
     }
 

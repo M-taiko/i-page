@@ -743,6 +743,27 @@ Define complete specifications for each feature **before** implementation. This 
 
 ---
 
+### Feature: Channel Bell & Organization Follow Subscriptions
+
+**Status**: Implemented
+
+**Business Rules**:
+- `channel_user.source` records how a membership was created: `self` (the visitor joined the channel) or `follow` (added by following the organization).
+- **Joining a channel yourself** subscribes with notifications **on** and shows a bell next to "Subscribed"; one tap mutes/unmutes (`channel_user.muted_at`) without reloading. Notifications already skip muted memberships (`PostNotificationService`).
+- **Following an organization** subscribes the visitor to all of its **main** channels (public, active, top-level) as `source = follow` and **muted**: their posts appear in the feed, without notifications. Memberships the visitor created themselves are never touched.
+- Joining (or unmuting) a channel that came from a follow turns it into a `self` membership with notifications on.
+- **Unfollowing** removes only the `follow` memberships of that organization; channels joined by the visitor stay.
+- Private channels keep the existing request/approval flow.
+
+**Acceptance Criteria**:
+- [x] Follow adds muted memberships to main public channels only; no notifications reach them
+- [x] Self-joined channels notify; the bell mutes/unmutes them
+- [x] Unfollow removes follow memberships only
+
+**Implementation**: migration `2026_11_22_000001_add_source_to_channel_user`, `App\Services\SubscriptionService` (join, leave, toggleBell, follow, unfollow, mainChannels), `ChannelSubscriptionController` (`POST channels/{channel}/subscribe|unsubscribe|bell`), `FollowController`, `channels/_bell` partial (channel page and Valex channel blocks). The demo seeder follows organizations through the service.
+
+---
+
 ## FUTURE FEATURES (Planned, Beyond Initial Release)
 
 ---

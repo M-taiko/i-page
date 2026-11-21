@@ -13,6 +13,7 @@ class ChannelUser extends Pivot
         'user_id',
         'role',
         'status',
+        'source',
         'joined_at',
         'muted_at',
         'can_post',

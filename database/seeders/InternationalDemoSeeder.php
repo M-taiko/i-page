@@ -167,7 +167,8 @@ class InternationalDemoSeeder extends Seeder
         foreach ($tenantAudienceCountries as $countryName) {
             foreach ($this->visitors[$countryName] ?? [] as $visitor) {
                 if (mt_rand(1, 100) <= 75) {
-                    DB::table('organization_followers')->insertOrIgnore(['organization_id' => $org->id, 'user_id' => $visitor->id, 'created_at' => now(), 'updated_at' => now()]);
+                    // Following also joins the main public channels, muted (docs/27).
+                    app(\App\Services\SubscriptionService::class)->follow($visitor, $org);
                 }
             }
         }

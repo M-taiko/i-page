@@ -73,7 +73,7 @@
                                     <i class="bi bi-folder-plus"></i>
                                 </button>
                             @else
-                                <form action="{{ route('dashboard.channels.subscribe', [$channel->organization_id, $channel->id]) }}" method="POST" style="flex:1;">
+                                <form action="{{ route('subscriptions.store', $channel->id) }}" method="POST" style="flex:1;">
                                     @csrf
                                     <button type="submit" class="btn-join" style="width:100%;">
                                         <i class="bi bi-plus"></i> {{ __('Join') }}

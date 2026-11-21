@@ -75,7 +75,7 @@
                     @else
                         <p>{{ __('You don\'t have permission to view :name. This private channel requires an invitation or approval.', ['name' => $channel->name]) }}</p>
 
-                        <form action="{{ route('dashboard.channels.subscribe', [$channel->organization_id, $channel->id]) }}" method="POST" class="mb-2">
+                        <form action="{{ route('subscriptions.store', $channel->id) }}" method="POST" class="mb-2">
                             @csrf
                             <button type="submit" class="btn btn-primary w-100">{{ __('Request to Join') }}</button>
                         </form>

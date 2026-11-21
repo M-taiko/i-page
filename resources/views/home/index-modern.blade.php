@@ -189,7 +189,7 @@
                     </button>
                 @else
                     @if(auth()->check())
-                    <form action="{{ route('dashboard.channels.subscribe', [session('current_organization_id'), $channel->id]) }}" method="POST" style="flex: 1;">
+                    <form action="{{ route('subscriptions.store', $channel->id) }}" method="POST" style="flex: 1;">
                         @csrf
                         <button type="submit" class="btn-subscribe" style="width: 100%; border: none;">
                             <i class="bi bi-plus-lg"></i>

@@ -55,6 +55,15 @@
 
     .channel-hero-subscribe.subscribe { background-color: white; color: var(--primary-700); }
     .channel-hero-subscribe.subscribed { background-color: rgba(255,255,255,0.2); color: white; }
+    .channel-hero-subscribe:disabled { opacity: .85; cursor: default; }
+    .channel-hero-actions { display: inline-flex; align-items: center; gap: 8px; }
+    .channel-hero-actions form { margin: 0; }
+    .channel-hero-bell { width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; background: rgba(255,255,255,.2); color: #fff; transition: background .2s, color .2s, transform .15s; }
+    .channel-hero-bell:hover { transform: translateY(-1px); }
+    .channel-hero-bell.is-on { background: #fff; color: #f59e0b; }
+    .channel-hero-bell.ring i { animation: chRing .7s ease; display: inline-block; transform-origin: 50% 10%; }
+    @keyframes chRing { 20% { transform: rotate(16deg); } 40% { transform: rotate(-14deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+    @media (prefers-reduced-motion: reduce) { .channel-hero-bell.ring i { animation: none; } }
 
     /* Instagram-style "stories" strip — all sibling channels of this org */
     .stories-strip {
@@ -186,21 +195,29 @@
         </div>
 
         @auth
-            @if($isSubscribed)
-                <form action="{{ route('dashboard.channels.unsubscribe', [$organization->id, $channel->id]) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="channel-hero-subscribe subscribed">
-                        <i class="bi bi-check-lg"></i> {{ __('Subscribed') }}
+            <div class="channel-hero-actions">
+                @if ($isSubscribed)
+                    <form action="{{ route('subscriptions.destroy', $channel->id) }}" method="POST"
+                          onsubmit="return confirm('{{ __('Unsubscribe from :name?', ['name' => $channel->name]) }}')">
+                        @csrf
+                        <button type="submit" class="channel-hero-subscribe subscribed" data-tip="{{ __('Subscribed') }}" data-tip-sub="{{ __('Tap to unsubscribe') }}">
+                            <i class="bi bi-check-lg"></i> {{ __('Subscribed') }}
+                        </button>
+                    </form>
+                    @include('channels._bell', ['class' => 'channel-hero-bell'])
+                @elseif ($isPending)
+                    <button type="button" class="channel-hero-subscribe subscribed" disabled>
+                        <i class="bi bi-hourglass-split"></i> {{ __('Request sent') }}
                     </button>
-                </form>
-            @else
-                <form action="{{ route('dashboard.channels.subscribe', [$organization->id, $channel->id]) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="channel-hero-subscribe subscribe">
-                        <i class="bi bi-plus-lg"></i> {{ __('Subscribe') }}
-                    </button>
-                </form>
-            @endif
+                @else
+                    <form action="{{ route('subscriptions.store', $channel->id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="channel-hero-subscribe subscribe">
+                            <i class="bi bi-{{ $channel->type === 'private' ? 'lock' : 'plus-lg' }}"></i> {{ $channel->type === 'private' ? __('Request to join') : __('Subscribe') }}
+                        </button>
+                    </form>
+                @endif
+            </div>
         @else
             <button type="button" class="channel-hero-subscribe subscribe" onclick="requireSignIn()">
                 <i class="bi bi-plus-lg"></i> {{ __('Subscribe') }}
