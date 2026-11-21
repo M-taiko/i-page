@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use App\Models\Channel;
 use App\Models\Post;
+use App\Services\FeedService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -26,74 +27,32 @@ class UserFeedController extends Controller
         return $currentOrganization;
     }
 
-    public function index(Request $request): View
+    /**
+     * Signed-in home (docs/27 "Personal Browse Feed"). "for-you": posts of the channels the user
+     * joined; "popular": public posts ranked by freshness and views with a per-visit random factor.
+     * Users without channels land on "popular". ?partial=1 returns the next batch for infinite scroll.
+     */
+    public function index(Request $request, FeedService $feed): View|\Illuminate\Http\JsonResponse
     {
         $this->resolveCurrentOrganization();
-        $user = auth()->user();
+        $user = $request->user();
+        $joined = $feed->joinedChannels($user);
+        $hasFeed = $joined->isNotEmpty();
 
-        $tab = in_array($request->query('tab'), ['for_you', 'following', 'discover', 'trending'])
-            ? $request->query('tab')
-            : 'for_you';
-
-        $subscribedChannelIds = $user->channels()->pluck('channels.id')->toArray();
-        $followedOrgIds = $user->followedOrganizations()->pluck('organization_id')->toArray();
-        $followingChannelIds = $subscribedChannelIds;
-
-        // Parent channels whose posts cascade into the channels this user follows (ADR-014).
-        $cascadeSourceIds = Channel::whereIn('id', $followingChannelIds)->get()
-            ->flatMap(fn (Channel $c) => $c->inheritableAncestorIds())
-            ->unique()->diff($followingChannelIds)->values()->all();
-
-        $query = Post::where('status', 'published')->with('author', 'channel.organization', 'organization');
-
-        switch ($tab) {
-            case 'following':
-                // Strictly what the user follows/subscribes to.
-                $query->where(function ($q) use ($followingChannelIds, $followedOrgIds, $cascadeSourceIds) {
-                    $q->whereIn('channel_id', $followingChannelIds)
-                      ->orWhere(fn ($c) => $c->whereIn('channel_id', $cascadeSourceIds ?: [0])->where('cascade', true))
-                      ->orWhere(function ($inner) use ($followedOrgIds) {
-                          $inner->whereIn('organization_id', $followedOrgIds)->whereNull('channel_id');
-                      });
-                });
-                $query->latest('published_at');
-                break;
-
-            case 'discover':
-                // Public channels the user does NOT already follow — new things to find.
-                $query->whereHas('channel', function ($q) use ($followingChannelIds) {
-                    $q->where('type', 'public')->whereNotIn('id', $followingChannelIds ?: [0]);
-                });
-                $query->latest('published_at');
-                break;
-
-            case 'trending':
-                // Most engaged public posts recently (reactions + comments).
-                $query->whereHas('channel', fn ($q) => $q->where('type', 'public'))
-                    ->withCount(['reactions', 'comments'])
-                    ->where('published_at', '>=', now()->subDays(14))
-                    ->orderByRaw('(reactions_count + comments_count) desc');
-                break;
-
-            case 'for_you':
-            default:
-                // Personalized: following + a light sprinkle of public discovery.
-                $query->where(function ($q) use ($followingChannelIds, $followedOrgIds, $cascadeSourceIds) {
-                    $q->whereIn('channel_id', $followingChannelIds)
-                      ->orWhere(fn ($c) => $c->whereIn('channel_id', $cascadeSourceIds ?: [0])->where('cascade', true))
-                      ->orWhere(function ($inner) use ($followedOrgIds) {
-                          $inner->whereIn('organization_id', $followedOrgIds)->whereNull('channel_id');
-                      })
-                      ->orWhereHas('channel', fn ($c) => $c->where('type', 'public'));
-                });
-                $query->latest('published_at');
-                break;
+        $tab = $request->query('tab');
+        if (! in_array($tab, ['for-you', 'popular'], true) || ($tab === 'for-you' && ! $hasFeed)) {
+            $tab = $hasFeed ? 'for-you' : 'popular';
         }
 
-        $posts = $query->paginate(15)->withQueryString();
+        $query = $tab === 'for-you' ? $feed->forYou($joined, $user) : $feed->popular($feed->seed($request, 'popular'));
+        $posts = $feed->page($query, $user, ['tab' => $tab]);
+        $feed->recordViews($posts, $user);
 
-        foreach ($posts as $post) {
-            $post->recordViewFor($user);
+        if ($request->boolean('partial')) {
+            return response()->json([
+                'html' => view('guest.partials._feed-cards', ['posts' => $posts])->render(),
+                'next' => $posts->nextPageUrl(),
+            ]);
         }
 
         // Collections: personal folders of subscribed channels (Instagram-Highlight strip).
@@ -103,7 +62,20 @@ class UserFeedController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('feed.index', compact('posts', 'collections', 'tab'));
+        $stats = [
+            'channels' => $joined->count(),
+            'today' => $hasFeed ? (clone $feed->forYou($joined, $user))->where('status', 'published')->where('published_at', '>=', now()->startOfDay())->count() : 0,
+            'unread' => $user->notifications()->whereNull('read_at')->count(),
+        ];
+
+        return view('feed.index', [
+            'posts' => $posts,
+            'collections' => $collections,
+            'tab' => $tab,
+            'hasFeed' => $hasFeed,
+            'stats' => $stats,
+            'suggested' => $hasFeed ? collect() : $feed->suggestedChannels($joined, 10),
+        ]);
     }
 
     /**

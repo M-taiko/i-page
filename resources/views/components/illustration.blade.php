@@ -98,6 +98,43 @@
                 <rect x="66" y="96" width="44" height="6" rx="3" fill="#fff" fill-opacity=".8"/><rect x="66" y="108" width="30" height="6" rx="3" fill="#fff" fill-opacity=".55"/></g>
             @break
 
+        @case('sunrise')
+            {{-- Morning: a sun rising behind a phone, news bubbles popping in --}}
+            <circle cx="100" cy="80" r="62" fill="var(--ill-soft)"/>
+            <g class="ill-spin-slow">
+                @foreach (range(0, 330, 30) as $deg)
+                    <rect x="98" y="16" width="4" height="12" rx="2" fill="var(--ill-warm)" transform="rotate({{ $deg }} 100 66)" opacity=".7"/>
+                @endforeach
+            </g>
+            <circle class="ill-pulse" cx="100" cy="66" r="26" fill="var(--ill-warm)" opacity=".5"/>
+            <circle cx="100" cy="66" r="22" fill="var(--ill-warm)"/>
+            <g class="ill-float">
+                <rect x="70" y="62" width="60" height="76" rx="12" fill="var(--ill-paper)" stroke="var(--ill-ink)" stroke-opacity=".12"/>
+                <rect x="78" y="72" width="44" height="6" rx="3" fill="var(--ill-line)"/>
+                <rect x="78" y="82" width="30" height="6" rx="3" fill="var(--ill-line)"/>
+                <rect x="78" y="96" width="44" height="22" rx="6" fill="var(--ill-primary)"/>
+            </g>
+            <g class="ill-pop-2 ill-float-delay"><rect x="132" y="70" width="40" height="22" rx="11" fill="var(--ill-accent)"/><circle cx="144" cy="81" r="3" fill="#fff"/><circle cx="152" cy="81" r="3" fill="#fff"/><circle cx="160" cy="81" r="3" fill="#fff"/></g>
+            <g class="ill-pop-3 ill-float"><rect x="26" y="88" width="40" height="22" rx="11" fill="var(--ill-green)"/><path d="M38 99 l5 5 9-9" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+            @break
+
+        @case('night')
+            {{-- Evening: a moon and twinkling stars over a glowing phone --}}
+            <circle cx="100" cy="80" r="62" fill="var(--ill-soft)"/>
+            <path class="ill-float-slow" d="M124 26 a24 24 0 1 0 22 34 a19 19 0 1 1 -22 -34z" fill="var(--ill-warm)"/>
+            <path class="ill-twinkle" d="M50 34 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="var(--ill-warm)"/>
+            <circle class="ill-twinkle-2" cx="168" cy="96" r="3.5" fill="var(--ill-paper)"/>
+            <circle class="ill-twinkle-3" cx="34" cy="76" r="3" fill="var(--ill-paper)"/>
+            <circle class="ill-twinkle" cx="80" cy="22" r="2.5" fill="var(--ill-paper)"/>
+            <g class="ill-float">
+                <rect x="70" y="58" width="60" height="80" rx="12" fill="var(--ill-paper)" stroke="var(--ill-ink)" stroke-opacity=".12"/>
+                <rect x="78" y="68" width="44" height="24" rx="6" fill="var(--ill-primary)"/>
+                <rect x="78" y="98" width="44" height="6" rx="3" fill="var(--ill-line)"/>
+                <rect x="78" y="108" width="28" height="6" rx="3" fill="var(--ill-line)"/>
+            </g>
+            <path class="ill-rise" d="M142 112 c-4-6-12-3-10 3 c1 4 10 9 10 9 s9-5 10-9 c2-6-6-9-10-3z" fill="var(--ill-accent)"/>
+            @break
+
         @default
             {{-- empty: an open box with floating dots --}}
             <circle cx="100" cy="78" r="58" fill="var(--ill-soft)"/>

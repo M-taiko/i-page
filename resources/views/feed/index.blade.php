@@ -11,15 +11,6 @@
         {{ __('Home') }}
     </div>
     <div class="app-bar-actions">
-        @if(auth()->user()->hasRole('super_admin'))
-            <a href="{{ route('admin.dashboard') }}" class="app-bar-icon-btn" aria-label="{{ __('Dashboard') }}" title="{{ __('Dashboard') }}">
-                <i class="bi bi-speedometer2"></i>
-            </a>
-        @elseif(auth()->user()->organizations()->exists())
-            <a href="{{ route('organizations.dashboard') }}" class="app-bar-icon-btn" aria-label="{{ __('Dashboard') }}" title="{{ __('Dashboard') }}">
-                <i class="bi bi-speedometer2"></i>
-            </a>
-        @endif
         <a href="{{ route('user.explore-organizations') }}" class="app-bar-icon-btn" aria-label="{{ __('Search') }}">
             <i class="bi bi-search"></i>
         </a>
@@ -30,33 +21,13 @@
 @endsection
 
 @section('extra-styles')
-    /* Tabs */
-    .feed-tabs {
-        display: flex;
-        background-color: var(--surface-bg);
-        border-bottom: 1px solid var(--surface-border);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    .feed-tab {
-        flex: 1;
-        text-align: center;
-        padding: var(--space-3) var(--space-2);
-        text-decoration: none;
-        color: var(--text-tertiary);
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-semibold);
-        border-bottom: 2px solid transparent;
-        white-space: nowrap;
-    }
-
-    .feed-tab.active {
-        color: var(--primary-600);
-        border-bottom-color: var(--primary-600);
-    }
-
+    .home { padding-bottom: 96px; }
+    @include('partials.feed._styles')
+    .hero-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+    .hero-stat { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: rgba(255, 255, 255, .16); font-size: 12px; font-weight: 700; color: #fff; text-decoration: none; }
+    .hero-stat:hover { background: rgba(255, 255, 255, .26); }
+    .hero-stat b { font-size: 13px; }
+    .collections-section { margin-top: 4px; }
     /* Collections strip (Instagram Highlights style) */
     .collections-section {
         padding: var(--space-4) 0 var(--space-4) var(--space-4);
@@ -306,164 +277,6 @@
     .cmodal-actions .btn-cancel { background-color: var(--surface-hover); color: var(--text-primary); }
     .cmodal-actions .btn-save { background-color: var(--primary-600); color: white; }
 
-    /* Post cards */
-    .feed-list { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
-
-    .post-card {
-        background-color: var(--surface-bg);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-    }
-
-    .post-header {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-3);
-        padding: var(--space-4);
-    }
-
-    .post-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: var(--radius-lg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: var(--font-weight-bold);
-        flex-shrink: 0;
-        font-size: var(--text-lg);
-    }
-
-    .post-info { flex: 1; min-width: 0; }
-
-    .post-author {
-        font-weight: var(--font-weight-bold);
-        font-size: var(--text-sm);
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .post-subtitle {
-        font-size: var(--text-xs);
-        color: var(--text-tertiary);
-        margin-top: 1px;
-    }
-
-    .post-meta {
-        font-size: var(--text-xs);
-        color: var(--text-tertiary);
-        margin-top: 2px;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .post-menu-btn {
-        background: none;
-        border: none;
-        color: var(--text-tertiary);
-        font-size: var(--text-lg);
-        cursor: pointer;
-        padding: var(--space-1);
-        flex-shrink: 0;
-    }
-
-    .post-body {
-        padding: 0 var(--space-4) var(--space-3);
-        font-size: var(--text-sm);
-        line-height: var(--line-height-relaxed);
-        color: var(--text-primary);
-    }
-
-    .post-image {
-        width: 100%;
-        max-height: 320px;
-        object-fit: cover;
-        display: block;
-        background-color: var(--surface-hover);
-    }
-
-    .post-footer {
-        display: flex;
-        align-items: center;
-        gap: var(--space-4);
-        padding: var(--space-3) var(--space-4);
-        border-top: 1px solid var(--surface-border);
-    }
-
-    .post-action {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        font-size: var(--text-xs);
-        font-weight: var(--font-weight-medium);
-        padding: 0;
-    }
-
-    .post-action i { font-size: var(--text-base); }
-    .post-action.liked { color: var(--primary-600); }
-
-    .post-views {
-        margin-inline-start: auto;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--text-tertiary);
-        font-size: var(--text-xs);
-    }
-
-    .feed-comments {
-        display: none;
-        padding: 0 var(--space-4) var(--space-4);
-        border-top: 1px solid var(--surface-border);
-        padding-top: var(--space-3);
-    }
-
-    .comment-item {
-        background: var(--surface-hover);
-        border-radius: var(--radius-md);
-        padding: var(--space-2) var(--space-3);
-        margin-bottom: var(--space-2);
-        font-size: var(--text-xs);
-    }
-
-    .comment-form { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
-
-    .comment-form input {
-        flex: 1;
-        padding: var(--space-2) var(--space-3);
-        border: 1px solid var(--surface-border);
-        border-radius: var(--radius-full);
-        font-size: var(--text-xs);
-        background-color: var(--surface-bg-secondary);
-        color: var(--text-primary);
-    }
-
-    .comment-form button {
-        width: 34px;
-        height: 34px;
-        border-radius: var(--radius-full);
-        background-color: var(--primary-600);
-        color: white;
-        border: none;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-
-    .empty-feed {
-        text-align: center;
-        padding: var(--space-8) var(--space-4);
-        color: var(--text-secondary);
-    }
-
     /* Drawer */
     .drawer-overlay {
         display: none;
@@ -561,18 +374,43 @@
 @endsection
 
 @section('content')
-    <!-- Tabs -->
-    <nav class="feed-tabs">
-        <a href="{{ route('user.feed', ['tab' => 'for_you']) }}" class="feed-tab {{ $tab === 'for_you' ? 'active' : '' }}">{{ __('For You') }}</a>
-        <a href="{{ route('user.feed', ['tab' => 'following']) }}" class="feed-tab {{ $tab === 'following' ? 'active' : '' }}">{{ __('Following') }}</a>
-        <a href="{{ route('user.feed', ['tab' => 'discover']) }}" class="feed-tab {{ $tab === 'discover' ? 'active' : '' }}">{{ __('Discover') }}</a>
-        <a href="{{ route('user.feed', ['tab' => 'trending']) }}" class="feed-tab {{ $tab === 'trending' ? 'active' : '' }}">{{ __('Trending') }}</a>
-    </nav>
+@php
+    $palette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777', '#0891b2'];
+    $colorFor = fn ($seed) => $palette[crc32((string) $seed) % count($palette)];
+    $hour = (int) now()->format('G');
+    $greeting = $hour < 12 ? __('Good morning') : ($hour < 18 ? __('Good afternoon') : __('Good evening'));
+    $scene = $hour >= 5 && $hour < 17 ? 'sunrise' : 'night';
+    $me = auth()->user();
+@endphp
+<div class="home">
+    <section class="hero reveal">
+        <div class="hero-text">
+            <div class="hero-kicker">{{ $greeting }}, {{ $me->first_name }} 👋</div>
+            @if ($hasFeed)
+                <h1>{{ $stats['today'] ? trans_choice(':count new post today|:count new posts today', $stats['today'], ['count' => $stats['today']]) : __('Here\'s what\'s new') }}</h1>
+                <p>{{ __('Everything from the channels you follow, newest first.') }}</p>
+            @else
+                <h1>{{ __('Let\'s fill your feed') }}</h1>
+                <p>{{ __('Here are the most talked-about posts right now. Join a few channels and this page becomes yours.') }}</p>
+            @endif
+            <div class="hero-stats">
+                <a href="{{ route('user.explore-channels') }}" class="hero-stat"><i class="bi bi-broadcast"></i> <b>{{ $stats['channels'] }}</b> {{ __('channels') }}</a>
+                <a href="{{ route('user.notifications') }}" class="hero-stat"><i class="bi bi-bell"></i> <b>{{ $stats['unread'] }}</b> {{ __('unread') }}</a>
+                <a href="{{ route('collections.index') }}" class="hero-stat"><i class="bi bi-bookmark-heart"></i> <b>{{ $collections->count() }}</b> {{ __('collections') }}</a>
+            </div>
+        </div>
+        <x-illustration :name="$scene" size="132" />
+    </section>
 
-    @php
-        $avatarPalette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777'];
-        $colorFor = fn($seed) => $avatarPalette[crc32($seed) % count($avatarPalette)];
-    @endphp
+    <nav class="seg" aria-label="{{ __('Feed') }}">
+        <div class="seg-inner">
+            @if ($hasFeed)
+                <a href="{{ route('user.feed', ['tab' => 'for-you']) }}" class="{{ $tab === 'for-you' ? 'active' : '' }}" @if ($tab === 'for-you') aria-current="page" @endif><i class="bi bi-house-heart"></i> {{ __('For you') }}</a>
+            @endif
+            <a href="{{ route('user.feed', ['tab' => 'popular']) }}" class="{{ $tab === 'popular' ? 'active' : '' }}" @if ($tab === 'popular') aria-current="page" @endif><i class="bi bi-fire"></i> {{ __('Popular') }}</a>
+            <a href="{{ route('user.explore-channels') }}"><i class="bi bi-compass"></i> {{ __('Channels') }}</a>
+        </div>
+    </nav>
 
     <!-- Collections (Instagram-Highlight style personal folders) -->
     <div class="collections-section">
@@ -618,124 +456,52 @@
         </div>
     </div>
 
-    <!-- Feed -->
-    <div class="feed-list">
-        @forelse($posts as $post)
-            @php
-                $displayName = $post->channel->name ?? $post->organization->name ?? __('i-Page');
-                $subtitle = $post->channel
-                    ? ($post->channel?->organization?->name ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update')))
-                    : ucfirst(str_replace('_', ' ', $post->post_type ?? 'announcement'));
-                $isPublic = !$post->channel || $post->channel->type === 'public';
-                $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
-                $userLiked = $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();
-                $likeCount = $post->reactions()->where('type', 'like')->count();
-                $commentCount = $post->comments()->approved()->count();
-            @endphp
-            <article class="post-card">
-                <div class="post-header">
-                    @if($post->channel)
-                        <a href="{{ route('guest.organization-detail', $post->organization_id) }}" style="text-decoration:none;">
-                            <div class="post-avatar" style="background-color: {{ $colorFor($displayName) }};">
-                                {{ substr($displayName, 0, 1) }}
-                            </div>
+
+    @unless ($hasFeed)
+        <div class="nudge reveal">
+            <x-illustration name="channels" size="70" />
+            <div><strong>{{ __('Make it yours') }}</strong>{{ __('Join a channel and this page turns into your personal feed.') }}</div>
+        </div>
+        @if ($suggested->isNotEmpty())
+            <section class="sec reveal" aria-labelledby="sugTitle">
+                <div class="sec-head"><h2 id="sugTitle">{{ __('Channels to start with') }}</h2><a href="{{ route('user.explore-channels') }}">{{ __('See all') }}</a></div>
+                <div class="hscroll">
+                    @foreach ($suggested as $channel)
+                        <a href="{{ route('guest.channel-detail', [$channel->organization_id, $channel->slug]) }}" class="sug">
+                            <div class="sug-av" style="--av: {{ $colorFor($channel->name) }};">{{ mb_substr($channel->name, 0, 1) }}</div>
+                            <div class="sug-name">{{ $channel->name }}</div>
+                            <div class="sug-org">{{ $channel->organization?->name }}</div>
+                            <div class="sug-foot"><span><i class="bi bi-people"></i> {{ $channel->users_count }}</span><span class="sug-go">{{ __('Open') }}</span></div>
                         </a>
-                    @else
-                        <a href="{{ route('guest.organization-detail', $post->organization_id) }}" style="text-decoration:none;">
-                            <div class="post-avatar" style="background-color: {{ $colorFor($displayName) }};">
-                                <i class="bi bi-building"></i>
-                            </div>
-                        </a>
-                    @endif
-
-                    <div class="post-info">
-                        <div class="post-author">{{ $displayName }}</div>
-                        <div class="post-subtitle">{{ $subtitle }}</div>
-                        <div class="post-meta">
-                            <span>{{ $post->published_at?->diffForHumans() }}</span>
-                            <span>&middot;</span>
-                            <i class="bi {{ $isPublic ? 'bi-globe2' : 'bi-lock-fill' }}"></i>
-                            <span>{{ $isPublic ? __('Public') : __('Private') }}</span>
-                        </div>
-                    </div>
-
-                    <div style="position: relative;">
-                        <button type="button" class="post-menu-btn" onclick="togglePostMenu(this)">
-                            <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <div class="app-menu" style="top: 28px;">
-                            <button type="button" onclick="copyPostLink('{{ route('posts.show', $post->id) }}')">
-                                <i class="bi bi-link-45deg"></i> {{ __('Copy link') }}
-                            </button>
-                            <a href="{{ route('posts.show', $post->id) }}"><i class="bi bi-eye"></i> {{ __('Open post') }}</a>
-                        </div>
-                    </div>
-                </div>
-
-                @php
-                    $postDetailUrl = $isPublic ? route('guest.post-detail', $post->id) : route('posts.show', $post->id);
-                @endphp
-                @include('posts.partials._content', ['post' => $post, 'limit' => 280, 'url' => $postDetailUrl, 'showWidgets' => $post->hasWidgets()])
-
-                <div class="post-footer">
-                    @unless ($post->hasWidgets())
-<form action="{{ route('posts.like', $post->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
-                            <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
-                            <span>{{ $likeCount }}</span>
-                        </button>
-                    </form>
-@endunless
-
-                    <button type="button" class="post-action" onclick="toggleFeedComments(this)">
-                        <i class="bi bi-chat"></i>
-                        <span>{{ $commentCount }}</span>
-                    </button>
-
-                    <button type="button" class="post-action" onclick="copyPostLink('{{ route('posts.show', $post->id) }}')">
-                        <i class="bi bi-share"></i>
-                    </button>
-
-                    <div class="post-views">
-                        <i class="bi bi-eye"></i>
-                        <span>{{ $viewsCount }}</span>
-                    </div>
-                </div>
-
-                <div class="feed-comments">
-                    @foreach($post->comments()->approved()->latest()->take(3)->get() as $comment)
-                        <div class="comment-item">
-                            <strong style="color: var(--text-primary);">{{ $comment->user->full_name }}</strong>
-                            <p style="margin-top: 2px; color: var(--text-secondary);">{{ $comment->body }}</p>
-                        </div>
                     @endforeach
-
-                    <form action="{{ route('posts.comments.store', $post->id) }}" method="POST" class="comment-form">
-                        @csrf
-                        <input type="text" name="body" placeholder="{{ __('Add a comment...') }}" required>
-                        <button type="submit"><i class="bi bi-send"></i></button>
-                    </form>
                 </div>
-            </article>
-        @empty
-            <div class="empty-feed">
-                <x-illustration name="feed" size="150" style="margin-bottom: var(--space-3);" />
-                <p style="margin-bottom: var(--space-3);">{{ __('Nothing here yet') }}</p>
-                <a href="{{ route('user.explore-organizations') }}" style="color: var(--primary-600); text-decoration: none; font-weight: 500;">
-                    {{ __('Discover Organizations') }} →
-                </a>
-            </div>
-        @endforelse
-
-        @if($posts->hasPages())
-            <div style="display: flex; justify-content: center; padding-top: var(--space-2);">
-                {{ $posts->onEachSide(1)->links() }}
-            </div>
+            </section>
         @endif
-    </div>
-@endsection
+    @endunless
 
+    <section class="sec" aria-labelledby="feedTitle">
+        <div class="sec-head"><h2 id="feedTitle">{{ $tab === 'for-you' ? __('Latest from your channels') : __('Popular right now') }}</h2></div>
+
+        @if ($posts->isEmpty())
+            <div class="feed-empty reveal">
+                <x-illustration :name="$tab === 'for-you' ? 'empty' : 'search'" size="170" />
+                <h3>{{ $tab === 'for-you' ? __('Your channels are quiet for now') : __('Nothing here yet') }}</h3>
+                <p>{{ $tab === 'for-you' ? __('New posts from the channels you joined will land here. Meanwhile, see what\'s popular.') : __('Organizations haven\'t posted publicly yet. Check back soon!') }}</p>
+                @if ($tab === 'for-you')<a href="{{ route('user.feed', ['tab' => 'popular']) }}" class="pill-btn"><i class="bi bi-fire"></i> {{ __('See popular posts') }}</a>@endif
+            </div>
+        @else
+            @include('partials.feed._list', [
+                'posts' => $posts,
+                'endTitle' => $tab === 'for-you' ? __('You\'re all caught up!') : __('You\'ve seen the best of today'),
+                'endText' => $tab === 'for-you' ? __('You\'ve seen every new post from your channels.') : __('Come back later for a fresh mix, or explore channels to follow.'),
+                'endUrl' => $tab === 'for-you' ? route('user.feed', ['tab' => 'popular']) : route('user.explore-channels'),
+                'endLabel' => $tab === 'for-you' ? __('See popular posts') : __('Explore channels'),
+                'endIcon' => $tab === 'for-you' ? 'fire' : 'compass',
+            ])
+        @endif
+    </section>
+</div>
+@endsection
 @section('modals')
 
     <!-- Slide-in Drawer -->
@@ -844,6 +610,7 @@
 @endsection
 
 @section('scripts')
+@include('partials.feed._script')
 <script>
     function toggleDrawer(show) {
         document.getElementById('drawer').classList.toggle('show', show);
@@ -869,32 +636,6 @@
                 document.removeEventListener('click', closeMenu);
             }
         });
-    }
-
-    function togglePostMenu(btn) {
-        document.querySelectorAll('.post-card .app-menu.show').forEach(m => {
-            if (m !== btn.nextElementSibling) m.classList.remove('show');
-        });
-        const menu = btn.nextElementSibling;
-        menu.classList.toggle('show');
-
-        document.addEventListener('click', function closeMenu(e) {
-            if (!menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
-                menu.classList.remove('show');
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }
-
-    function toggleFeedComments(button) {
-        const card = button.closest('.post-card');
-        const section = card.querySelector('.feed-comments');
-        section.style.display = section.style.display === 'none' || !section.style.display ? 'block' : 'none';
-    }
-
-    function copyPostLink(url) {
-        navigator.clipboard?.writeText(url);
-        alert('{{ __('Link copied!') }}');
     }
 
     /* ===================== Collections ===================== */
