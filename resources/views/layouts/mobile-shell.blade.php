@@ -57,94 +57,100 @@
             .shell { max-width: 820px; }
         }
 
-        /* Top App Bar */
+        /* Top app bar: a glassy sticky bar. Pages fill it through @section('app-bar'); the layout adds
+           the theme toggle and, for members, the notification bell. Gains a shadow once content scrolls. */
         .app-bar {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            padding: var(--space-3) var(--space-4);
-            padding-top: max(var(--space-3), env(safe-area-inset-top));
-            background-color: var(--surface-bg);
-            border-bottom: 1px solid var(--surface-border);
-            position: sticky;
-            top: 0;
-            z-index: 20;
+            display: flex; align-items: center; gap: 6px;
+            min-height: 60px;
+            padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top));
+            position: sticky; top: 0; z-index: 40;
+            background: color-mix(in srgb, var(--surface-bg) 82%, transparent);
+            -webkit-backdrop-filter: blur(18px) saturate(1.6);
+            backdrop-filter: blur(18px) saturate(1.6);
+            border-bottom: 1px solid color-mix(in srgb, var(--surface-border) 70%, transparent);
+            transition: box-shadow .25s ease, border-color .25s ease;
         }
-
+        .app-bar.is-scrolled { box-shadow: 0 10px 24px -18px rgba(15, 23, 42, .55); border-bottom-color: var(--surface-border); }
         .app-bar-icon-btn {
-            background: none;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-primary);
-            font-size: var(--text-xl);
-            cursor: pointer;
-            text-decoration: none;
-            flex-shrink: 0;
-            transition: background-color var(--transition-fast);
+            position: relative; flex-shrink: 0;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border: 0; border-radius: 12px; background: none; cursor: pointer;
+            color: var(--text-primary); font-size: 20px; text-decoration: none;
+            transition: background-color .15s ease, color .15s ease, transform .15s ease;
         }
-
         .app-bar-icon-btn:hover { background-color: var(--surface-hover); }
-
+        .app-bar-icon-btn:active { transform: scale(.92); }
+        .app-bar-icon-btn:focus-visible { outline: 2px solid var(--primary-500); outline-offset: 2px; }
         .app-bar-title {
-            flex: 1;
-            font-size: var(--text-lg);
-            font-weight: var(--font-weight-bold);
-            color: var(--text-primary);
+            flex: 1; min-width: 0;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 17px; font-weight: 800; letter-spacing: -.01em; color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .app-bar-title a { color: inherit; text-decoration: none; display: inline-flex; align-items: center; }
+        .app-bar-actions { display: flex; align-items: center; gap: 2px; }
 
-        .app-bar-actions {
-            display: flex;
-            align-items: center;
-            gap: var(--space-1);
+        /* Notification bell + panel */
+        .nb { position: relative; }
+        .nb-btn.has-unread i { animation: nbRing 4s ease-in-out infinite; transform-origin: 50% 10%; display: inline-block; }
+        .nb-badge {
+            position: absolute; top: 3px; inset-inline-end: 3px;
+            min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff;
+            font-size: 10.5px; font-weight: 800; line-height: 1;
+            border: 2px solid var(--surface-bg); box-shadow: 0 4px 10px -3px rgba(225, 29, 72, .6);
         }
-
-        .app-bar-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-600), var(--secondary-600));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: var(--font-weight-bold);
-            text-decoration: none;
-            flex-shrink: 0;
-            overflow: hidden;
-            border: 1.5px solid var(--surface-border);
-            margin-inline-start: 2px;
+        .nb-badge[hidden] { display: none; }
+        .nb-badge.bump { animation: nbBump .5s cubic-bezier(.34, 1.56, .64, 1); }
+        .np {
+            position: absolute; top: calc(100% + 10px); inset-inline-end: -6px; z-index: 60;
+            width: min(380px, calc(100vw - 24px));
+            border-radius: 20px; overflow: hidden;
+            background: var(--surface-bg); border: 1px solid var(--surface-border);
+            box-shadow: 0 24px 60px -20px rgba(15, 23, 42, .45);
+            transform-origin: top right; animation: npIn .2s cubic-bezier(.2, .8, .2, 1);
         }
-
-        .app-bar-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        [dir="rtl"] .np { transform-origin: top left; }
+        .np-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px 10px; }
+        .np-head strong { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+        .np-all { border: 0; background: none; color: var(--primary-600); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+        .np-all:hover { background: var(--surface-hover); }
+        .np-list { max-height: min(60vh, 440px); overflow-y: auto; padding: 0 6px 6px; }
+        .np-item { position: relative; display: flex; gap: 12px; padding: 10px; border-radius: 14px; text-decoration: none; color: var(--text-secondary); transition: background .15s ease; }
+        .np-item:hover { background: var(--surface-hover); }
+        .np-item.is-unread { background: color-mix(in srgb, var(--primary-600) 7%, transparent); color: var(--text-primary); }
+        .np-ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 17px; }
+        .np-body { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding-inline-end: 12px; }
+        .np-msg { font-size: 13px; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+        .np-time { font-size: 11.5px; color: var(--text-tertiary); }
+        .np-dot { position: absolute; top: 50%; inset-inline-end: 10px; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--primary-600); }
+        .np-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 8px 20px 18px; color: var(--text-secondary); font-size: 12.5px; }
+        .np-empty strong { color: var(--text-primary); font-size: 14px; }
+        .np-skel { height: 58px; margin: 4px; border-radius: 14px; background: linear-gradient(90deg, var(--surface-hover) 25%, color-mix(in srgb, var(--surface-hover) 40%, var(--surface-bg)) 50%, var(--surface-hover) 75%); background-size: 200% 100%; animation: npShine 1.2s linear infinite; }
+        .np-foot { display: block; padding: 12px; text-align: center; border-top: 1px solid var(--surface-border); font-size: 13px; font-weight: 700; color: var(--primary-600); text-decoration: none; }
+        .np-foot:hover { background: var(--surface-hover); }
+        @media (max-width: 520px) {
+            .np { position: fixed; top: calc(62px + env(safe-area-inset-top)); left: 12px; right: 12px; width: auto; }
         }
+        @keyframes nbRing { 0%, 86%, 100% { transform: rotate(0); } 88% { transform: rotate(14deg); } 91% { transform: rotate(-12deg); } 94% { transform: rotate(7deg); } 97% { transform: rotate(-3deg); } }
+        @keyframes nbBump { 0% { transform: scale(.6); } 100% { transform: scale(1); } }
+        @keyframes npIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+        @keyframes npShine { to { background-position: -200% 0; } }
 
-        .app-bar-bell-badge {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background-color: var(--danger-600);
-            color: white;
-            font-size: 9px;
-            font-weight: var(--font-weight-bold);
-            min-width: 15px;
-            height: 15px;
-            border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 3px;
-            border: 1.5px solid var(--surface-bg);
+        /* Page-transition loader */
+        .page-loader {
+            position: fixed; inset: 0; z-index: 999;
+            display: none; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--surface-bg) 86%, transparent);
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
         }
-
+        .page-loader.show { display: flex; animation: plIn .2s ease; }
+        @keyframes plIn { from { opacity: 0; } to { opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) {
+            .nb-btn.has-unread i, .nb-badge.bump, .np, .np-skel, .page-loader.show { animation: none; }
+        }
         /* Shell content: scrollable area, floats fully behind the bottom nav */
         .shell-content {
             flex: 1;
@@ -258,12 +264,33 @@
 </head>
 <body>
     <div class="shell">
-        <div class="app-bar">
+        <div class="app-bar" id="appBar">
             @yield('app-bar')
 
             <button type="button" class="app-bar-icon-btn theme-toggle" onclick="toggleShellTheme()" aria-label="{{ __('Switch light / dark mode') }}">
                 <i class="bi bi-moon-stars"></i><i class="bi bi-sun"></i>
             </button>
+            @auth
+                @php $navUnread = auth()->user()->notifications()->whereNull('read_at')->count(); @endphp
+                <div class="nb" id="notifBell" data-latest-url="{{ route('user.notifications.latest') }}" data-read-all-url="{{ route('user.notifications.read-all') }}">
+                    <button type="button" class="app-bar-icon-btn nb-btn {{ $navUnread ? 'has-unread' : '' }}" id="notifBtn"
+                            aria-haspopup="dialog" aria-expanded="false" aria-controls="notifPanel"
+                            aria-label="{{ __('Notifications') }}">
+                        <i class="bi bi-bell"></i>
+                        <span class="nb-badge" id="notifBadge" @unless ($navUnread) hidden @endunless>{{ $navUnread > 99 ? '99+' : $navUnread }}</span>
+                    </button>
+                    <div class="np" id="notifPanel" role="dialog" aria-label="{{ __('Notifications') }}" hidden>
+                        <div class="np-head">
+                            <strong>{{ __('Notifications') }}</strong>
+                            <button type="button" class="np-all" id="notifReadAll"><i class="bi bi-check2-all"></i> {{ __('Mark all read') }}</button>
+                        </div>
+                        <div class="np-list" id="notifList">
+                            <div class="np-skel"></div><div class="np-skel"></div><div class="np-skel"></div>
+                        </div>
+                        <a class="np-foot" href="{{ route('user.notifications') }}">{{ __('See all notifications') }} <i class="bi bi-arrow-right rtl-flip"></i></a>
+                    </div>
+                </div>
+            @endauth
         </div>
 
         <div class="shell-content">
@@ -324,36 +351,112 @@
 
     @include('partials.qr-scan-modal')
     <!-- Page-transition loader -->
-    <div id="pageLoaderOverlay" style="display: none; position: fixed; inset: 0; background-color: var(--surface-bg); z-index: 999; align-items: center; justify-content: center;">
-        <x-app-loader :size="72"/>
+    <div id="pageLoaderOverlay" class="page-loader" aria-hidden="true">
+        <x-app-loader :size="54"/>
     </div>
 
     @yield('modals')
 
     <script>
         (function () {
+            // The logo loader appears only when a navigation takes longer than ~180 ms.
             const overlay = document.getElementById('pageLoaderOverlay');
+            let loaderTimer = null;
+            function startLoader() {
+                clearTimeout(loaderTimer);
+                loaderTimer = setTimeout(() => overlay.classList.add('show'), 180);
+            }
+            function stopLoader() {
+                clearTimeout(loaderTimer);
+                overlay.classList.remove('show');
+            }
 
             document.addEventListener('click', function (event) {
+                if (event.defaultPrevented || event.button !== 0) return;
                 const link = event.target.closest('a[href]');
-                if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+                if (!link || link.target === '_blank' || link.hasAttribute('download') || link.dataset.noLoader !== undefined) return;
 
                 const url = new URL(link.href, window.location.href);
-                const isSamePageAnchor = url.pathname === window.location.pathname && url.hash;
-                if (url.origin !== window.location.origin || isSamePageAnchor || event.ctrlKey || event.metaKey) return;
+                const isSamePageAnchor = url.pathname === window.location.pathname && url.search === window.location.search && url.hash;
+                if (url.origin !== window.location.origin || isSamePageAnchor || event.ctrlKey || event.metaKey || event.shiftKey) return;
 
-                overlay.style.display = 'flex';
+                startLoader();
             });
 
             document.addEventListener('submit', function (event) {
-                if (event.target.tagName === 'FORM') {
-                    overlay.style.display = 'flex';
-                }
+                if (!event.defaultPrevented && event.target.tagName === 'FORM' && event.target.dataset.noLoader === undefined) startLoader();
             });
 
-            window.addEventListener('pageshow', function () {
-                overlay.style.display = 'none';
-            });
+            window.addEventListener('pageshow', stopLoader);
+
+            // App bar shadow once the content scrolls.
+            const bar = document.getElementById('appBar');
+            const scroller = document.querySelector('.shell-content');
+            if (bar && scroller) {
+                scroller.addEventListener('scroll', () => bar.classList.toggle('is-scrolled', scroller.scrollTop > 4), { passive: true });
+            }
+
+            // Notification bell: panel, mark as read, background refresh.
+            const bell = document.getElementById('notifBell');
+            if (bell) {
+                const btn = document.getElementById('notifBtn');
+                const panel = document.getElementById('notifPanel');
+                const list = document.getElementById('notifList');
+                const badge = document.getElementById('notifBadge');
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+                let loaded = false;
+
+                function setCount(n) {
+                    const prev = parseInt(badge.textContent, 10) || 0;
+                    badge.hidden = n <= 0;
+                    badge.textContent = n > 99 ? '99+' : n;
+                    btn.classList.toggle('has-unread', n > 0);
+                    if (n > prev) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+                }
+                async function refresh() {
+                    try {
+                        const res = await fetch(bell.dataset.latestUrl, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        setCount(data.unread);
+                        list.innerHTML = data.html;
+                        loaded = true;
+                    } catch (e) { /* offline: keep what we have */ }
+                }
+                function open() {
+                    panel.hidden = false;
+                    btn.setAttribute('aria-expanded', 'true');
+                    if (!loaded) refresh();
+                }
+                function close() {
+                    panel.hidden = true;
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+                btn.addEventListener('click', e => { e.preventDefault(); panel.hidden ? open() : close(); });
+                document.addEventListener('click', e => { if (!panel.hidden && !bell.contains(e.target)) close(); });
+                document.addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) { close(); btn.focus(); } });
+
+                // Opening a notification marks it read in the background, then follows its link.
+                list.addEventListener('click', e => {
+                    const item = e.target.closest('.np-item');
+                    if (!item || !item.classList.contains('is-unread')) return;
+                    fetch(item.dataset.readUrl, { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+                    item.classList.remove('is-unread');
+                    item.querySelector('.np-dot')?.remove();
+                    setCount(Math.max(0, (parseInt(badge.textContent, 10) || 1) - 1));
+                });
+                document.getElementById('notifReadAll').addEventListener('click', async () => {
+                    list.querySelectorAll('.np-item.is-unread').forEach(i => { i.classList.remove('is-unread'); i.querySelector('.np-dot')?.remove(); });
+                    setCount(0);
+                    try {
+                        await fetch(bell.dataset.readAllUrl, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+                    } catch (e) { /* retried on the next refresh */ }
+                });
+
+                // Light polling while the tab is visible.
+                setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 45000);
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+            }
         })();
     </script>
 

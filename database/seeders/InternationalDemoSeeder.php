@@ -53,6 +53,7 @@ class InternationalDemoSeeder extends Seeder
         }
 
         $this->interactions();
+        $this->notifications();
         $this->preferences();
         $this->writeAccounts();
     }
@@ -403,6 +404,27 @@ class InternationalDemoSeeder extends Seeder
 
         $this->command?->info(sprintf('Interactions: %d views, %d reactions, %d comments, %d poll votes on %d posts.',
             count($receipts), count($reactions), count($comments), count($votes), count($this->postMeta)));
+    }
+
+    /**
+     * In-app notifications for posts of the last 10 days, written as if they were sent when each post
+     * was published (same recipients as PostNotificationService). Older ones are mostly read already.
+     */
+    public function notifications(): void
+    {
+        $service = app(\App\Services\PostNotificationService::class);
+        $posts = Post::where('status', 'published')->where('published_at', '>=', now()->subDays(10))->orderBy('published_at')->get();
+        foreach ($posts as $post) {
+            Carbon::setTestNow($post->published_at);
+            $service->published($post);
+        }
+        Carbon::setTestNow();
+
+        // Older notifications are usually read; keep the recent ones unread so the bell has something to show.
+        DB::table('notifications')->where('created_at', '<', now()->subDays(2))
+            ->whereRaw('MOD(id, 10) < 7')->update(['read_at' => DB::raw('DATE_ADD(created_at, INTERVAL 3 HOUR)')]);
+
+        $this->command?->info('Notifications: ' . DB::table('notifications')->count() . ' (' . DB::table('notifications')->whereNull('read_at')->count() . ' unread).');
     }
 
     /** People who can see a post: subscribers of its receiving channels, the tenant's followers for page posts, plus the team. */

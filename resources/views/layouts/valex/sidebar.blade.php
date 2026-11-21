@@ -11,10 +11,10 @@
 <div class="app-sidebar__overlay" data-toggle="sidebar"></div>
 <aside class="app-sidebar sidebar-scroll">
     <div class="main-sidebar-header active">
-        <a class="desktop-logo logo-light active" href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('logo.png') }}" class="main-logo" alt="i-Page"></a>
-        <a class="desktop-logo logo-dark active" href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('logo-white.png') }}" class="main-logo dark-theme" alt="i-Page"></a>
-        <a class="logo-icon mobile-logo icon-light active" href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('favicon.png') }}" class="logo-icon" alt="i-Page"></a>
-        <a class="logo-icon mobile-logo icon-dark active" href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('favicon-white.png') }}" class="logo-icon dark-theme" alt="i-Page"></a>
+        <a class="desktop-logo logo-light active" href="{{ route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="34" class="main-logo" /></a>
+        <a class="desktop-logo logo-dark active" href="{{ route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="34" class="main-logo dark-theme" style="--bl-ink-1: #e0e7ff; --bl-ink-2: #c4b5fd;" /></a>
+        <a class="logo-icon mobile-logo icon-light active" href="{{ route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="34" class="logo-icon" /></a>
+        <a class="logo-icon mobile-logo icon-dark active" href="{{ route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="34" class="logo-icon dark-theme" /></a>
     </div>
 
     <div class="main-sidemenu">

@@ -46,8 +46,10 @@
         }
 
         .auth-logo {
-            width: 60px;
-            height: 60px;
+            width: auto;
+            height: auto;
+            display: flex;
+            justify-content: center;
             margin: 0 auto var(--space-4);
             display: flex;
             align-items: center;
@@ -218,8 +220,8 @@
             }
 
             .auth-logo {
-                width: 50px;
-                height: 50px;
+                width: auto;
+                height: auto;
                 font-size: var(--text-2xl);
             }
 
@@ -244,7 +246,7 @@
             <!-- Header -->
             <div class="auth-header">
                 <div class="auth-logo">
-                    <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page">
+                    <x-brand-logo :height="44" />
                 </div>
                 <h1 class="auth-title">{{ __('i-Page') }}</h1>
                 <p class="auth-subtitle">{{ __('The Digital Front Door for Every Organization') }}</p>

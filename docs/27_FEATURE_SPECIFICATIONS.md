@@ -723,6 +723,26 @@ Define complete specifications for each feature **before** implementation. This 
 
 ---
 
+### Feature: Brand Logo, Page Loader, App Bar Notifications, Search & Register Redesign
+
+**Status**: Implemented
+
+**Business Rules**:
+- **Logo**: an SVG mark — a page with a folded corner and a white "i" whose dot is a gold notification dot — next to the wordmark "i-page". `<x-brand-logo variant="full|mark" animate="none|once|loop">` renders it inline (colors follow light/dark); `public/images/brand/logo-mark.svg` is the static file (favicon, emails, standalone pages).
+- **Loader**: the animated logo loops: the page rocks left/right and grows slightly, the i bounces, and the word types itself (gold, slightly larger p), deletes and retypes — while a page loads. It appears only when navigation takes longer than ~180 ms, so fast pages never flash. Used by the mobile shell and the Valex dashboards.
+- **App bar**: glassy sticky bar with the page title/actions, theme toggle and, for signed-in users, a notification bell: unread badge, a dropdown of the latest notifications (icon by type, message, time, unread dot), mark one / all as read without reloading, "See all", and a light refresh every 45 s while the tab is visible (`GET /notifications/latest`).
+- **Search** (`/browse/search`): hero search box with live filtering on the server, industry-agnostic organization cards (initial, name, city/country, channel and follower counts), quick chips, animated empty state.
+- **Register** (`/register`): split layout on large screens (animated brand panel with value points) and a single column on phones; grouped fields, live password checklist and show/hide toggle.
+
+**Acceptance Criteria**:
+- [x] Logo renders crisp at any size, light and dark; loader respects reduced motion
+- [x] Bell shows the right unread count, marks read without reload, refreshes in the background
+- [x] Search and register work on phones and desktops, RTL/LTR, keyboard accessible
+
+**Implementation**: `<x-brand-logo>` (animate: live by default, none for static), `<x-app-loader>`, `public/images/brand/logo-mark.svg` + `logo-full.svg`, app bar + bell in `layouts/mobile-shell`, `NotificationController::latest()` + JSON read/read-all, `notifications/_panel-items`, `guest/organizations` + `guest/partials/_search-results`, `auth/register-new`; Valex sidebar/header/loader use the new logo. Demo seeder writes notifications for the last 10 days.
+
+---
+
 ## FUTURE FEATURES (Planned, Beyond Initial Release)
 
 ---

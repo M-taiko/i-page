@@ -9,10 +9,10 @@
     <div class="container-fluid">
         <div class="main-header-left">
             <div class="responsive-logo">
-                <a href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('logo.png') }}" class="logo-1" alt="i-Page"></a>
-                <a href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('logo-white.png') }}" class="dark-logo-1" alt="i-Page"></a>
-                <a href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('favicon.png') }}" class="logo-2" alt="i-Page"></a>
-                <a href="{{ route('organizations.dashboard') }}"><img src="{{ $logo('favicon-white.png') }}" class="dark-logo-2" alt="i-Page"></a>
+                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="32" class="logo-1" /></a>
+                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="32" class="dark-logo-1" style="--bl-ink-1: #e0e7ff; --bl-ink-2: #c4b5fd;" /></a>
+                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="32" class="logo-2" /></a>
+                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="32" class="dark-logo-2" /></a>
             </div>
             <div class="app-sidebar__toggle" data-toggle="sidebar">
                 <a class="open-toggle" href="#"><i class="header-icon fe fe-align-left"></i></a>

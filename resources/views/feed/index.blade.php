@@ -3,20 +3,13 @@
 @section('title', __('Home') . ' - i-Page')
 
 @section('app-bar')
-    <button type="button" class="app-bar-icon-btn" onclick="toggleDrawer(true)" aria-label="{{ __('Menu') }}">
-        <i class="bi bi-list"></i>
-    </button>
-    <div class="app-bar-title" style="display: flex; align-items: center; gap: var(--space-2);">
-        <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="" style="width: 24px; height: 24px;">
-        {{ __('Home') }}
+    <div class="app-bar-title">
+        <a href="{{ route('guest.home') }}" aria-label="{{ __('i-page home') }}"><x-brand-logo animate="idle" :height="30" /></a>
     </div>
     <div class="app-bar-actions">
         <a href="{{ route('user.explore-organizations') }}" class="app-bar-icon-btn" aria-label="{{ __('Search') }}">
             <i class="bi bi-search"></i>
         </a>
-        <button type="button" class="app-bar-icon-btn" onclick="toggleAppMenu()" aria-label="{{ __('More') }}">
-            <i class="bi bi-three-dots-vertical"></i>
-        </button>
     </div>
 @endsection
 
@@ -277,67 +270,6 @@
     .cmodal-actions .btn-cancel { background-color: var(--surface-hover); color: var(--text-primary); }
     .cmodal-actions .btn-save { background-color: var(--primary-600); color: white; }
 
-    /* Drawer */
-    .drawer-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 40;
-    }
-
-    .drawer-overlay.show { display: block; }
-
-    .drawer {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: 280px;
-        max-width: 82vw;
-        background-color: var(--surface-bg);
-        z-index: 41;
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-        display: flex;
-        flex-direction: column;
-        padding: var(--space-6) var(--space-4);
-        padding-top: max(var(--space-6), env(safe-area-inset-top));
-    }
-
-    html[dir="rtl"] .drawer { left: auto; right: 0; transform: translateX(100%); }
-
-    .drawer.show { transform: translateX(0); }
-
-    .drawer-user { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
-
-    .drawer-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-full);
-        background: linear-gradient(135deg, var(--primary-600), var(--secondary-600));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: var(--font-weight-bold);
-    }
-
-    .drawer-link {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        padding: var(--space-3);
-        text-decoration: none;
-        color: var(--text-primary);
-        border-radius: var(--radius-md);
-        font-size: var(--text-sm);
-        font-weight: var(--font-weight-medium);
-    }
-
-    .drawer-link:hover { background-color: var(--surface-hover); }
-    .drawer-link i { font-size: var(--text-lg); color: var(--text-secondary); width: 22px; }
-
     /* App menu dropdown */
     .app-menu {
         display: none;
@@ -505,41 +437,6 @@
 </div>
 @endsection
 @section('modals')
-
-    <!-- Slide-in Drawer -->
-    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
-    <div class="drawer" id="drawer">
-        <div class="drawer-user">
-            <div class="drawer-avatar">{{ auth()->user()->initials }}</div>
-            <div>
-                <div style="font-weight: var(--font-weight-bold); font-size: var(--text-sm);">{{ auth()->user()->full_name }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-tertiary);">{{ auth()->user()->email }}</div>
-            </div>
-        </div>
-
-        <a href="{{ route('user.feed') }}" class="drawer-link"><i class="bi bi-house"></i> {{ __('Home') }}</a>
-        <a href="{{ route('user.explore-channels') }}" class="drawer-link"><i class="bi bi-grid"></i> {{ __('Explore Channels') }}</a>
-        <a href="{{ route('user.explore-organizations') }}" class="drawer-link"><i class="bi bi-building"></i> {{ __('Explore Organizations') }}</a>
-        <a href="{{ route('user.notifications') }}" class="drawer-link"><i class="bi bi-bell"></i> {{ __('Notifications') }}</a>
-        <a href="{{ route('profile.settings') }}" class="drawer-link"><i class="bi bi-gear"></i> {{ __('Settings') }}</a>
-
-        @if(auth()->user()->hasRole('super_admin'))
-            <a href="{{ route('admin.dashboard') }}" class="drawer-link"><i class="bi bi-shield-check"></i> {{ __('Admin Panel') }}</a>
-        @endif
-        @if(auth()->user()->organizations()->exists())
-            <a href="{{ route('organizations.dashboard') }}" class="drawer-link"><i class="bi bi-graph-up"></i> {{ __('Organization Dashboard') }}</a>
-        @endif
-
-        <div style="flex: 1;"></div>
-
-        <form id="logout-form-drawer" method="POST" action="{{ route('logout') }}">
-            @csrf
-        </form>
-        <button type="button" class="drawer-link" style="border: none; background: none; width: 100%; cursor: pointer; color: var(--danger-600);" onclick="document.getElementById('logout-form-drawer').submit();">
-            <i class="bi bi-box-arrow-right"></i> {{ __('Logout') }}
-        </button>
-    </div>
-
     <!-- Collection long-press bottom sheet -->
     <div class="sheet-overlay" id="collectionSheet" onclick="if(event.target===this) closeSheet()">
         <div class="bottom-sheet">
@@ -614,32 +511,6 @@
 @section('scripts')
 @include('partials.feed._script')
 <script>
-    function toggleDrawer(show) {
-        document.getElementById('drawer').classList.toggle('show', show);
-        document.getElementById('drawerOverlay').classList.toggle('show', show);
-    }
-
-    function toggleAppMenu() {
-        const menu = document.getElementById('appMenu');
-        if (menu) { menu.classList.toggle('show'); return; }
-
-        const el = document.createElement('div');
-        el.id = 'appMenu';
-        el.className = 'app-menu show';
-        el.innerHTML = `
-            <button type="button" onclick="toggleShellTheme()"><i class="bi bi-moon-stars"></i> {{ __('Toggle Theme') }}</button>
-            <a href="{{ route('profile.settings') }}"><i class="bi bi-gear"></i> {{ __('Settings') }}</a>
-        `;
-        document.querySelector('.app-bar-actions').appendChild(el);
-
-        document.addEventListener('click', function closeMenu(e) {
-            if (!el.contains(e.target) && !e.target.closest('.app-bar-icon-btn')) {
-                el.classList.remove('show');
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }
-
     /* ===================== Collections ===================== */
     const collectionsBaseUrl = "{{ url('/collections') }}";
     const collectionsStoreUrl = "{{ route('collections.store') }}";

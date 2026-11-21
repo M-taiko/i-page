@@ -3,12 +3,8 @@
 @section('title', __('i-Page') . ' - ' . ($tab === 'for-you' ? __('Your feed') : __('Discover')))
 
 @section('app-bar')
-    <button type="button" class="app-bar-icon-btn" onclick="toggleDrawer(true)" aria-label="{{ __('Menu') }}">
-        <i class="bi bi-list"></i>
-    </button>
-    <div class="app-bar-title" style="display: flex; align-items: center; gap: var(--space-2);">
-        <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="" style="width: 24px; height: 24px;">
-        i-Page
+    <div class="app-bar-title">
+        <a href="{{ route('guest.home') }}" aria-label="{{ __('i-page home') }}"><x-brand-logo animate="idle" :height="30" /></a>
     </div>
     <div class="app-bar-actions">
         <a href="{{ route('guest.search-organizations') }}" class="app-bar-icon-btn" aria-label="{{ __('Search') }}">
@@ -132,30 +128,6 @@
 @endsection
 
 @section('modals')
-    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
-    <div class="drawer" id="drawer">
-        <div class="drawer-brand">
-            <div class="drawer-brand-icon"><img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page" style="width: 100%; height: 100%; object-fit: contain;"></div>
-            <div>
-                <div style="font-weight: var(--font-weight-bold); font-size: var(--text-base);">i-Page</div>
-                <div style="font-size: var(--text-xs); color: var(--text-tertiary);">{{ __('The Digital Front Door') }}</div>
-            </div>
-        </div>
-
-        <a href="{{ route('guest.home') }}" class="drawer-link"><i class="bi bi-house"></i> {{ __('Home') }}</a>
-        <a href="{{ route('guest.search-organizations') }}" class="drawer-link"><i class="bi bi-building"></i> {{ __('Explore Organizations') }}</a>
-
-        <div style="flex: 1;"></div>
-
-        @guest
-            <a href="{{ route('login') }}" class="drawer-link" style="background-color: var(--primary-50); color: var(--primary-700);">
-                <i class="bi bi-box-arrow-in-right" style="color: var(--primary-600);"></i> {{ __('Sign In') }}
-            </a>
-            <a href="{{ route('register') }}" class="drawer-link"><i class="bi bi-person-plus"></i> {{ __('Create Account') }}</a>
-        @endguest
-    </div>
-
-
     <div class="signin-modal-overlay" id="signinModal" onclick="if(event.target===this) closeSignInModal()">
         <div class="signin-modal">
             <x-illustration name="notifications" size="120" />
@@ -172,10 +144,6 @@
 @section('scripts')
 @include('partials.feed._script')
 <script>
-    function toggleDrawer(show) {
-        document.getElementById('drawer').classList.toggle('show', show);
-        document.getElementById('drawerOverlay').classList.toggle('show', show);
-    }
     function requireSignIn() { document.getElementById('signinModal').classList.add('show'); }
     function closeSignInModal() { document.getElementById('signinModal').classList.remove('show'); }
 

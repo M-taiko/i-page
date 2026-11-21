@@ -12,7 +12,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'i-Page') — {{ config('app.name', 'i-Page') }}</title>
-    <link rel="icon" href="{{ $assets('img/brand/favicon.png') }}" type="image/x-icon">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/logo-mark.svg') }}">
 
     <link href="{{ $assets($cssDir . '/icons.css') }}" rel="stylesheet">
     <link href="{{ $assets('plugins/mscrollbar/jquery.mCustomScrollbar.css') }}" rel="stylesheet">
@@ -43,7 +43,7 @@
     </script>
 
     <div id="global-loader">
-        <img src="{{ $assets('img/loader.svg') }}" class="loader-img" alt="">
+        <x-app-loader :size="48" class="loader-img" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" />
     </div>
 
     @include('layouts.valex.sidebar')

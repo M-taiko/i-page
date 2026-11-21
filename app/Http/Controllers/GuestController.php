@@ -79,19 +79,48 @@ class GuestController extends Controller
         ]);
     }
 
-    public function searchOrganizations(Request $request): View
+    /**
+     * Search (docs/27): organizations and public channels matching ?q, optionally filtered by ?country.
+     * ?partial=1 returns only the results block (live search while typing).
+     */
+    public function searchOrganizations(Request $request): View|\Illuminate\Http\JsonResponse
     {
-        $search = $request->get('q', '');
+        $search = trim((string) $request->get('q', ''));
+        $country = trim((string) $request->get('country', ''));
+        $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
 
         $organizations = Organization::where('is_active', true)
-            ->when($search, function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
-            })
-            ->withCount('users', 'channels', 'posts')
-            ->paginate(12);
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', $like)
+                ->orWhere('description', 'like', $like)->orWhere('city', 'like', $like)->orWhere('country', 'like', $like)
+                ->orWhereHas('channels', fn ($c) => $c->where('type', 'public')->where('name', 'like', $like))))
+            ->when($country !== '', fn ($q) => $q->where(fn ($w) => $w->where('country', $country)
+                ->orWhereHas('channels', fn ($c) => $c->where('type', 'public')->where('name', 'like', '%' . $country . '%'))))
+            ->withCount(['channels' => fn ($c) => $c->where('type', 'public'), 'followers'])
+            ->orderByDesc('followers_count')->orderBy('name')
+            ->paginate(12)->withQueryString();
 
-        return view('guest.organizations', compact('organizations', 'search'));
+        $channels = $search === '' ? collect() : \App\Models\Channel::where('type', 'public')->where('status', 'active')
+            ->where('name', 'like', $like)
+            ->whereHas('organization', fn ($o) => $o->where('is_active', true))
+            ->with('organization')
+            ->withCount(['users' => fn ($u) => $u->where('channel_user.status', 'approved')])
+            ->orderByDesc('users_count')->limit(8)->get();
+
+        $data = compact('organizations', 'channels', 'search', 'country');
+
+        if ($request->boolean('partial')) {
+            return response()->json(['html' => view('guest.partials._search-results', $data)->render()]);
+        }
+
+        // Quick filters: countries where organizations or their channels are.
+        $countries = collect(['Egypt', 'KSA', 'UAE', 'Jordan', 'Saudi Arabia', 'United Arab Emirates'])
+            ->merge(Organization::where('is_active', true)->whereNotNull('country')->distinct()->pluck('country'))
+            ->filter(fn ($c) => \App\Models\Channel::where('type', 'public')->where('name', 'like', '%' . $c . '%')->exists()
+                || Organization::where('country', $c)->exists())
+            ->map(fn ($c) => ['Saudi Arabia' => 'KSA', 'United Arab Emirates' => 'UAE'][$c] ?? $c)
+            ->unique()->values();
+
+        return view('guest.organizations', $data + ['countries' => $countries]);
     }
 
     public function organizationDetail(Organization $organization): View
