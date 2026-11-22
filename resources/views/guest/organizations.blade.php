@@ -1,6 +1,7 @@
 @extends('layouts.mobile-shell')
 
-@section('title', ($search !== '' ? $search . ' · ' : '') . __('Search') . ' - i-Page')
+@section('title', ($search !== '' ? $search . ' · ' : '') . __('Search organizations & channels') . ' · i-page')
+@section('meta_description', __('Find hotels, stores, schools and other organizations on i-page by name, city or country, and follow their channels.'))
 
 @section('app-bar')
     <a href="{{ route('guest.home') }}" class="app-bar-icon-btn" aria-label="{{ __('Back') }}">

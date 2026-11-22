@@ -2,6 +2,7 @@
 
 @section('title', $channel->name)
 @section('meta_description', \Illuminate\Support\Str::limit($channel->description ?? __(':channel — updates from :org on i-Page.', ['channel' => $channel->name, 'org' => $organization->name]), 180))
+@section('seo_schema', json_encode(\App\Support\SeoSchema::channel($channel, $organization), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
 
 @push('styles')
     <link href="{{ asset('assets/valex/plugins/timeline/css/timeline.min.css') }}" rel="stylesheet">

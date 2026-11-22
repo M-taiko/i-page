@@ -2,6 +2,7 @@
 
 @section('title', $organization->name . ' - i-Page')
 @section('meta_description', \Illuminate\Support\Str::limit($organization->description ?: __('Follow :name on i-Page for news, announcements and updates.', ['name' => $organization->name]), 180))
+@section('seo_schema', json_encode(\App\Support\SeoSchema::organization($organization), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
 @php
     $ogCover = \App\Support\Designs::coverPaths($organization->design_options ?? [])[0] ?? null;
 @endphp
@@ -22,6 +23,7 @@
 @endsection
 
 @section('extra-styles')
+    @include('partials.feed._styles')
     /* Org header */
     .org-hero {
         background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
@@ -311,83 +313,8 @@
         </div>
 
         @if($posts->isNotEmpty())
-            <div class="feed-list">
-                @foreach($posts as $post)
-                    @php
-                        $displayName = $post->sourceName() ?? $organization->name;
-                        $subtitle = ($post->isTenantPost() ? __('Official post') : null) ?? ucfirst(str_replace('_', ' ', $post->post_type ?? 'update'));
-                        $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
-                        $likeCount = $post->reactions()->where('type', 'like')->count();
-                        $commentCount = $post->comments()->approved()->count();
-                        $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();
-                    @endphp
-                    <article class="post-card">
-                        <div class="post-header">
-                            <div class="post-avatar" style="background-color: {{ $colorFor($displayName) }};">
-                                {{ substr($displayName, 0, 1) }}
-                            </div>
-                            <div class="post-info">
-                                <div class="post-author">{{ $displayName }}</div>
-                                <div class="post-subtitle">{{ $subtitle }}</div>
-                                <div class="post-meta">
-                                    <span>{{ $post->published_at?->diffForHumans() }}</span>
-                                    <span>&middot;</span>
-                                    <i class="bi bi-globe2"></i>
-                                    <span>{{ __('Public') }}</span>
-                                </div>
-                            </div>
-                        </div>
-    
-                        @include('posts.partials._content', ['post' => $post, 'limit' => 280, 'url' => route('guest.post-detail', $post->id), 'showWidgets' => $post->hasWidgets()])
-    
-                        <div class="post-footer">
-                            @auth
-                                @unless ($post->hasWidgets())
-                                <form action="{{ route('posts.like', $post->id) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
-                                        <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
-                                        <span>{{ $likeCount }}</span>
-                                    </button>
-                                </form>
-                                @endunless
-                                <button type="button" class="post-action" onclick="toggleFeedComments(this)">
-                                    <i class="bi bi-chat"></i>
-                                    <span>{{ $commentCount }}</span>
-                                </button>
-                            @else
-                                <button type="button" class="post-action" onclick="requireSignIn()">
-                                    <i class="bi bi-hand-thumbs-up"></i>
-                                    <span>{{ $likeCount }}</span>
-                                </button>
-                                <button type="button" class="post-action" onclick="requireSignIn()">
-                                    <i class="bi bi-chat"></i>
-                                    <span>{{ $commentCount }}</span>
-                                </button>
-                            @endauth
-                            <div class="post-views">
-                                <i class="bi bi-eye"></i>
-                                <span>{{ $viewsCount }}</span>
-                            </div>
-                        </div>
-    
-                        @auth
-                            <div class="feed-comments">
-                                @foreach($post->comments()->approved()->latest()->take(3)->get() as $comment)
-                                    <div class="comment-item">
-                                        <strong style="color: var(--text-primary);">{{ $comment->user->full_name }}</strong>
-                                        <p style="margin-top: 2px; color: var(--text-secondary);">{{ $comment->body }}</p>
-                                    </div>
-                                @endforeach
-                                <form action="{{ route('posts.comments.store', $post->id) }}" method="POST" class="comment-form">
-                                    @csrf
-                                    <input type="text" name="body" placeholder="{{ __('Add a comment...') }}" required>
-                                    <button type="submit"><i class="bi bi-send"></i></button>
-                                </form>
-                            </div>
-                        @endauth
-                    </article>
-            @endforeach
+            <div class="feed">
+                @include('guest.partials._feed-cards', ['posts' => $posts])
 
                 @if($posts->hasPages())
                     <div style="display: flex; justify-content: center; padding-top: var(--space-2);">
@@ -436,13 +363,8 @@
 @endsection
 
 @section('scripts')
+@include('partials.feed._script')
 <script>
-    function toggleFeedComments(button) {
-        const card = button.closest('.post-card');
-        const section = card.querySelector('.feed-comments');
-        section.style.display = section.style.display === 'none' || !section.style.display ? 'block' : 'none';
-    }
-
     function requireSignIn() {
         document.getElementById('signinModal').classList.add('show');
     }

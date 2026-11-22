@@ -37,6 +37,17 @@ class SeoController extends Controller
                 $urls[] = ['loc' => route('guest.channel-detail', [$channel->organization_id, $channel->slug]), 'lastmod' => $channel->updated_at, 'priority' => '0.5', 'changefreq' => 'weekly'];
             }
 
+            $urls[] = ['loc' => route('guest.search-organizations'), 'priority' => '0.6', 'changefreq' => 'weekly'];
+
+            // Public posts: posts of public channels and posts tenants show on their page (newest first).
+            $posts = \App\Models\Post::where('status', 'published')
+                ->where(fn ($q) => $q->whereHas('channel', fn ($c) => $c->where('type', 'public')->where('status', 'active')->whereIn('organization_id', $organizations->pluck('id')))
+                    ->orWhere(fn ($t) => $t->whereNull('channel_id')->where('show_on_page', true)->whereIn('organization_id', $organizations->pluck('id'))))
+                ->latest('published_at')->limit(self::SITEMAP_LIMIT)->get(['id', 'updated_at', 'published_at']);
+            foreach ($posts as $post) {
+                $urls[] = ['loc' => route('guest.post-detail', $post->id), 'lastmod' => $post->updated_at ?? $post->published_at, 'priority' => '0.4', 'changefreq' => 'monthly'];
+            }
+
             return view('seo.sitemap', ['urls' => $urls])->render();
         });
 
@@ -45,7 +56,7 @@ class SeoController extends Controller
 
     public function robots(): Response
     {
-        $private = ['/admin', '/admin-dashboard', '/tenant', '/organizations', '/organization/', '/dashboard', '/settings', '/tickets', '/posts', '/feed', '/profile', '/collections', '/notifications', '/otp', '/qr/'];
+        $private = ['/admin', '/admin-dashboard', '/tenant', '/organizations', '/organization/', '/dashboard', '/settings', '/tickets', '/posts', '/feed', '/profile', '/collections', '/notifications', '/otp', '/qr/', '/channels/', '/browse/search?'];
 
         $lines = ['User-agent: *'];
         foreach ($private as $path) {

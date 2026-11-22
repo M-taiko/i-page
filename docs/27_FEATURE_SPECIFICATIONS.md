@@ -640,6 +640,10 @@ Define complete specifications for each feature **before** implementation. This 
 - JSON-LD (`Organization`, `WebSite`, `SoftwareApplication`).
 - Dynamic `/sitemap.xml` (landing in both languages, browse page, active organizations and their public channels, capped and cached for an hour) and dynamic `/robots.txt` that blocks private areas (`/admin`, `/tenant`, `/organizations`, `/organization`, `/dashboard`, `/settings`, `/tickets`, `/posts`) and points to the sitemap.
 - Public pages that use the classic shell or the Valex public layout fall back to the same share card when they do not set their own.
+- **Brand refresh (new logo)**: share image `images/og/ipage-share-v2.jpg` (1200×630, ~60 KB — under WhatsApp's ~300 KB limit; new file name so platforms fetch it fresh), PWA/Apple icons and `favicon.ico` regenerated from the new mark; theme color `#4f46e5`.
+- **Every public page** (`partials/seo-auto`): title, description, canonical, Open Graph + Twitter card, publisher Organization (logo) in JSON-LD; pages add their own nodes via `@section('seo_schema')` built by `App\Support\SeoSchema` — Organization + BreadcrumbList (organization), CollectionPage + breadcrumbs through the channel tree (channel), SocialMediaPosting + `og:type=article` with publish/modify times (post), WebSite + SearchAction (/browse).
+- Search results, filtered and personal views (`q`, `country`, `tab`) are `noindex,follow`; login is noindex; register is indexable with its own share card.
+- Sitemap adds the search page and the 1,000 newest public posts; robots blocks `/channels/` actions and search-result URLs.
 
 **Sections**: Hero (rotating industries, animated QR-to-phone demo), live stats (count-up), How it works, Industries marquee, Platform features, Roles, Design system, Roadmap timeline, Principles and technology, Final call to action.
 
@@ -728,8 +732,8 @@ Define complete specifications for each feature **before** implementation. This 
 **Status**: Implemented
 
 **Business Rules**:
-- **Logo**: an SVG mark — a page with a folded corner and a white "i" whose dot is a gold notification dot — next to the wordmark "i-page". `<x-brand-logo variant="full|mark" animate="none|once|loop">` renders it inline (colors follow light/dark); `public/images/brand/logo-mark.svg` is the static file (favicon, emails, standalone pages).
-- **Loader**: the animated logo loops: the page rocks left/right and grows slightly, the i bounces, and the word types itself (gold, slightly larger p), deletes and retypes — while a page loads. It appears only when navigation takes longer than ~180 ms, so fast pages never flash. Used by the mobile shell and the Valex dashboards.
+- **Logo**: an SVG mark — a document with a folded corner and a white "i" whose dot is a gold notification dot — followed by the word "Page" (capital P in gold), reading "iPage". Always rendered left-to-right, also on Arabic pages. `<x-brand-logo variant="full|mark" animate="none|once|loop">` renders it inline (colors follow light/dark); `public/images/brand/logo-mark.svg` is the static file (favicon, emails, standalone pages).
+- **Loader / everywhere**: the animated logo loops: the i bounces inside the document; "Page" types itself behind a caret; the document then slides over the word like an eraser, rubbing the letters out one by one, returns to its place, and the word types again (6 s cycle). Icon-only uses sway with the bouncing i. while a page loads. It appears only when navigation takes longer than ~180 ms, so fast pages never flash. Used by the mobile shell and the Valex dashboards.
 - **App bar**: glassy sticky bar with the page title/actions, theme toggle and, for signed-in users, a notification bell: unread badge, a dropdown of the latest notifications (icon by type, message, time, unread dot), mark one / all as read without reloading, "See all", and a light refresh every 45 s while the tab is visible (`GET /notifications/latest`).
 - **Search** (`/browse/search`): hero search box with live filtering on the server, industry-agnostic organization cards (initial, name, city/country, channel and follower counts), quick chips, animated empty state.
 - **Register** (`/register`): split layout on large screens (animated brand panel with value points) and a single column on phones; grouped fields, live password checklist and show/hide toggle.
@@ -763,6 +767,20 @@ Define complete specifications for each feature **before** implementation. This 
 - [x] Unfollow removes follow memberships only
 
 **Implementation**: migration `2026_11_22_000001_add_source_to_channel_user`, `App\Services\SubscriptionService` (join, leave, toggleBell, follow, unfollow, mainChannels), `ChannelSubscriptionController` (`POST channels/{channel}/subscribe|unsubscribe|bell`), `FollowController`, `channels/_bell` partial (channel page and Valex channel blocks). The demo seeder follows organizations through the service.
+
+---
+
+### Feature: Compact Post Card, Saved Posts, Default Collections, My Activities
+
+**Status**: Implemented
+
+**Business Rules**:
+- **One post card everywhere** (`guest/partials/_feed-cards`): /browse, /feed, /saved, organization and channel pages. Header: round avatar (organization logo or initial, verified badge on tenant posts), source name, friendly time ("Today at 08:30 AM", "Yesterday at …", "Nov 15 at …", "Nov 15, 2025"), pin marker and the ⋮ manage menu. Footer: like, comments, (views when the channel shows them), share, save. Channel display settings (author, date, reactions, comments, views, excerpt, template) still apply.
+- **Compact template** (title + 3 lines beside a rounded thumbnail; first gallery image with a +N badge) is the **default** for new posts and the first option in the template picker; former "classic" posts were switched to it. Other templates (classic, large image, gradient, spotlight) stay available.
+- **Saved posts**: the bookmark saves/unsaves a post without reloading (`post_saves`); the list is at /saved (Me → Saved posts). Only posts the user can see can be saved.
+- **Default collections**: every account starts with Education, Hotels, Supermarkets, Restaurants and Healthcare (created once at account creation; existing accounts by migration). Users add, rename, delete collections and add/remove channels freely; deleted defaults never come back.
+- **Bottom bar for members**: Home · Explore · Collections · [Scan] · My activity · Alerts · Me (icons only under 440 px, with tooltips). Guests keep Home · Explore · [Scan] · Join · Sign in.
+- **My activities** (/activity): placeholder page; its logic will be specified later.
 
 ---
 

@@ -2,6 +2,10 @@
 
 @section('title', ($post->title ?? Str::limit($post->body, 50)) . ' - i-Page')
 @section('meta_description', \Illuminate\Support\Str::limit($post->summary ?: $post->body, 180))
+@section('seo_schema', json_encode(\App\Support\SeoSchema::post($post), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
+@section('meta_type', 'article')
+@section('meta_published', $post->published_at?->toIso8601String())
+@section('meta_modified', $post->updated_at?->toIso8601String())
 @if ($postCover = $post->coverUrl())
     @section('meta_image', url($postCover))
 @endif

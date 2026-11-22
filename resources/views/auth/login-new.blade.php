@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('partials.seo', ['seo' => ['no_title' => true, 'title' => __('Sign in · i-page'), 'description' => __('Sign in to i-page to see the latest from the places you follow.'), 'url' => url()->current(), 'robots' => 'noindex,follow', 'locale' => app()->getLocale() === 'ar' ? 'ar_AR' : 'en_US']])
     <title>{{ __('Sign In') }} - i-Page</title>
 
     <!-- Design System & Components -->
@@ -248,7 +249,6 @@
                 <div class="auth-logo">
                     <x-brand-logo :height="44" />
                 </div>
-                <h1 class="auth-title">{{ __('i-Page') }}</h1>
                 <p class="auth-subtitle">{{ __('The Digital Front Door for Every Organization') }}</p>
                 <x-illustration name="discover" size="130" style="margin-top: 10px;" />
             </div>

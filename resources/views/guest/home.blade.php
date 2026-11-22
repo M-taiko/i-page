@@ -1,6 +1,7 @@
 @extends('layouts.mobile-shell')
 
-@section('title', __('i-Page') . ' - ' . ($tab === 'for-you' ? __('Your feed') : __('Discover')))
+@section('title', ($tab === 'for-you' ? __('Your feed') : __('Discover hotels, stores, schools & more')) . ' · i-page')
+@section('meta_description', __('Follow the places you love — hotels, stores, schools and more — and get their news, offers and events in one feed. Scan a QR code to join any channel.'))
 
 @section('app-bar')
     <div class="app-bar-title">

@@ -2,6 +2,7 @@
 
 @section('title', $channel->name . ' - i-Page')
 @section('meta_description', \Illuminate\Support\Str::limit($channel->description ?? __(':channel — updates from :org on i-Page.', ['channel' => $channel->name, 'org' => $organization->name]), 180))
+@section('seo_schema', json_encode(\App\Support\SeoSchema::channel($channel, $organization), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
 
 @section('app-bar')
     <a href="{{ route('guest.organization-detail', $organization) }}" class="app-bar-icon-btn" aria-label="{{ __('Back') }}">
@@ -24,6 +25,7 @@
 @endsection
 
 @section('extra-styles')
+    @include('partials.feed._styles')
     .channel-hero {
         background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
         color: white;
@@ -286,112 +288,18 @@
         .post-from { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: rgba(98,89,202,.12); color: #6259ca; text-decoration: none; }
         .post-pinned { font-size: 11px; font-weight: 800; color: #6259ca; }
     </style>
-    <div class="feed-list layout-{{ $ps['layout'] }}">
-        @forelse($posts as $post)
-            @php
-                $viewsCount = $post->receipts()->whereNotNull('first_viewed_at')->count();
-                $likeCount = $post->reactions()->where('type', 'like')->count();
-                $commentCount = $post->comments()->approved()->count();
-                $userLiked = auth()->check() && $post->reactions()->where('user_id', auth()->id())->where('type', 'like')->exists();
-                $inherited = $post->channel_id !== $channel->id;
-            @endphp
-            <article class="post-card">
-                <div class="post-header">
-                    @if ($ps['show_author'])
-                        <div class="post-avatar" style="background-color: {{ $colorFor($post->author->full_name ?? $channel->name) }};">
-                            {{ $post->author->initials ?? substr($channel->name, 0, 1) }}
-                        </div>
-                    @endif
-                    <div class="post-info">
-                        @if ($ps['show_author'])<div class="post-author">{{ $post->author->full_name ?? __('i-Page') }}</div>@endif
-                        <div class="post-meta">
-                            @if ($ps['show_date'])<span>{{ $post->published_at?->diffForHumans() }}</span>@endif
-                            @if ($post->isPinned())<span class="post-pinned">📌 {{ __('Pinned') }}</span>@endif
-                            @if ($inherited && $post->channel)
-                                <a class="post-from" href="{{ route('guest.channel-detail', [$organization, $post->channel->slug]) }}">↳ {{ __('From :channel', ['channel' => $post->channel->name]) }}</a>
-                            @elseif ($post->isTenantPost())
-                                <span class="post-from">🏢 {{ __('From :tenant', ['tenant' => $post->organization?->name]) }}</span>
-                            @endif
-                        </div>
-                    </div>
-                    @include('posts.partials._manage')
-                </div>
-
-                @include('posts.partials._content', [
-                    'post' => $post,
-                    'limit' => $ps['excerpt'],
-                    'url' => route('guest.post-detail', $post->id),
-                    'showWidgets' => $post->hasWidgets() && ($post->post_format !== 'standard' || $ps['show_reactions']),
-                    'cardStyle' => $psStyle,
-                    'hideMedia' => $ps['layout'] === 'compact',
-                    'hideReactions' => ! $ps['show_reactions'],
-                ])
-
-                @if ($ps['show_reactions'] || $ps['show_comments'] || $ps['show_views'])
-                <div class="post-footer">
-                    @auth
-                        @if ($ps['show_reactions'] && ! $post->hasWidgets())
-                        <form action="{{ route('posts.like', $post->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="post-action {{ $userLiked ? 'liked' : '' }}">
-                                <i class="bi {{ $userLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up' }}"></i>
-                                <span>{{ $likeCount }}</span>
-                            </button>
-                        </form>
-                        @endif
-                        @if ($ps['show_comments'])
-                        <button type="button" class="post-action" onclick="toggleFeedComments(this)">
-                            <i class="bi bi-chat"></i>
-                            <span>{{ $commentCount }}</span>
-                        </button>
-                        @endif
-                    @else
-                        @if ($ps['show_reactions'] && ! $post->hasWidgets())
-                        <button type="button" class="post-action" onclick="requireSignIn()">
-                            <i class="bi bi-hand-thumbs-up"></i>
-                            <span>{{ $likeCount }}</span>
-                        </button>
-                        @endif
-                        @if ($ps['show_comments'])
-                        <button type="button" class="post-action" onclick="requireSignIn()">
-                            <i class="bi bi-chat"></i>
-                            <span>{{ $commentCount }}</span>
-                        </button>
-                        @endif
-                    @endauth
-                    @if ($ps['show_views'])
-                    <div class="post-views">
-                        <i class="bi bi-eye"></i>
-                        <span>{{ $viewsCount }}</span>
-                    </div>
-                    @endif
-                </div>
-                @endif
-
-                @auth
-                    @if ($ps['show_comments'])
-                    <div class="feed-comments">
-                        @foreach($post->comments()->approved()->latest()->take(3)->get() as $comment)
-                            <div class="comment-item">
-                                <strong style="color: var(--text-primary);">{{ $comment->user->full_name }}</strong>
-                                <p style="margin-top: 2px; color: var(--text-secondary);">{{ $comment->body }}</p>
-                            </div>
-                        @endforeach
-                        <form action="{{ route('posts.comments.store', $post->id) }}" method="POST" class="comment-form">
-                            @csrf
-                            <input type="text" name="body" placeholder="{{ __('Add a comment...') }}" required>
-                            <button type="submit"><i class="bi bi-send"></i></button>
-                        </form>
-                    </div>
-                    @endif
-                @endauth
-            </article>
-        @empty
+    <div class="feed feed-list layout-{{ $ps['layout'] }}">
+        @if ($posts->isNotEmpty())
+            @include('guest.partials._feed-cards', ['posts' => $posts, 'context' => $channel, 'display' => [
+                'show_author' => $ps['show_author'], 'show_date' => $ps['show_date'], 'show_reactions' => $ps['show_reactions'],
+                'show_comments' => $ps['show_comments'], 'show_views' => $ps['show_views'], 'excerpt' => $ps['excerpt'], 'card_style' => $psStyle,
+            ]])
+        @else
             <div class="empty-feed">
                 <x-illustration name="empty" size="150" style="margin-bottom: var(--space-3);" />
                 <p>{{ __('No posts in this channel yet') }}</p>
             </div>
-        @endforelse
+        @endif
 
         @if($posts->hasPages())
             <div style="display: flex; justify-content: center; padding-top: var(--space-2);">
@@ -418,6 +326,7 @@
 @endsection
 
 @section('scripts')
+@include('partials.feed._script')
 <script>
     function requireSignIn() {
         document.getElementById('signinModal').classList.add('show');
@@ -427,10 +336,5 @@
         document.getElementById('signinModal').classList.remove('show');
     }
 
-    function toggleFeedComments(button) {
-        const card = button.closest('.post-card');
-        const section = card.querySelector('.feed-comments');
-        section.style.display = section.style.display === 'none' || !section.style.display ? 'block' : 'none';
-    }
 </script>
 @endsection

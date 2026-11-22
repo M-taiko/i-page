@@ -15,8 +15,10 @@ return [
         'rating' => ['name' => 'Rating', 'icon' => 'star', 'description' => 'Ask people to rate with 1-5 stars.'],
     ],
 
+    // The first one is the default for new posts.
     'card_styles' => [
-        'classic' => ['name' => 'Classic', 'description' => 'Plain card.'],
+        'compact' => ['name' => 'Compact', 'description' => 'Title and text beside a thumbnail — the default.'],
+        'classic' => ['name' => 'Classic', 'description' => 'Plain card, image below the text.'],
         'image' => ['name' => 'Large image', 'description' => 'Big cover image on top.'],
         'gradient' => ['name' => 'Gradient', 'description' => 'Text on a colored background.'],
         'spotlight' => ['name' => 'Spotlight', 'description' => 'Highlighted card with an accent edge.'],

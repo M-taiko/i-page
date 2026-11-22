@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 204 64" role="img" aria-label="i-page">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 64" role="img" aria-label="iPage">
     <defs>
         <linearGradient id="ipg" x1="8" y1="58" x2="56" y2="6" gradientUnits="userSpaceOnUse">
             <stop offset="0" stop-color="#4338ca"/>
@@ -14,5 +14,5 @@
     <path d="M38 6 V18 a4 4 0 0 0 4 4 H54 Z" fill="#fff" fill-opacity=".38"/>
     <rect x="27" y="28" width="10" height="21" rx="5" fill="#fff"/>
     <circle cx="32" cy="18.5" r="5.5" fill="#fbbf24"/>
-    <text x="66" y="45" font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="35" font-weight="800" letter-spacing="-1" fill="url(#ipt)">i-<tspan fill="#fbbf24" font-size="41">p</tspan>age</text>
+    <text y="46" font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="800"><tspan x="67" font-size="42" fill="#fbbf24">P</tspan><tspan font-size="36" fill="url(#ipt)">age</tspan></text>
 </svg>

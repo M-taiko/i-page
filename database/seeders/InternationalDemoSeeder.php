@@ -38,7 +38,7 @@ class InternationalDemoSeeder extends Seeder
     private array $visitors = [];
     /** Posts to fill with interactions: [Post, sector, private, team ids]. */
     private array $postMeta = [];
-    private array $cardStyles = ['classic', 'classic', 'gradient', 'spotlight'];
+    private array $cardStyles = ['compact', 'compact', 'compact', 'gradient', 'spotlight'];
 
     public function run(): void
     {
@@ -54,6 +54,7 @@ class InternationalDemoSeeder extends Seeder
 
         $this->interactions();
         $this->notifications();
+        $this->collections();
         $this->preferences();
         $this->writeAccounts();
     }
@@ -323,7 +324,7 @@ class InternationalDemoSeeder extends Seeder
             'channel_id' => null, 'organization_id' => $org->id, 'author_id' => $author->id,
             'title' => $title, 'summary' => Str::limit($body, 120), 'body' => $body,
             'post_type' => 'announcement', 'post_format' => 'standard',
-            'card_style' => $private ? 'classic' : $this->cardStyles[mt_rand(0, count($this->cardStyles) - 1)],
+            'card_style' => $private ? 'compact' : $this->cardStyles[mt_rand(0, count($this->cardStyles) - 1)],
             'priority' => 'medium', 'language' => 'en', 'audience' => 'all', 'status' => 'published',
             'options' => $options, 'published_at' => $published, 'created_at' => $published, 'updated_at' => $published,
         ]);
@@ -426,6 +427,33 @@ class InternationalDemoSeeder extends Seeder
             ->whereRaw('MOD(id, 10) < 7')->update(['read_at' => DB::raw('DATE_ADD(created_at, INTERVAL 3 HOUR)')]);
 
         $this->command?->info('Notifications: ' . DB::table('notifications')->count() . ' (' . DB::table('notifications')->whereNull('read_at')->count() . ' unread).');
+    }
+
+    /**
+     * Default collections for every account (model events are off while seeding), and each visitor's
+     * subscribed main/branch channels filed by sector: hotels → Hotels, markets → Supermarkets, schools → Education.
+     */
+    public function collections(): void
+    {
+        $defaults = app(\App\Services\DefaultCollections::class);
+        $bySector = ['hotel' => 'Hotels', 'market' => 'Supermarkets', 'school' => 'Education'];
+        $sectorOf = collect(C::TENANTS)->mapWithKeys(fn ($t, $slug) => [$slug => $t['sector']]);
+        $orgSector = \App\Models\Organization::pluck('slug', 'id')->map(fn ($slug) => $sectorOf[$slug] ?? null);
+
+        User::query()->each(function (User $user) use ($defaults, $bySector, $orgSector) {
+            $defaults->createFor($user);
+            if (! str_ends_with($user->email, '@demo.test')) {
+                return;
+            }
+            $collections = $user->collections()->get()->keyBy('name');
+            $channels = Channel::whereIn('id', DB::table('channel_user')->where('user_id', $user->id)->where('status', 'approved')->select('channel_id'))
+                ->where('type', 'public')->get(['id', 'organization_id']);
+            foreach ($channels->groupBy(fn ($c) => $bySector[$orgSector[$c->organization_id] ?? ''] ?? null) as $name => $group) {
+                if ($name && isset($collections[$name])) {
+                    $collections[$name]->channels()->syncWithoutDetaching($group->pluck('id')->take(12)->all());
+                }
+            }
+        });
     }
 
     /** People who can see a post: subscribers of its receiving channels, the tenant's followers for page posts, plus the team. */

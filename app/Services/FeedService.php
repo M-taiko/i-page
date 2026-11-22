@@ -99,16 +99,24 @@ class FeedService
     /** Eager loads and counters the feed cards need, then one page of results. */
     public function page(Builder $query, ?User $user, array $appends = []): Paginator
     {
-        return $query->where('status', 'published')
+        return $this->decorate($query->where('status', 'published'), $user)
+            ->simplePaginate(self::PAGE_SIZE)
+            ->appends($appends);
+    }
+
+    /** What a post card shows: relations, counters, and whether the viewer liked / saved it. */
+    public function decorate(Builder $query, ?User $user): Builder
+    {
+        return $query
             ->with(['author', 'channel.organization', 'organization', 'media', 'pollOptions'])
             ->withCount([
                 'reactions as like_count',
                 'comments as comment_count' => fn ($c) => $c->where('status', 'approved'),
                 'receipts as views_count' => fn ($r) => $r->whereNotNull('first_viewed_at'),
             ])
-            ->when($user, fn ($q) => $q->withExists(['reactions as user_liked' => fn ($r) => $r->where('user_id', $user->id)]))
-            ->simplePaginate(self::PAGE_SIZE)
-            ->appends($appends);
+            ->when($user, fn ($q) => $q
+                ->withExists(['reactions as user_liked' => fn ($r) => $r->where('user_id', $user->id)])
+                ->withExists(['savers as user_saved' => fn ($s) => $s->where('users.id', $user->id)]));
     }
 
     public function recordViews(iterable $posts, ?User $user): void

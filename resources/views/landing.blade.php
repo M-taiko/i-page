@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @include('partials.seo')
-    <meta name="theme-color" content="#6259ca">
+    <meta name="theme-color" content="#4f46e5">
     <link rel="icon" href="{{ asset('images/brand/logo-mark.svg') }}" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -279,7 +279,7 @@
 
 <nav class="top">
     <div class="wrap">
-        <a href="{{ url('/') }}" class="brand"><img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page"> i-Page</a>
+        <a href="{{ url('/') }}" class="brand" aria-label="iPage"><x-brand-logo :height="38" /></a>
         <div class="links" id="links">
             <a href="#how">{{ $t['nav']['how'] }}</a>
             <a href="#features">{{ $t['nav']['features'] }}</a>
@@ -331,7 +331,7 @@
                     <div class="scr scr1">
                         <b>{{ $t['hero']['scan'] }}</b>
                         <div class="qrbox"><div class="corner a"></div><div class="corner b"></div><div class="corner c"></div><div class="corner d"></div><div id="qr"></div><div class="beam"></div></div>
-                        <small style="opacity:.7">i-Page</small>
+                        <x-brand-logo :height="24" />
                     </div>
                     <div class="scr scr2">
                         <div class="mhead"><div class="mav">{{ mb_substr($t['hero']['phone_org'], 0, 1) }}</div><div><b style="font-size:14px">{{ $t['hero']['phone_org'] }}</b><div style="font-size:11px;color:#64748b">● online</div></div></div>

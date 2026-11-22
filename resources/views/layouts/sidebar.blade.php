@@ -3,9 +3,8 @@
     <div class="p-4">
         <!-- Logo & Title -->
         <div class="d-flex align-items-center mb-4">
-            <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page" style="width: 32px; height: 32px; margin-inline-end: 0.5rem;">
             <div>
-                <h5 class="mb-0 text-white">IPAGE</h5>
+                <x-brand-logo :height="32" style="--bl-ink-1: #fff; --bl-ink-2: #e0e7ff;" />
                 <small class="text-light">Organization Hub</small>
             </div>
         </div>

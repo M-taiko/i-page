@@ -261,11 +261,8 @@
 <aside class="sidebar-modern" id="sidebarModern">
     <!-- Header -->
     <div class="sidebar-header">
-        <div class="sidebar-logo">
-            <img src="{{ asset('images/brand/logo-mark.svg') }}" alt="i-Page" style="width: 100%; height: 100%; object-fit: contain;">
-        </div>
         <div>
-            <h3 class="sidebar-title">IPAGE</h3>
+            <x-brand-logo :height="34" />
             <p class="sidebar-subtitle">Discover</p>
         </div>
     </div>

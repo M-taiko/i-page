@@ -96,6 +96,13 @@ Route::prefix('api')->name('api.')->group(function () {
 });
 
 // Comment Routes
+// Saved posts (bookmark) and the member's activity page (docs/27)
+Route::middleware('auth')->group(function () {
+    Route::get('/saved', [\App\Http\Controllers\SavedPostController::class, 'index'])->name('saved.index');
+    Route::post('/posts/{post}/save', [\App\Http\Controllers\SavedPostController::class, 'toggle'])->name('saved.toggle');
+    Route::get('/activity', fn () => view('activity.index'))->name('activity.index');
+});
+
 Route::middleware('auth')->prefix('posts')->name('posts.')->group(function () {
     Route::post('{post}/comments', [\App\Http\Controllers\CommentController::class, 'store'])->name('comments.store');
     Route::post('comments/{comment}/approve', [\App\Http\Controllers\CommentController::class, 'approve'])->name('comments.approve');

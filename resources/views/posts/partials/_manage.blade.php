@@ -26,7 +26,7 @@
 </style>
 @endonce
 <details class="pm">
-    <summary aria-label="{{ __('Post actions') }}">⋯</summary>
+    <summary aria-label="{{ __('Post actions') }}"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="8" cy="3" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="8" cy="13" r="1.6"/></svg></summary>
     <div class="pm-menu">
         @if ($mTenant)
             <form action="{{ route('organizations.posts.pin', $post->id) }}" method="POST">

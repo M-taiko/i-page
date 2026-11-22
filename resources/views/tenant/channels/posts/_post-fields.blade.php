@@ -110,7 +110,7 @@
                 <div class="col-6 col-md-3 mb-2">
                     <label class="card h-100 mb-0" style="cursor:pointer">
                         <div class="card-body py-3">
-                            <input type="radio" name="card_style" value="{{ $key }}" @checked(old('card_style', 'classic') === $key)>
+                            <input type="radio" name="card_style" value="{{ $key }}" @checked(old('card_style', array_key_first($styles)) === $key)>
                             <strong>{{ __($s['name']) }}</strong>
                             <div class="small text-muted">{{ __($s['description']) }}</div>
                         </div>

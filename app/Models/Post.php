@@ -99,6 +99,12 @@ class Post extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    /** People who saved (bookmarked) this post. */
+    public function savers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'post_saves')->withTimestamps();
+    }
+
     public function receipts(): HasMany
     {
         return $this->hasMany(PostReceipt::class);
@@ -293,6 +299,23 @@ class Post extends Model
         $ends = $this->option('poll.ends_at');
 
         return $ends && \Illuminate\Support\Carbon::parse($ends)->isPast();
+    }
+
+    /** Friendly time for cards: "Today at 08:30 AM", "Yesterday at …", "Nov 15 at …", or "Nov 15, 2025". */
+    public function whenLabel(): string
+    {
+        $at = $this->published_at ?? $this->created_at;
+        if (! $at) {
+            return '';
+        }
+        $time = $at->translatedFormat('h:i A');
+
+        return match (true) {
+            $at->isToday() => __('Today at :time', ['time' => $time]),
+            $at->isYesterday() => __('Yesterday at :time', ['time' => $time]),
+            $at->isCurrentYear() => __(':date at :time', ['date' => $at->translatedFormat('M j'), 'time' => $time]),
+            default => $at->translatedFormat('M j, Y'),
+        };
     }
 
     public function scopePublished($query)

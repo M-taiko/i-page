@@ -11,6 +11,26 @@
         document.querySelectorAll('[data-daytime]').forEach(el => { el.toggleAttribute('hidden', (el.dataset.daytime === 'day') !== day); });
     })();
 
+
+    /* Save (bookmark) a post without reloading. */
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('[data-save-url]');
+        if (!btn || btn.disabled) return;
+        e.preventDefault();
+        btn.disabled = true;
+        try {
+            const res = await fetch(btn.dataset.saveUrl, { method: 'POST', credentials: 'same-origin',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' } });
+            if (!res.ok) throw new Error(res.status);
+            const saved = (await res.json()).saved;
+            btn.classList.toggle('is-on', saved);
+            btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+            btn.dataset.tip = saved ? '{{ __('Saved') }}' : '{{ __('Save') }}';
+            btn.querySelector('i').className = 'bi ' + (saved ? 'bi-bookmark-fill' : 'bi-bookmark');
+        } catch (err) { /* keep the current state */ }
+        finally { btn.disabled = false; }
+    });
+
     function toggleFeedComments(button) {
         const box = button.closest('.fc').querySelector('.fc-comments');
         if (!box) return;

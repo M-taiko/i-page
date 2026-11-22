@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('partials.seo', ['seo' => ['no_title' => true, 'title' => __('Create your free i-page account'), 'description' => __('Join i-page to follow hotels, stores, schools and more — and get their news, offers and events in one feed.'), 'url' => url()->current(), 'robots' => 'index,follow,max-image-preview:large', 'locale' => app()->getLocale() === 'ar' ? 'ar_AR' : 'en_US']])
     <title>{{ __('Create Account') }} - i-Page</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/logo-mark.svg') }}">
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');</script>

@@ -116,3 +116,31 @@
         .hero-stat { padding: 4px 9px; font-size: 11px; }
         .hero-stat b { font-size: 12px; }
     }
+
+    /* Post card, compact look (docs/27): round avatar, clean header, light footer with save. */
+    .fc { border-radius: 20px; }
+    .fc-head { padding: 14px 14px 10px 16px; }
+    .fc-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: visible; background: var(--av); box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--av) 70%, transparent); }
+    .fc-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .fc-source { font-size: 15.5px; }
+    .fc-meta { font-size: 12.5px; }
+    .fc-org { color: var(--text-tertiary); font-weight: 500; }
+    .fc-org::before { content: '·'; margin-inline-end: 5px; }
+    .fc-tools { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; flex: 0 0 auto; }
+    .fc-pin { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--primary-600, #4f46e5) 12%, transparent); color: var(--primary-600, #4f46e5); font-size: 15px; }
+    .fc-tools .pm { margin-inline-start: 0; }
+    .fc-tools .pm > summary { width: 34px; height: 34px; border-radius: 10px; }
+    .fc-actions { gap: 4px; padding: 6px 10px 10px; border-top: 1px solid color-mix(in srgb, var(--surface-border) 60%, transparent); margin: 0 6px; }
+    .fc-btn { background: none; padding: 7px 10px; font-size: 14px; color: var(--text-secondary); }
+    .fc-btn i { font-size: 18px; }
+    .fc-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+    .fc-btn.is-on { background: none; color: var(--primary-600, #4f46e5); }
+    .fc-spacer { flex: 1; }
+    .fc-views { margin-inline-start: 4px; }
+    .fc-icon { width: 36px; height: 36px; border: 0; border-radius: 10px; background: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 18px; transition: background .15s, color .15s, transform .15s; }
+    .fc-icon:hover { background: var(--surface-hover); color: var(--text-primary); }
+    .fc-icon:active { transform: scale(.92); }
+    .fc-save.is-on { color: var(--primary-600, #4f46e5); }
+    .fc-save.is-on i { animation: fcPop .45s cubic-bezier(.34, 1.56, .64, 1); }
+    .fc-body .pf-badges { padding-top: 0; }
+    @media (prefers-reduced-motion: reduce) { .fc-save.is-on i { animation: none; } }

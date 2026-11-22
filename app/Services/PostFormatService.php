@@ -75,7 +75,7 @@ class PostFormatService
         ];
 
         $post->post_format = $format;
-        $post->card_style = $data['card_style'] ?? 'classic';
+        $post->card_style = $data['card_style'] ?? array_key_first(config('posts.card_styles'));
         $post->priority = $data['priority'] ?? 'medium';
         $post->badge_key = $data['badge_key'] ?? null;
         $post->badge_label = ($data['badge_key'] ?? null) ? ($data['badge_label'] ?? null) : null;

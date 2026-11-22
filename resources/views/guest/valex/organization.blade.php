@@ -2,6 +2,7 @@
 
 @section('title', $organization->name)
 @section('meta_description', \Illuminate\Support\Str::limit($organization->description ?: __('Follow :name on i-Page for news, announcements and updates.', ['name' => $organization->name]), 180))
+@section('seo_schema', json_encode(\App\Support\SeoSchema::organization($organization), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))
 @php
     $ogCover = \App\Support\Designs::coverPaths($organization->design_options ?? [])[0] ?? null;
 @endphp

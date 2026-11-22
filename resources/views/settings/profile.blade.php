@@ -293,7 +293,8 @@
         @if ($dashUrl)
             <a href="{{ $dashUrl }}" class="me-link"><span class="me-link-ic" style="--c: #4557f5;"><i class="bi bi-speedometer2"></i></span>{{ __('Dashboard') }}</a>
         @endif
-        <a href="{{ route('collections.index') }}" class="me-link"><span class="me-link-ic" style="--c: #db2777;"><i class="bi bi-bookmark-heart"></i></span>{{ __('Collections') }}</a>
+        <a href="{{ route('collections.index') }}" class="me-link"><span class="me-link-ic" style="--c: #db2777;"><i class="bi bi-collection"></i></span>{{ __('Collections') }}</a>
+        <a href="{{ route('saved.index') }}" class="me-link"><span class="me-link-ic" style="--c: #4f46e5;"><i class="bi bi-bookmark-fill"></i></span>{{ __('Saved posts') }}</a>
         <a href="{{ route('guest.home') }}" class="me-link"><span class="me-link-ic" style="--c: #059669;"><i class="bi bi-house-heart"></i></span>{{ __('My feed') }}</a>
         <button type="button" class="me-link" onclick="toggleShellTheme()"><span class="me-link-ic" style="--c: #d97706;"><i class="bi bi-circle-half"></i></span>{{ __('Theme') }}</button>
     </div>

@@ -1,9 +1,10 @@
 {{-- Post title/body/media/badges in the post's card style (ADR-013).
      Expects $post. Optional: $limit (truncate body), $url (link title and text), $showWidgets (render interactions),
-     $cardStyle (channel override, ADR-014), $hideMedia (compact layouts), $hideReactions. --}}
+     $cardStyle (channel override, ADR-014), $hideMedia (compact layouts), $hideReactions.
+     "compact" (the default template): title and text beside a thumbnail. --}}
 @include('posts.partials._styles')
 @php
-    $style = ($cardStyle ?? null) ?: ($post->card_style ?: 'classic');
+    $style = ($cardStyle ?? null) ?: ($post->card_style ?: 'compact');
     $hideMedia = $hideMedia ?? false;
     $badge = $post->badge();
     $accent = $badge['color'] ?? null;
@@ -11,6 +12,9 @@
     $formats = config('posts.formats');
     $text = ($limit ?? null) ? Str::limit($post->body, $limit) : $post->body;
     $url = $url ?? null;
+    // Compact cards show one thumbnail (the first image, with a +N badge for galleries) instead of the media block.
+    $thumb = $style === 'compact' && ! $hideMedia ? $post->coverUrl() : null;
+    $extraImages = $thumb ? max(0, $post->galleryImages()->count() - 1) : 0;
 @endphp
 <div class="pf-content pf-style-{{ $style }}" @if ($accent) style="--pf-accent: {{ $accent }}" @endif>
     @if ($badge || in_array($post->priority, ['high', 'critical'], true) || $format !== 'standard')
@@ -25,22 +29,37 @@
         </div>
     @endif
 
-    @if ($style === 'image' && ! $hideMedia)
-        @include('posts.partials._media')
-    @endif
-
-    @if ($style === 'gradient')
-        <div class="pf-text">
-            @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif
-            <div class="pf-body">{{ $text }}</div>
+    @if ($style === 'compact')
+        <div class="pf-row {{ $thumb ? 'has-thumb' : '' }}">
+            <div class="pf-row-text">
+                @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif
+                @if ($text)<div class="pf-body">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $text }}</a>@else{{ $text }}@endif</div>@endif
+            </div>
+            @if ($thumb)
+                @if ($url)<a href="{{ $url }}" class="pf-thumb" tabindex="-1" aria-hidden="true">@else<span class="pf-thumb">@endif
+                    <img src="{{ $thumb }}" alt="" loading="lazy">
+                    @if ($extraImages)<span class="pf-thumb-more">+{{ $extraImages }}</span>@endif
+                @if ($url)</a>@else</span>@endif
+            @endif
         </div>
     @else
-        @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif
-        @if ($text)<div class="pf-body">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $text }}</a>@else{{ $text }}@endif</div>@endif
-    @endif
+        @if ($style === 'image' && ! $hideMedia)
+            @include('posts.partials._media')
+        @endif
 
-    @if ($style !== 'image' && ! $hideMedia)
-        @include('posts.partials._media')
+        @if ($style === 'gradient')
+            <div class="pf-text">
+                @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif
+                <div class="pf-body">{{ $text }}</div>
+            </div>
+        @else
+            @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif
+            @if ($text)<div class="pf-body">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $text }}</a>@else{{ $text }}@endif</div>@endif
+        @endif
+
+        @if ($style !== 'image' && ! $hideMedia)
+            @include('posts.partials._media')
+        @endif
     @endif
 
     @if ($showWidgets ?? false)

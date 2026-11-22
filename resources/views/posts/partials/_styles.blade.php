@@ -13,6 +13,22 @@
     .pf-title { font-weight: 700; font-size: 16px; padding: 0 16px 6px; line-height: 1.4; }
     .pf-content a.pf-link { color: inherit; text-decoration: none; display: block; }
 
+    /* Compact (default template): bold title and a few lines of text beside a rounded thumbnail. */
+    .pf-row { display: flex; align-items: flex-start; gap: 14px; padding: 0 16px 12px; }
+    .pf-row-text { flex: 1; min-width: 0; }
+    .pf-style-compact .pf-title { padding: 0 0 4px; font-size: 17px; font-weight: 800; line-height: 1.3; letter-spacing: -.01em;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .pf-style-compact .pf-body { padding: 0; font-size: 14px; line-height: 1.5; white-space: normal; opacity: .82;
+        display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .pf-row.has-thumb .pf-body { -webkit-line-clamp: 3; }
+    .pf-thumb { position: relative; flex: 0 0 38%; max-width: 190px; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; display: block; background: rgba(100,116,139,.12); }
+    .pf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .35s ease; }
+    .pf-thumb:hover img { transform: scale(1.05); }
+    .pf-thumb-more { position: absolute; inset-inline-end: 6px; bottom: 6px; padding: 1px 8px; border-radius: 999px; background: rgba(15,23,42,.7); color: #fff; font-size: 11.5px; font-weight: 700; }
+    @media (min-width: 640px) { .pf-thumb { max-width: 210px; } }
+    @media (max-width: 380px) { .pf-thumb { flex-basis: 34%; } .pf-style-compact .pf-title { font-size: 16px; } }
+    @media (prefers-reduced-motion: reduce) { .pf-thumb img { transition: none; } }
+
     .pf-style-image .pf-media img.pf-single, .pf-style-image .pf-carousel { max-height: 360px; }
     .pf-style-gradient .pf-text { margin: 0 16px 12px; padding: 22px 20px; border-radius: 14px; color: #fff;
         background: linear-gradient(135deg, var(--pf-accent), #1e293b); }

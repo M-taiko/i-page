@@ -14,6 +14,12 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
+    /** New accounts start with the default collections (Education, Hotels, Supermarkets…), docs/27. */
+    protected static function booted(): void
+    {
+        static::created(fn (User $user) => app(\App\Services\DefaultCollections::class)->createFor($user));
+    }
+
     public const PROFILE_LEVEL_BASIC = 'basic';
     public const PROFILE_LEVEL_PRIVATE = 'private';
     public const PROFILE_LEVEL_BUSINESS = 'business';
@@ -288,6 +294,12 @@ class User extends Authenticatable
     public function comments()
     {
         return $this->hasMany(Comment::class);
+    }
+
+    /** Posts this user saved with the bookmark. */
+    public function savedPosts()
+    {
+        return $this->belongsToMany(Post::class, 'post_saves')->withTimestamps();
     }
 
     public function followedOrganizations()

@@ -142,7 +142,7 @@ class GuestController extends Controller
                 ->orWhere(fn ($t) => $t->whereNull('channel_id')->where('organization_id', $organization->id)
                     ->whereNotNull('placement')->where('show_on_page', true)))
             ->where('status', 'published')
-            ->with('author', 'channel', 'organization', 'media')
+            ->tap(fn ($q) => app(FeedService::class)->decorate($q, auth()->user()))
             // Pinned first, then the tenant's own posts, then channel posts — newest first in each group.
             ->orderByRaw('CASE WHEN pinned_until > ? THEN 0 WHEN channel_id IS NULL THEN 1 ELSE 2 END', [now()])
             ->latest('published_at')
@@ -179,7 +179,7 @@ class GuestController extends Controller
         // Own posts + posts cascading from parent channels (ADR-014).
         $posts = $channel->feedQuery()
             ->where('status', 'published')
-            ->with(['author', 'channel', 'organization', 'media'])
+            ->tap(fn ($q) => app(FeedService::class)->decorate($q, auth()->user()))
             ->latest('published_at')
             ->paginate(20)
             ->withQueryString();

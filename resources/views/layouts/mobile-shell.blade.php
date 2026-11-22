@@ -3,8 +3,9 @@
 <head>
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/logo-mark.svg') }}">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
-    <meta name="theme-color" content="#2563eb">
-    <link rel="apple-touch-icon" href="{{ asset('images/pwa/apple-touch-icon.png') }}">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="{{ asset('images/pwa/apple-touch-icon.png') }}?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/brand/favicon-32.png') }}?v=2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
@@ -168,6 +169,13 @@
             transition: transform .32s cubic-bezier(.2, .8, .2, 1), opacity .32s ease;
         }
         .bottom-nav-wrap.is-hidden { transform: translateY(calc(100% + 16px)); opacity: 0; }
+        .bottom-nav.is-member { grid-template-columns: repeat(7, 1fr); max-width: 560px; }
+        @media (max-width: 440px) {
+            .bottom-nav.is-member .bn-label { display: none; }
+            .bottom-nav.is-member .bn-item { min-height: 46px; }
+            .bottom-nav.is-member .bn-center { padding-bottom: 2px; }
+            .bottom-nav.is-member .bn-fab { width: 52px; height: 52px; margin-top: -24px; }
+        }
         .bottom-nav {
             pointer-events: auto;
             max-width: 460px; margin: 0 auto;
@@ -302,17 +310,24 @@
                 'home' => request()->routeIs('guest.home', 'user.feed'),
                 'explore' => request()->routeIs('guest.search-organizations', 'user.explore-organizations', 'user.explore-channels', 'user.explore-people'),
                 'alerts' => request()->routeIs('user.notifications'),
-                'me' => request()->routeIs('profile.settings', 'collections.*'),
+                'collections' => request()->routeIs('collections.*'),
+                'activity' => request()->routeIs('activity.*'),
+                'me' => request()->routeIs('profile.settings', 'saved.*'),
             ];
         @endphp
         <div class="bottom-nav-wrap" id="bottomNav">
-            <nav class="bottom-nav" aria-label="{{ __('Main navigation') }}">
-                <a href="{{ route('guest.home') }}" class="bn-item {{ $nav['home'] ? 'active' : '' }}" @if ($nav['home']) aria-current="page" @endif>
+            <nav class="bottom-nav {{ auth()->check() ? 'is-member' : '' }}" aria-label="{{ __('Main navigation') }}">
+                <a href="{{ route('guest.home') }}" class="bn-item {{ $nav['home'] ? 'active' : '' }}" @if ($nav['home']) aria-current="page" @endif data-tip="{{ __('Home') }}">
                     <i class="bi {{ $nav['home'] ? 'bi-house-door-fill' : 'bi-house-door' }}"></i><span class="bn-label">{{ __('Home') }}</span>
                 </a>
-                <a href="{{ auth()->check() ? route('user.explore-organizations') : route('guest.search-organizations') }}" class="bn-item {{ $nav['explore'] ? 'active' : '' }}" @if ($nav['explore']) aria-current="page" @endif>
+                <a href="{{ auth()->check() ? route('user.explore-organizations') : route('guest.search-organizations') }}" class="bn-item {{ $nav['explore'] ? 'active' : '' }}" @if ($nav['explore']) aria-current="page" @endif data-tip="{{ __('Explore') }}">
                     <i class="bi {{ $nav['explore'] ? 'bi-compass-fill' : 'bi-compass' }}"></i><span class="bn-label">{{ __('Explore') }}</span>
                 </a>
+                @auth
+                    <a href="{{ route('collections.index') }}" class="bn-item {{ $nav['collections'] ? 'active' : '' }}" @if ($nav['collections']) aria-current="page" @endif data-tip="{{ __('Collections') }}" aria-label="{{ __('Collections') }}">
+                        <i class="bi {{ $nav['collections'] ? 'bi-collection-fill' : 'bi-collection' }}"></i><span class="bn-label">{{ __('Collections') }}</span>
+                    </a>
+                @endauth
                 <div class="bn-center">
                     <button type="button" class="bn-fab" onclick="openQrModal()" aria-label="{{ __('Scan a QR code') }}">
                         <i class="bi bi-qr-code-scan"></i>
@@ -320,6 +335,9 @@
                     <span class="bn-label" aria-hidden="true">{{ __('Scan') }}</span>
                 </div>
                 @auth
+                    <a href="{{ route('activity.index') }}" class="bn-item {{ $nav['activity'] ? 'active' : '' }}" @if ($nav['activity']) aria-current="page" @endif data-tip="{{ __('My activity') }}" aria-label="{{ __('My activity') }}">
+                        <i class="bi bi-activity"></i><span class="bn-label">{{ __('Activity') }}</span>
+                    </a>
                     @php $bnUnread = auth()->user()->notifications()->whereNull('read_at')->count(); @endphp
                     <a href="{{ route('user.notifications') }}" class="bn-item {{ $nav['alerts'] ? 'active' : '' }}" @if ($nav['alerts']) aria-current="page" @endif
                        aria-label="{{ __('Alerts') }}{{ $bnUnread ? ' (' . $bnUnread . ')' : '' }}">

@@ -45,7 +45,7 @@ class LandingController extends Controller
         $t = config("landing.$lang.seo");
         $home = rtrim(url('/'), '/') . '/';
         $canonical = $lang === 'ar' ? $home : $home . '?lang=en';
-        $image = asset('images/og/ipage-share.jpg');
+        $image = asset('images/og/ipage-share-v3.jpg');
 
         return [
             'title' => $t['title'],
