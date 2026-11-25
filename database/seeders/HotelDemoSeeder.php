@@ -25,11 +25,12 @@ class HotelDemoSeeder extends Seeder
             throw new \RuntimeException('Hotel demo accounts are only allowed in local/testing environments.');
         }
         if (User::withTrashed()->exists() || Organization::withTrashed()->exists()) {
-            throw new \RuntimeException('HotelDemoSeeder requires an empty database; it never deletes existing data.');
+            $this->presentation();
+            return;
         }
         $this->password = Hash::make('123456789');
         DB::transaction(function () {
-            $this->person('superadmin@ipage.test', 'Platform', 'Admin', 'super_admin', 'Platform administrator');
+            $this->person('donia.a5ra2019@gmail.com', 'Donia', 'Admin', 'super_admin', 'Platform administrator');
             $this->organization = Organization::create([
                 'name'=>'Hilton', 'slug'=>'hilton-demo',
                 'organization_template_id'=>OrganizationTemplate::where('key','hotel')->sole()->id,
@@ -103,12 +104,62 @@ class HotelDemoSeeder extends Seeder
             $this->grant($cairo['housekeeping'],$viewer,'member',[], 'pending');
             foreach (User::all() as $user) app(DefaultCollections::class)->createFor($user);
         });
+        $this->presentation();
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         $file = fopen(storage_path('app/hotel-demo-accounts.csv'), 'w');
         fputcsv($file,['Email','Global role','Scope']);
         foreach ($this->accounts as $row) fputcsv($file,$row);
         fclose($file);
         $this->command?->info('Hotel demo created: 2 countries, 4 hotels; accounts in storage/app/hotel-demo-accounts.csv. Local demo password: 123456789');
+    }
+
+    private function presentation(): void
+    {
+        DB::transaction(function () {
+            $org = Organization::where('slug', 'hilton-demo')->firstOrFail();
+            $password = Hash::make('123456789');
+            $make = function ($email, $first, $last, $role) use ($password) {
+                $user = User::firstOrNew(['email'=>$email]);
+                if (!$user->exists) $user->forceFill(['ipage_id'=>'IP'.Str::upper(Str::random(12)), 'username'=>Str::before($email,'@'), 'first_name'=>$first, 'last_name'=>$last, 'profile_level'=>'basic', 'language'=>'en']);
+                $user->forceFill(['password'=>$password, 'email_verified_at'=>now()])->save();
+                $user->assignRole($role);
+                return $user;
+            };
+            $make('donia.a5ra2019@gmail.com','Donia','Admin','super_admin');
+            $admin=$make('admin@hilton.test','Mona','Hassan','organization_admin');
+            OrganizationMembership::updateOrCreate(['organization_id'=>$org->id,'user_id'=>$admin->id],['role'=>'organization_admin','status'=>'active','joined_date'=>now()->subMonths(3)]);
+            $names=['Ahmed','Nour','Salma','Omar','Laila','Youssef','Hana','Karim','Mariam','Adam'];
+            $guests=[];
+            for($i=1;$i<=40;$i++) $guests[]=$make('hotel.guest'.$i.'@demo.test',$names[($i-1)%10],['Hassan','Ali','Mansour','Adel'][($i-1)%4],'member');
+            $topics=[
+                ['Breakfast with a view','Start your morning with fresh pastries, seasonal fruit and a relaxed breakfast overlooking the gardens.'],
+                ['A quieter afternoon by the pool','Take a break, enjoy the sunshine and share your favourite poolside moment with us.'],
+                ['Discover local flavours','Our chefs are preparing a selection inspired by local recipes. Which dish would you like to try?'],
+                ['Your weekend escape','Enjoy a relaxed weekend with good food, welcoming spaces and time for the people who matter.'],
+                ['A little time for yourself','Explore a calmer side of your stay with our spa and wellness experiences.'],
+                ['Family moments','We are planning activities for all ages. Tell us what would make your family stay special.'],
+                ['Meet the people behind your stay','Thank you to our reception and housekeeping teams for the care they bring to every guest experience.'],
+                ['An evening to remember','Join the conversation and share your favourite moments from your stay.'],
+            ];
+            $comments=['The breakfast selection looks wonderful.','Is this suitable for families with young children?','We enjoyed our last visit and would love to return.','The team made us feel very welcome. Thank you!','Could you share the available times?','The garden is our favourite place to relax.','Looking forward to trying this on our next stay.','A lovely idea for the weekend.'];
+            foreach(Channel::where('organization_id',$org->id)->where('type','public')->get() as $channel){
+                $manager=$make('channel.'.$channel->id.'@hilton.test','Channel','Manager','staff');
+                OrganizationMembership::updateOrCreate(['organization_id'=>$org->id,'user_id'=>$manager->id],['role'=>'staff','status'=>'active','joined_date'=>now()->subMonths(2)]);
+                $channel->users()->syncWithoutDetaching([$manager->id=>['role'=>'admin','status'=>'approved','can_post'=>true,'can_edit'=>true,'can_delete'=>true,'joined_at'=>now()]]);
+                foreach($guests as $g) $channel->users()->syncWithoutDetaching([$g->id=>['role'=>'member','status'=>'approved','joined_at'=>now()]]);
+                for($n=0;$n<16;$n++){
+                    [$title,$body]=$topics[$n%8]; $title.=' · '.($n<8?'This week':'Next week');
+                    $post=Post::firstOrCreate(['channel_id'=>$channel->id,'title'=>$title,'author_id'=>$manager->id],['organization_id'=>$org->id,'summary'=>$body,'body'=>$body,'status'=>'published','published_at'=>now()->subDays(16-$n),'post_type'=>'announcement','post_format'=>'standard','card_style'=>['classic','spotlight','gradient'][$n%3],'language'=>'en','audience'=>'channel','cascade'=>false,'options'=>['reactions'=>['like','love','celebrate']]]);
+                    foreach(array_slice($guests,0,8+$n%19) as $j=>$guest){
+                        $post->reactions()->firstOrCreate(['user_id'=>$guest->id],['type'=>['like','love','celebrate'][$j%3]]);
+                        if($j<3+$n%5) $post->comments()->firstOrCreate(['user_id'=>$guest->id,'body'=>$comments[($j+$n)%8]]);
+                        $post->receipts()->firstOrCreate(['user_id'=>$guest->id],['delivered_at'=>now()->subHours(3),'first_viewed_at'=>now()->subHours(2),'read_at'=>now()->subHour()]);
+                    }
+                }
+            }
+        });
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->command?->info('Hotel presentation data ready. All created demo accounts use 123456789. Interactions are simulated demo data.');
     }
 
     private function person(string $email,string $first,string $last,string $role,string $scope): User
