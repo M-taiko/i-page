@@ -56,6 +56,15 @@
     .organization-identity{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;color:white;text-align:center}
     .organization-logo{width:64px;height:64px;flex-shrink:0;background:var(--surface-bg);border:3px solid #fff;border-radius:19px;overflow:hidden;display:grid;place-items:center;font-size:24px;color:var(--text-primary);box-shadow:0 5px 18px #0003}
     .organization-logo img{width:100%;height:100%;object-fit:cover}.organization-identity strong{font-size:16px;line-height:22px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.organization-identity small{font-size:12px;opacity:.85}
+    @media(max-width:700px){
+        .discover-channel.organization-preview{flex-basis:150px;border-radius:18px}
+        .discover-channel.organization-preview.expanded{flex-basis:var(--channel-expanded-width,calc(100% - 32px))}
+        .organization-preview .channel-preview,.organization-preview.expanded .channel-preview{height:128px}
+        .organization-preview .organization-identity{padding:8px;gap:4px}
+        .organization-preview .organization-logo{width:40px;height:40px;border-radius:12px;border-width:2px}
+        .organization-preview .organization-identity strong{font-size:13px;line-height:17px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;height:34px}
+        .organization-preview .organization-identity small{font-size:11px}
+    }
     /* Collections as Instagram-style story circles */
     .stories { display: flex; gap: 14px; overflow-x: auto; padding: 6px 16px 12px; scroll-snap-type: x proximity; scrollbar-width: none; }
     .stories::-webkit-scrollbar { display: none; }
