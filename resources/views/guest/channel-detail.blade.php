@@ -27,6 +27,9 @@
 @section('extra-styles')
     @include('partials.feed._styles')
     .channel-hero {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
         background: linear-gradient(135deg, var(--primary-600) 0%, var(--secondary-600) 100%);
         color: white;
         padding: var(--space-6) var(--space-4);
@@ -39,6 +42,12 @@
         display: flex; align-items: center; justify-content: center;
         font-size: 28px; margin: 0 auto var(--space-3);
     }
+    .channel-hero-cover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; }
+    .channel-hero.has-cover::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(8,20,30,.35),rgba(8,20,30,.8)); z-index:-1; }
+    .channel-hero.has-cover { padding-block:36px; }
+    .channel-hero-icon img { width:100%; height:100%; object-fit:cover; border-radius:inherit; }
+    .channel-hero-icon.has-logo { width:80px; height:80px; padding:3px; background:white; box-shadow:0 6px 24px rgba(0,0,0,.2); }
+    .channel-hero-actions { flex-wrap:wrap; justify-content:center; }
 
     .channel-hero-name { font-size: var(--text-xl); font-weight: var(--font-weight-bold); margin-bottom: var(--space-1); }
     .channel-hero-meta { font-size: var(--text-sm); opacity: 0.9; margin-bottom: var(--space-4); }
@@ -221,8 +230,12 @@
             && $channel->organization->appointmentServices()->where('is_active',true)->exists();
     @endphp
 
-    <div class="channel-hero">
-        <div class="channel-hero-icon"><i class="bi bi-chat-dots"></i></div>
+    @php $channelCover = \App\Support\Designs::coverPaths($channel->design_options ?? [])[0] ?? null; @endphp
+    <div class="channel-hero {{ $channelCover ? 'has-cover' : '' }}">
+        @if($channelCover)<img class="channel-hero-cover" src="{{ Storage::url($channelCover) }}" alt="" fetchpriority="high">@endif
+        <div class="channel-hero-icon {{ $channel->logo_path ? 'has-logo' : '' }}">
+            @if($channel->logo_path)<img src="{{ Storage::url($channel->logo_path) }}" alt="{{ $channel->name }}">@else<i class="bi bi-chat-dots"></i>@endif
+        </div>
         <div class="channel-hero-name">{{ $channel->name }}</div>
         <div class="channel-hero-meta">
             {{ $channel->users_count }} {{ __('members') }}
@@ -277,7 +290,11 @@
                    data-tip="{{ $parentChannel->name }}" data-tip-sub="{{ __('Back to the parent channel') }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($parentChannel->name) }};">
-                            <i class="bi bi-arrow-up-left" style="font-size: 20px;"></i>
+                            @if($parentChannel->logo_path)
+                                <img src="{{ Storage::url($parentChannel->logo_path) }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" loading="lazy">
+                            @else
+                                {{ mb_substr($parentChannel->name, 0, 1) }}
+                            @endif
                         </div>
                     </div>
                     <div class="story-name">{{ $parentChannel->name }}</div>
@@ -291,7 +308,11 @@
                    data-tip-sub="{{ $sub->id === $channel->id ? __('You are here') : trim(trans_choice(':count member|:count members', $sub->users_count ?? 0) . ($sub->child_channels_count ? ' · ' . trans_choice(':count sub-channel|:count sub-channels', $sub->child_channels_count) : '')) }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($sub->name) }};">
-                            {{ mb_substr($sub->name, 0, 1) }}
+                            @if($sub->logo_path)
+                                <img src="{{ Storage::url($sub->logo_path) }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" loading="lazy">
+                            @else
+                                {{ mb_substr($sub->name, 0, 1) }}
+                            @endif
                         </div>
                     </div>
                     <div class="story-name">{{ $sub->name }}</div>
@@ -308,7 +329,11 @@
                    data-tip-sub="{{ $orgChannel->id === $channel->id ? __('You are here') : trans_choice(':count member|:count members', $orgChannel->users_count ?? 0) }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($orgChannel->name) }};">
-                            {{ mb_substr($orgChannel->name, 0, 1) }}
+                            @if($orgChannel->logo_path)
+                                <img src="{{ Storage::url($orgChannel->logo_path) }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" loading="lazy">
+                            @else
+                                {{ mb_substr($orgChannel->name, 0, 1) }}
+                            @endif
                         </div>
                     </div>
                     <div class="story-name">{{ $orgChannel->name }}</div>
