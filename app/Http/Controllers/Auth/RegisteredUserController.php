@@ -51,6 +51,10 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        if ($invitation = app(\App\Http\Controllers\ChannelAccessController::class)->resume($request)) {
+            return $invitation;
+        }
+
         // Redirect to feed/organizations to browse available organizations
         return redirect()->route('user.feed');
     }

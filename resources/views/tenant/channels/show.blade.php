@@ -11,6 +11,7 @@
 @endsection
 
 @section('content')
+@include('tenant.channels._modules')
 <x-valex.hero :title="$channel->name">
     <x-valex.badge :variant="$channel->type === 'public' ? 'success' : 'warning'"><i class="fe fe-{{ $channel->type === 'public' ? 'globe' : 'lock' }}"></i> {{ $channel->type === 'public' ? __('Public') : __('Private') }}</x-valex.badge>
     <x-valex.badge variant="info">{{ ucfirst($channel->status) }}</x-valex.badge>

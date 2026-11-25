@@ -12,6 +12,7 @@
 @endsection
 
 @section('content')
+<div class="ip-action-banner"><div><span class="ip-task-type">{{ __('YOUR WORKSPACE') }}</span><h2>{{ __('Keep your team moving') }}</h2><p>{{ __('Review pending posts and organization or channel join requests in one place.') }}</p></div><a class="btn btn-primary" href="{{ route('tenant.actions.index') }}">{{ __('Open action center') }} <i class="fe fe-arrow-right"></i></a></div>
 @php
     $postVariant = fn ($s) => match ($s) { 'draft' => 'secondary', 'published' => 'success', 'pending_approval' => 'warning', 'rejected' => 'danger', default => 'info' };
     $priorityVariant = fn ($p) => match ($p) { 'urgent' => 'danger', 'high' => 'warning', 'medium' => 'info', default => 'secondary' };

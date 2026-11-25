@@ -53,20 +53,21 @@
                     {{-- Invite existing user --}}
                     <div class="tab-pane" id="invitePanel">
                         <div class="form-group">
-                            <label for="inviteSearchInput">{{ __('Search by name or @username') }}</label>
-                            <input type="text" id="inviteSearchInput" autocomplete="off" class="form-control" placeholder="{{ __('e.g. John or @john.doe') }}">
-                            <div id="inviteSearchResults"></div>
+                            <label for="inviteSearchInput">{{ __('Search by name, email or phone number') }}</label>
+                            <input type="search" id="inviteSearchInput" autocomplete="off" class="form-control" placeholder="{{ __('Enter at least two characters') }}" aria-controls="inviteSearchResults">
+                            <div id="inviteSearchResults" role="status" aria-live="polite" class="invite-search-results"></div>
                         </div>
 
                         <form method="POST" action="{{ route('organizations.membership.invite-user', $organization) }}" id="inviteForm" style="display: none;">
                             @csrf
                             <input type="hidden" name="user_id" id="inviteUserId">
 
-                            <div class="d-flex align-items-center bg-light rounded p-3 mb-3">
+                            <div class="d-flex align-items-center rounded p-3 mb-3 invite-selected">
                                 <span class="avatar avatar-md brround bg-primary mx-2" id="inviteSelectedAvatar"></span>
                                 <div class="flex-grow-1">
                                     <div class="font-weight-bold" id="inviteSelectedName"></div>
-                                    <small class="text-muted" id="inviteSelectedHandle"></small>
+                                    <small class="d-block text-muted" id="inviteSelectedEmail"></small>
+                                    <small class="d-block text-muted" id="inviteSelectedMobile"></small>
                                 </div>
                                 <button type="button" class="close" onclick="clearInviteSelection()" aria-label="{{ __('Clear') }}"><span aria-hidden="true">&times;</span></button>
                             </div>
@@ -85,69 +86,80 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+.invite-search-results{max-height:380px;overflow:auto;margin-top:10px}.invite-result{display:flex;align-items:center;gap:12px;width:100%;text-align:start;background:var(--ip-surface,#fff);color:var(--ip-ink,#222);border:1px solid var(--ip-border,#e4e8f0);border-radius:12px;padding:12px;margin:8px 0;cursor:pointer}.invite-result:hover,.invite-result:focus{border-color:var(--ip-accent,#5264ec);background:var(--ip-surface-soft,#f8f9fe)}.invite-result-details{min-width:0;overflow-wrap:anywhere}.invite-selected{background:var(--ip-surface-soft,#f8f9fe);border:1px solid var(--ip-border,#e4e8f0)}.invite-result .avatar{flex-shrink:0}
+</style>
+@endpush
+
 @push('scripts')
 <script>
     (function () {
         const input = document.getElementById('inviteSearchInput');
         const resultsBox = document.getElementById('inviteSearchResults');
+        const inviteForm = document.getElementById('inviteForm');
         let debounceTimer = null;
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str || '';
-            return div.innerHTML;
-        }
+        let searchRequest = null;
+        let searchSequence = 0;
+        const message = text => { resultsBox.replaceChildren(); const line = document.createElement('p'); line.className = 'small text-muted mt-2'; line.textContent = text; resultsBox.append(line); };
 
         input.addEventListener('input', function () {
             clearTimeout(debounceTimer);
+            if (searchRequest) searchRequest.abort();
+            searchSequence++;
+            clearInviteSelection();
             const query = input.value.trim();
-            if (query.length < 1) { resultsBox.innerHTML = ''; return; }
-            debounceTimer = setTimeout(() => runSearch(query), 300);
+            if (query.length < 2) { resultsBox.replaceChildren(); return; }
+            message(@json(__('Searching...')));
+            const sequence = searchSequence;
+            debounceTimer = setTimeout(() => runSearch(query, sequence), 300);
         });
 
-        function runSearch(query) {
-            fetch('{{ route('api.people.search') }}?q=' + encodeURIComponent(query))
-                .then(res => res.json())
-                .then(data => renderResults(data.users || []))
-                .catch(() => renderResults([]));
+        function runSearch(query, sequence) {
+            searchRequest = new AbortController();
+            fetch(@json(route('organizations.membership.invite-user.search', $organization)) + '?q=' + encodeURIComponent(query), {
+                signal: searchRequest.signal,
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            }).then(res => { if (!res.ok) throw new Error('Search failed'); return res.json(); })
+                .then(data => { if (sequence === searchSequence) renderResults(data.users || []); })
+                .catch(error => { if (error.name !== 'AbortError' && sequence === searchSequence) message(@json(__('Search failed. Please try again.'))); });
         }
 
         function renderResults(users) {
+            resultsBox.replaceChildren();
             if (users.length === 0) {
-                resultsBox.innerHTML = '<p class="small text-muted mt-2">{{ __('No people found.') }}</p>';
+                message(@json(__('No people found.')));
                 return;
             }
-
-            resultsBox.innerHTML = users.map(u => `
-                <div class="d-flex align-items-center border rounded p-2 mt-2" style="cursor: pointer;" data-select-user='${JSON.stringify(u).replace(/'/g, "&apos;")}'>
-                    <span class="avatar avatar-md brround bg-primary mx-2">${u.avatar_path ? `<img src="${u.avatar_path}" alt="">` : escapeHtml(u.initials)}</span>
-                    <div>
-                        <div class="font-weight-bold">${escapeHtml(u.full_name)}</div>
-                        <small class="text-muted">${u.username ? '@' + escapeHtml(u.username) : ''}</small>
-                    </div>
-                </div>
-            `).join('');
-
-            resultsBox.querySelectorAll('[data-select-user]').forEach(row => {
-                row.addEventListener('click', function () {
-                    selectInviteUser(JSON.parse(this.getAttribute('data-select-user').replace(/&apos;/g, "'")));
-                });
+            users.forEach(user => {
+                const row = document.createElement('button');
+                row.type = 'button'; row.className = 'invite-result';
+                const avatar = document.createElement('span');
+                avatar.className = 'avatar avatar-md brround bg-primary'; avatar.textContent = user.initials || '?';
+                const details = document.createElement('span'); details.className = 'invite-result-details';
+                const name = document.createElement('strong'); name.className = 'd-block'; name.textContent = user.name || '';
+                const email = document.createElement('small'); email.className = 'd-block text-muted'; email.textContent = @json(__('Email')) + ': ' + (user.email || @json(__('Not provided')));
+                const phone = document.createElement('small'); phone.className = 'd-block text-muted'; phone.textContent = @json(__('Phone')) + ': ' + (user.mobile || @json(__('Not provided')));
+                details.append(name, email, phone); row.append(avatar, details);
+                row.addEventListener('click', () => selectInviteUser(user));
+                resultsBox.append(row);
             });
         }
 
-        window.selectInviteUser = function (u) {
+        function selectInviteUser(u) {
             document.getElementById('inviteUserId').value = u.id;
-            document.getElementById('inviteSelectedName').textContent = u.full_name;
-            document.getElementById('inviteSelectedHandle').textContent = u.username ? '@' + u.username : '';
-            document.getElementById('inviteSelectedAvatar').innerHTML = u.avatar_path
-                ? `<img src="${u.avatar_path}" alt="">` : escapeHtml(u.initials);
-            document.getElementById('inviteForm').style.display = 'block';
+            document.getElementById('inviteSelectedName').textContent = u.name || '';
+            document.getElementById('inviteSelectedEmail').textContent = @json(__('Email')) + ': ' + (u.email || @json(__('Not provided')));
+            document.getElementById('inviteSelectedMobile').textContent = @json(__('Phone')) + ': ' + (u.mobile || @json(__('Not provided')));
+            document.getElementById('inviteSelectedAvatar').textContent = u.initials || '?';
+            inviteForm.style.display = 'block';
             input.value = '';
-            resultsBox.innerHTML = '';
-        };
+            resultsBox.replaceChildren();
+        }
 
         window.clearInviteSelection = function () {
-            document.getElementById('inviteForm').style.display = 'none';
+            inviteForm.style.display = 'none';
             document.getElementById('inviteUserId').value = '';
         };
     })();

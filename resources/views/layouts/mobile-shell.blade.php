@@ -58,7 +58,7 @@
             .shell { max-width: 820px; }
         }
 
-        /* Top app bar: a glassy sticky bar. Pages fill it through @section('app-bar'); the layout adds
+        /* Top app bar: a glassy sticky bar. Pages fill it through the app-bar section; the layout adds
            the theme toggle and, for members, the notification bell. Gains a shadow once content scrolls. */
         .app-bar {
             display: flex; align-items: center; gap: 6px;
@@ -170,6 +170,9 @@
         }
         .bottom-nav-wrap.is-hidden { transform: translateY(calc(100% + 16px)); opacity: 0; }
         .bottom-nav.is-member { grid-template-columns: repeat(7, 1fr); max-width: 560px; }
+        .bottom-nav.has-dashboard { grid-template-columns: repeat(8, 1fr); max-width: 620px; }
+        .bottom-nav.has-dashboard .bn-item .bn-label { font-size: 10.5px; }
+        .bn-fab { text-decoration: none; }
         @media (max-width: 440px) {
             .bottom-nav.is-member .bn-label { display: none; }
             .bottom-nav.is-member .bn-item { min-height: 46px; }
@@ -312,11 +315,16 @@
                 'alerts' => request()->routeIs('user.notifications'),
                 'collections' => request()->routeIs('collections.*'),
                 'activity' => request()->routeIs('activity.*'),
+                'dashboard' => request()->routeIs('admin.dashboard', 'organizations.dashboard'),
+            ];
+            $bnUser = auth()->user();
+            $bnDashUrl = $bnUser ? ($bnUser->hasRole('super_admin') ? route('admin.dashboard') : ($bnUser->organizations()->exists() ? route('organizations.dashboard') : null)) : null;
+            $nav += [
                 'me' => request()->routeIs('profile.settings', 'saved.*'),
             ];
         @endphp
         <div class="bottom-nav-wrap" id="bottomNav">
-            <nav class="bottom-nav {{ auth()->check() ? 'is-member' : '' }}" aria-label="{{ __('Main navigation') }}">
+            <nav class="bottom-nav {{ auth()->check() ? 'is-member' : '' }} {{ $bnDashUrl ? 'has-dashboard' : '' }}" aria-label="{{ __('Main navigation') }}">
                 <a href="{{ route('guest.home') }}" class="bn-item {{ $nav['home'] ? 'active' : '' }}" @if ($nav['home']) aria-current="page" @endif data-tip="{{ __('Home') }}">
                     <i class="bi {{ $nav['home'] ? 'bi-house-door-fill' : 'bi-house-door' }}"></i><span class="bn-label">{{ __('Home') }}</span>
                 </a>
@@ -329,15 +337,27 @@
                     </a>
                 @endauth
                 <div class="bn-center">
-                    <button type="button" class="bn-fab" onclick="openQrModal()" aria-label="{{ __('Scan a QR code') }}">
-                        <i class="bi bi-qr-code-scan"></i>
-                    </button>
-                    <span class="bn-label" aria-hidden="true">{{ __('Scan') }}</span>
+                    @if ($bnDashUrl)
+                        <a href="{{ $bnDashUrl }}" class="bn-fab" aria-label="{{ __('Dashboard') }}" data-tip="{{ __('Dashboard') }}" data-tip-sub="{{ __('Manage your channels and posts') }}">
+                            <i class="bi bi-speedometer2"></i>
+                        </a>
+                        <span class="bn-label" aria-hidden="true">{{ __('Dashboard') }}</span>
+                    @else
+                        <button type="button" class="bn-fab" onclick="openQrModal()" aria-label="{{ __('Scan a QR code') }}">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </button>
+                        <span class="bn-label" aria-hidden="true">{{ __('Scan') }}</span>
+                    @endif
                 </div>
                 @auth
                     <a href="{{ route('activity.index') }}" class="bn-item {{ $nav['activity'] ? 'active' : '' }}" @if ($nav['activity']) aria-current="page" @endif data-tip="{{ __('My activity') }}" aria-label="{{ __('My activity') }}">
                         <i class="bi bi-activity"></i><span class="bn-label">{{ __('Activity') }}</span>
                     </a>
+                    @if ($bnDashUrl)
+                        <button type="button" class="bn-item" onclick="openQrModal()" aria-label="{{ __('Scan a QR code') }}" data-tip="{{ __('Scan a QR code') }}">
+                            <i class="bi bi-qr-code-scan"></i><span class="bn-label">{{ __('Scan') }}</span>
+                        </button>
+                    @endif
                     @php $bnUnread = auth()->user()->notifications()->whereNull('read_at')->count(); @endphp
                     <a href="{{ route('user.notifications') }}" class="bn-item {{ $nav['alerts'] ? 'active' : '' }}" @if ($nav['alerts']) aria-current="page" @endif
                        aria-label="{{ __('Alerts') }}{{ $bnUnread ? ' (' . $bnUnread . ')' : '' }}">

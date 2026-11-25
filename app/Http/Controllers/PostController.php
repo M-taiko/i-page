@@ -39,82 +39,26 @@ class PostController extends Controller
 
     public function create()
     {
-        $this->authorize('create', Post::class);
+        $user = auth()->user();
+        $organization = $user->currentOrganization;
+        $channels = \App\Models\Channel::query()
+            ->when($organization, fn ($query) => $query->visibleTo($user, $organization->id))
+            ->with(['organization', 'parentChannels'])->orderBy('name')->get()
+            ->filter(fn ($channel) => $channel->userCan($user, 'post'))->values();
+        abort_if($channels->isEmpty(), 403, __('You do not have permission to publish in any channel.'));
 
-        if (auth()->user()->hasRole('super_admin')) {
-            $organization = auth()->user()->organizations()->first();
-        } else {
-            $organization = auth()->user()->currentOrganization;
-        }
-
-        if (!$organization) {
-            abort(403, 'No organization context');
-        }
-
-        return view('posts.form', compact('organization'));
+        return view('posts.create', compact('channels', 'organization'));
     }
 
     public function store(Request $request)
     {
-        $this->authorize('create', Post::class);
+        $validated = $request->validate(['channel_id' => 'required|integer|exists:channels,id']);
+        $channel = \App\Models\Channel::findOrFail($validated['channel_id']);
+        $organization = $request->user()->currentOrganization;
+        abort_if($organization && $channel->organization_id !== $organization->id, 403);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'summary' => 'nullable|string|max:500',
-            'body' => 'required|string|max:10000',
-            'post_type' => 'required|in:announcement,news,offer,emergency',
-            'priority' => 'required|in:low,medium,high,critical',
-            'language' => 'required|in:en,ar',
-            'requires_acknowledgment' => 'boolean',
-            'is_emergency' => 'boolean',
-            'status' => 'in:draft,pending_approval,published',
-            'scheduled_for' => 'nullable|date_format:Y-m-d H:i',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'media' => 'nullable|array',
-            'media.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
-        ]);
-
-        if (auth()->user()->hasRole('super_admin')) {
-            $organization = auth()->user()->organizations()->first();
-        } else {
-            $organization = auth()->user()->currentOrganization;
-        }
-
-        if (!$organization) {
-            abort(403, 'No organization context');
-        }
-
-        $requestedStatus = $validated['status'] ?? 'draft';
-        $canApprove = auth()->user()->can('approvePost', new Post(['organization_id' => $organization->id]));
-
-        $post = $organization->posts()->create([
-            'channel_id' => $organization->channels()->first()?->id,
-            'author_id' => auth()->id(),
-            'status' => ($requestedStatus === 'published' && !$canApprove) ? 'pending_approval' : $requestedStatus,
-            'title' => $validated['title'],
-            'summary' => $validated['summary'],
-            'body' => $validated['body'],
-            'post_type' => $validated['post_type'],
-            'priority' => $validated['priority'],
-            'language' => $validated['language'],
-            'requires_acknowledgment' => $validated['requires_acknowledgment'] ?? false,
-            'is_emergency' => $validated['is_emergency'] ?? false,
-            'scheduled_for' => $validated['scheduled_for'] ?? null,
-            'image_path' => $request->hasFile('image') ? $request->file('image')->store('posts', 'public') : null,
-        ]);
-
-        if ($request->hasFile('media')) {
-            foreach ($request->file('media') as $file) {
-                $this->mediaService->upload($file, $post, 'public', 'post_attachment');
-            }
-        }
-
-        if ($requestedStatus === 'published' && $canApprove) {
-            $this->approvalService->publish($post, auth()->user());
-        }
-
-        return redirect()->route('posts.show', $post)
-            ->with('success', 'Post created successfully.');
+        // Both entry points use the same validation, channel permission check and format persistence.
+        return app(TenantChannelPostController::class)->store($request, $channel);
     }
 
     public function show(Post $post)
@@ -126,11 +70,13 @@ class PostController extends Controller
 
     public function edit(Post $post)
     {
-        $this->authorize('update', $post);
-
-        if (!in_array($post->status, ['draft', 'rejected'])) {
-            abort(403, 'Can only edit draft or rejected posts.');
+        // Published channel posts and tenant posts have their own editors (ADR-014/016): send people there
+        // instead of refusing; those editors check the channel/tenant permissions themselves.
+        if (! in_array($post->status, ['draft', 'rejected'], true)) {
+            return redirect()->to($post->editUrl());
         }
+
+        $this->authorize('update', $post);
 
         return view('posts.form', compact('post'));
     }

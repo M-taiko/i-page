@@ -5,6 +5,73 @@
 <svg {{ $attributes->merge(['class' => 'ill ill-' . $name]) }} width="{{ $size }}" height="{{ $h }}" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
     <ellipse cx="100" cy="146" rx="62" ry="7" fill="var(--ill-softer)"/>
     @switch($name)
+
+        @case('workspace-dashboard')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float-slow"><rect x="35" y="34" width="130" height="90" rx="12" fill="var(--ill-paper)" stroke="var(--ill-line)"/><path d="M35 54h130" stroke="var(--ill-line)"/><circle cx="47" cy="44" r="3" fill="var(--ill-accent)"/><circle cx="57" cy="44" r="3" fill="var(--ill-warm)"/><circle cx="67" cy="44" r="3" fill="var(--ill-green)"/>
+            <rect x="49" y="91" width="14" height="20" rx="4" fill="var(--ill-soft)"/><rect class="ip-art-bar-1" x="70" y="79" width="14" height="32" rx="4" fill="var(--ill-primary)"/><rect class="ip-art-bar-2" x="91" y="66" width="14" height="45" rx="4" fill="var(--ill-accent)"/><path d="m119 101 9-12 8 3 14-20" stroke="var(--ill-green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <g class="ill-float-delay"><rect x="127" y="16" width="43" height="30" rx="10" fill="var(--ill-primary)"/><path d="m139 33 6-6 5 4 9-9" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>
+            <circle class="ill-twinkle" cx="27" cy="95" r="4" fill="var(--ill-warm)"/>
+            @break
+        @case('workspace-organization')
+            <circle cx="101" cy="77" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float-slow"><rect x="57" y="28" width="78" height="102" rx="10" fill="var(--ill-paper)" stroke="var(--ill-line)"/><path d="M70 28v-8h53v8" stroke="var(--ill-primary)" stroke-width="3"/>
+            @foreach ([46,65,84] as $y) @foreach ([73,94,115] as $x)<rect x="{{ $x }}" y="{{ $y }}" width="10" height="10" rx="3" fill="{{ $y === 65 ? 'var(--ill-accent)' : 'var(--ill-primary)' }}" fill-opacity=".75"/>@endforeach @endforeach
+            <path d="M88 130v-22a8 8 0 0 1 16 0v22" fill="var(--ill-primary)"/></g>
+            <g class="ill-float-delay"><rect x="130" y="66" width="36" height="63" rx="8" fill="var(--ill-paper)" stroke="var(--ill-line)"/><path d="M140 80h16m-16 12h16m-16 12h9" stroke="var(--ill-primary)" stroke-width="4" stroke-linecap="round"/></g>
+            <path d="M34 129v-21m-10-6a10 10 0 1 0 20 0a10 10 0 1 0-20 0" stroke="var(--ill-green)" stroke-width="4" stroke-linecap="round"/><circle class="ill-twinkle" cx="155" cy="33" r="5" fill="var(--ill-warm)"/>
+            @break
+        @case('workspace-team')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <path class="ill-draw" d="M50 92 100 59l50 33" stroke="var(--ill-line)" stroke-width="3" stroke-dasharray="4 6"/>
+            <g class="ill-float-delay"><rect x="24" y="68" width="48" height="56" rx="11" fill="var(--ill-paper)" stroke="var(--ill-line)"/><circle cx="48" cy="86" r="9" fill="var(--ill-accent)"/><path d="M34 113v-4a14 14 0 0 1 28 0v4" fill="var(--ill-accent)" fill-opacity=".4"/></g>
+            <g class="ill-float"><rect x="72" y="24" width="56" height="70" rx="13" fill="var(--ill-paper)" stroke="var(--ill-primary)" stroke-width="2"/><circle cx="100" cy="46" r="12" fill="var(--ill-primary)"/><path d="M82 80v-4a18 18 0 0 1 36 0v4" fill="var(--ill-primary)" fill-opacity=".25"/></g>
+            <g class="ill-float-slow"><rect x="128" y="68" width="48" height="56" rx="11" fill="var(--ill-paper)" stroke="var(--ill-line)"/><circle cx="152" cy="86" r="9" fill="var(--ill-green)"/><path d="M138 113v-4a14 14 0 0 1 28 0v4" fill="var(--ill-green)" fill-opacity=".35"/></g>
+            <path class="ill-twinkle" d="M153 31v12m-6-6h12" stroke="var(--ill-warm)" stroke-width="3" stroke-linecap="round"/>
+            @break
+        @case('workspace-settings')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float-slow"><rect x="43" y="31" width="114" height="99" rx="14" fill="var(--ill-paper)" stroke="var(--ill-line)"/>
+            <path d="M61 55h78M61 80h78M61 105h78" stroke="var(--ill-line)" stroke-width="5" stroke-linecap="round"/>
+            <g class="ip-art-slider"><circle cx="83" cy="55" r="8" fill="var(--ill-primary)"/><circle cx="83" cy="55" r="3" fill="var(--ill-paper)"/></g>
+            <circle cx="121" cy="80" r="8" fill="var(--ill-accent)"/><circle cx="121" cy="80" r="3" fill="var(--ill-paper)"/>
+            <g class="ip-art-slider"><circle cx="76" cy="105" r="8" fill="var(--ill-green)"/><circle cx="76" cy="105" r="3" fill="var(--ill-paper)"/></g></g>
+            <g class="ill-float-delay"><circle cx="152" cy="34" r="17" fill="var(--ill-primary)"/><path d="m144 34 6 6 10-11" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>
+            @break
+        @case('workspace-activity')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float-slow"><rect x="45" y="27" width="110" height="107" rx="13" fill="var(--ill-paper)" stroke="var(--ill-line)"/><path d="M66 51v58" stroke="var(--ill-line)" stroke-width="3"/>
+            @foreach ([51,78,105] as $y)<circle class="ill-blink-{{ $loop->index % 2 + 2 }}" cx="66" cy="{{ $y }}" r="7" fill="var(--ill-primary)"/><rect x="83" y="{{ $y - 5 }}" width="52" height="5" rx="2.5" fill="var(--ill-line)"/><rect x="83" y="{{ $y + 5 }}" width="32" height="4" rx="2" fill="var(--ill-soft)"/>@endforeach</g>
+            <g class="ill-float-delay"><circle cx="153" cy="40" r="19" fill="var(--ill-accent)"/><path d="M153 29v12l8 5" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>
+            @break
+        @case('workspace-location')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <path d="m29 68 47-12 48 13 47-12v69l-47 12-48-13-47 12Z" fill="var(--ill-paper)" stroke="var(--ill-line)" stroke-width="2"/><path d="M76 56v69m48-56v69" stroke="var(--ill-line)"/><path d="m43 113 37-18 35 16 43-28" stroke="var(--ill-accent)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+            <g class="ill-float"><path d="M100 19a25 25 0 0 0-25 25c0 19 25 42 25 42s25-23 25-42a25 25 0 0 0-25-25Z" fill="var(--ill-primary)"/><circle cx="100" cy="44" r="9" fill="var(--ill-paper)"/></g>
+            <circle class="ill-twinkle" cx="153" cy="32" r="5" fill="var(--ill-green)"/>
+            @break
+        @case('workspace-permissions')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float"><path d="m100 24 43 16v38c0 27-43 52-43 52S57 105 57 78V40Z" fill="var(--ill-paper)" stroke="var(--ill-primary)" stroke-width="3"/><path d="m100 35 33 12v29c0 20-33 41-33 41S67 96 67 76V47Z" fill="var(--ill-soft)"/><rect x="83" y="65" width="34" height="28" rx="7" fill="var(--ill-primary)"/><path d="M90 65v-9a10 10 0 0 1 20 0v9" stroke="var(--ill-primary)" stroke-width="4"/><path d="M100 76v7" stroke="#fff" stroke-width="4" stroke-linecap="round"/></g>
+            <circle class="ill-twinkle" cx="158" cy="86" r="6" fill="var(--ill-green)"/><path class="ill-twinkle-2" d="M38 50v12m-6-6h12" stroke="var(--ill-warm)" stroke-width="3"/>
+            @break
+        @case('workspace-audience')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float-slow"><circle cx="100" cy="78" r="43" stroke="var(--ill-primary)" stroke-width="2" stroke-dasharray="5 7"/><circle cx="100" cy="78" r="27" fill="var(--ill-paper)" stroke="var(--ill-line)"/><circle cx="100" cy="70" r="8" fill="var(--ill-primary)"/><path d="M87 93a13 13 0 0 1 26 0" fill="var(--ill-primary)" fill-opacity=".35"/></g>
+            @foreach ([[48,50],[150,48],[47,112],[151,111]] as [$x,$y])<g class="{{ $loop->odd ? 'ill-float' : 'ill-float-delay' }}"><circle cx="{{ $x }}" cy="{{ $y }}" r="17" fill="var(--ill-paper)" stroke="var(--ill-line)"/><circle cx="{{ $x }}" cy="{{ $y-4 }}" r="5" fill="{{ $loop->odd ? 'var(--ill-accent)' : 'var(--ill-green)' }}"/><path d="M{{ $x-8 }} {{ $y+9 }}a8 8 0 0 1 16 0" stroke="{{ $loop->odd ? 'var(--ill-accent)' : 'var(--ill-green)' }}" stroke-width="4"/></g>@endforeach
+            @break
+        @case('workspace-support')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float"><path d="M60 75V62a40 40 0 0 1 80 0v34c0 17-13 27-29 27" stroke="var(--ill-primary)" stroke-width="8" stroke-linecap="round"/><rect x="48" y="65" width="24" height="37" rx="10" fill="var(--ill-paper)" stroke="var(--ill-primary)" stroke-width="3"/><rect x="128" y="65" width="24" height="37" rx="10" fill="var(--ill-paper)" stroke="var(--ill-primary)" stroke-width="3"/><rect x="92" y="117" width="22" height="11" rx="5" fill="var(--ill-accent)"/></g>
+            <g class="ill-float-delay"><path d="M80 57h40a8 8 0 0 1 8 8v21a8 8 0 0 1-8 8H99l-12 10V94h-7a8 8 0 0 1-8-8V65a8 8 0 0 1 8-8Z" fill="var(--ill-soft)"/><circle cx="88" cy="75" r="3" fill="var(--ill-primary)"/><circle cx="100" cy="75" r="3" fill="var(--ill-primary)"/><circle cx="112" cy="75" r="3" fill="var(--ill-primary)"/></g>
+            @break
+        @case('workspace-checklist')
+            <circle cx="100" cy="78" r="61" fill="var(--ill-soft)"/>
+            <g class="ill-float-slow"><rect x="54" y="28" width="92" height="106" rx="12" fill="var(--ill-paper)" stroke="var(--ill-line)"/><rect x="79" y="20" width="42" height="16" rx="6" fill="var(--ill-primary)"/>
+            @foreach ([55,81,107] as $y)<rect x="69" y="{{ $y }}" width="13" height="13" rx="4" fill="var(--ill-soft)"/><path class="ill-draw" d="m72 {{ $y+6 }} 3 3 5-6" stroke="var(--ill-green)" stroke-width="2" stroke-linecap="round"/><rect x="92" y="{{ $y+3 }}" width="37" height="5" rx="2.5" fill="var(--ill-line)"/>@endforeach</g>
+            <circle class="ill-twinkle" cx="159" cy="52" r="5" fill="var(--ill-accent)"/>
+            @break
+
         @case('discover')
             {{-- A phone of cards with a compass orbiting --}}
             <circle cx="100" cy="76" r="62" fill="var(--ill-soft)"/>

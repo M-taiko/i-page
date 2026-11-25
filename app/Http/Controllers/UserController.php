@@ -20,6 +20,7 @@ class UserController extends Controller
     public function index($organization): View
     {
         $org = \App\Models\Organization::findOrFail($organization);
+        $this->authorizeOrganizationManager($org);
 
         $filters = array_merge(request()->all(), ['organization_id' => $organization, 'membership_status' => 'active']);
         $users = $this->userRepository->paginate($filters);
@@ -38,12 +39,14 @@ class UserController extends Controller
 
     public function create($organization): View
     {
+        $this->authorizeOrganizationManager(\App\Models\Organization::findOrFail($organization));
         return view('users.create', compact('organization'));
     }
 
     public function store(Request $request, $organization): RedirectResponse
     {
         $org = \App\Models\Organization::findOrFail($organization);
+        $this->authorizeOrganizationManager($org);
 
         $validated = $request->validate([
             'first_name' => 'required|string|max:80',
@@ -80,6 +83,7 @@ class UserController extends Controller
 
     public function show($organization, User $user): View
     {
+        $this->authorizeOrganizationManager(\App\Models\Organization::findOrFail($organization));
         return view('users.show', compact('user', 'organization'));
     }
 
@@ -87,6 +91,7 @@ class UserController extends Controller
     {
         // Verify user belongs to this organization
         $org = \App\Models\Organization::findOrFail($organization);
+        $this->authorizeOrganizationManager($org);
         if (!$org->users()->where('users.id', $user->id)->exists()) {
             abort(403, 'User does not belong to this organization');
         }
@@ -97,6 +102,7 @@ class UserController extends Controller
     {
         // Verify user belongs to this organization
         $org = \App\Models\Organization::findOrFail($organization);
+        $this->authorizeOrganizationManager($org);
         if (!$org->users()->where('users.id', $user->id)->exists()) {
             abort(403, 'User does not belong to this organization');
         }
@@ -120,6 +126,7 @@ class UserController extends Controller
     {
         // Verify user belongs to this organization
         $org = \App\Models\Organization::findOrFail($organization);
+        $this->authorizeOrganizationManager($org);
         if (!$org->users()->where('users.id', $user->id)->exists()) {
             abort(403, 'User does not belong to this organization');
         }
@@ -129,5 +136,10 @@ class UserController extends Controller
 
         return redirect()->route('dashboard.users.index', $organization)
             ->with('success', 'User removed from organization');
+    }
+
+    private function authorizeOrganizationManager(\App\Models\Organization $organization): void
+    {
+        abort_unless(\App\Models\Channel::isOrgManager(auth()->user(), $organization->id), 403);
     }
 }

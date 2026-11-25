@@ -44,5 +44,7 @@ class OrganizationTemplateService
                 'admin_user_id' => $adminUserId,
             ]);
         }
+
+        app(TenantServiceCatalog::class)->seedDefaults($organization->fresh('template'));
     }
 }

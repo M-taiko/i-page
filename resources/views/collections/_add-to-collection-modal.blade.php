@@ -1,90 +1,35 @@
-{{-- Reusable Add-to-Collection modal. Include on any authenticated page.
-     Call openAddToCollection('channel'|'organization', id, name) to open it. --}}
+{{-- Personal collection picker. Call openAddToCollection('channel'|'organization', id, name). --}}
 @auth
+@php $atcCollections = auth()->user()->collections()->with('channels:id')->orderByDesc('is_pinned')->orderBy('sort_order')->get(); @endphp
 <style>
-    .atc-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center; padding: var(--space-4); }
-    .atc-overlay.show { display: flex; }
-    .atc-box { background-color: var(--surface-bg); border-radius: var(--radius-xl); padding: var(--space-6); max-width: 360px; width: 100%; max-height: 80vh; overflow-y: auto; }
-    .atc-box h3 { font-size: var(--text-lg); margin-bottom: var(--space-1); color: var(--text-primary); }
-    .atc-box p.atc-target { font-size: var(--text-sm); color: var(--text-tertiary); margin-bottom: var(--space-4); }
-    .atc-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2); border: 1px solid var(--surface-border); border-radius: var(--radius-md); margin-bottom: var(--space-2); }
-    .atc-row-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-    .atc-row-name { flex: 1; font-size: var(--text-sm); color: var(--text-primary); }
-    .atc-empty { font-size: var(--text-sm); color: var(--text-tertiary); }
-    .atc-btn-primary { width: 100%; padding: var(--space-3); border-radius: var(--radius-md); background-color: var(--primary-600); color: white; border: none; font-weight: 500; cursor: pointer; }
+.atc-overlay{display:none;position:fixed;inset:0;z-index:2000;align-items:center;justify-content:center;padding:18px;background:rgba(13,18,38,.62);backdrop-filter:blur(7px)}.atc-overlay.show{display:flex}.atc-box{overflow:hidden;width:100%;max-width:440px;max-height:min(720px,90vh);border:1px solid var(--surface-border);border-radius:25px;background:var(--surface-bg);box-shadow:0 28px 80px rgba(12,18,48,.28);animation:atcIn .2s ease-out}@keyframes atcIn{from{opacity:0;transform:translateY(12px) scale(.98)}}.atc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:22px 22px 16px}.atc-title{margin:0;color:var(--text-primary);font-size:1.12rem;font-weight:900}.atc-target{margin:4px 0 0;color:var(--text-tertiary);font-size:.78rem}.atc-close{display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:11px;background:var(--surface-hover);color:var(--text-secondary);cursor:pointer}.atc-list{overflow-y:auto;max-height:350px;padding:2px 18px 10px}.atc-row{display:flex;align-items:center;gap:12px;padding:11px;margin-bottom:8px;border:1px solid var(--surface-border);border-radius:15px;background:var(--surface-bg);cursor:pointer;transition:.18s}.atc-row:hover{border-color:#beb7f2;background:var(--surface-hover)}.atc-row-icon{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;border-radius:13px;font-size:18px}.atc-row-name{flex:1;color:var(--text-primary);font-size:.86rem;font-weight:800}.atc-checkbox{width:20px;height:20px;accent-color:#5b4bdf}.atc-empty{padding:20px 12px;color:var(--text-tertiary);font-size:.83rem;text-align:center}.atc-create-toggle{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 36px);min-height:44px;margin:2px 18px 12px;border:1px dashed #a9a1eb;border-radius:14px;background:rgba(91,75,223,.05);color:#5b4bdf;font-weight:850;cursor:pointer}.atc-create{display:none;margin:0 18px 14px;padding:15px;border-radius:16px;background:var(--surface-hover)}.atc-create.show{display:block}.atc-create label{display:block;margin-bottom:6px;color:var(--text-secondary);font-size:.75rem;font-weight:800}.atc-create-line{display:flex;gap:8px}.atc-create input{min-width:0;flex:1;height:43px;padding:0 12px;border:1px solid var(--surface-border);border-radius:12px;background:var(--surface-bg);color:var(--text-primary);outline:0}.atc-create input:focus{border-color:#7167e7;box-shadow:0 0 0 3px rgba(91,75,223,.1)}.atc-create button,.atc-done{border:0;border-radius:12px;background:linear-gradient(135deg,#5b4bdf,#7c3aed);color:#fff;font-weight:850;cursor:pointer}.atc-create button{padding:0 15px}.atc-create button:disabled{opacity:.65}.atc-error{display:none;margin:8px 0 0;color:#dc3545;font-size:.75rem}.atc-footer{padding:14px 18px 18px;border-top:1px solid var(--surface-border)}.atc-done{width:100%;min-height:46px}.atc-toast{display:none;margin:0 18px 10px;padding:9px 12px;border-radius:11px;background:#eafaf2;color:#158353;font-size:.78rem;font-weight:800}.atc-toast.show{display:block}@media(max-width:520px){.atc-overlay{align-items:flex-end;padding:0}.atc-box{max-width:none;border-radius:24px 24px 0 0}.atc-list{max-height:42vh}}
 </style>
-
-<div class="atc-overlay" id="addToCollectionOverlay" onclick="if(event.target===this) closeAddToCollection()">
-    <div class="atc-box">
-        <h3>{{ __('Add to Collection') }}</h3>
-        <p class="atc-target" id="atcTargetName"></p>
-
-        <div id="atcList">
-            @forelse(auth()->user()->collections()->orderBy('sort_order')->get() as $collection)
-                <div class="atc-row">
-                    <span class="atc-row-icon" style="background-color: {{ $collection->color }};">{{ $collection->icon }}</span>
-                    <span class="atc-row-name">{{ $collection->name }}</span>
-                    <input type="checkbox" class="atc-checkbox" data-collection-id="{{ $collection->id }}" onchange="atcToggle(this)">
-                </div>
-            @empty
-                <p class="atc-empty">{{ __("You don't have any collections yet. Create one from the Home page.") }}</p>
-            @endforelse
-        </div>
-
-        <button type="button" class="atc-btn-primary" onclick="closeAddToCollection()">{{ __('Done') }}</button>
-    </div>
+<div class="atc-overlay" id="addToCollectionOverlay" onclick="if(event.target===this)closeAddToCollection()">
+ <div class="atc-box" role="dialog" aria-modal="true" aria-labelledby="atcTitle">
+  <div class="atc-head"><div><h3 class="atc-title" id="atcTitle">{{ __('Save to collection') }}</h3><p class="atc-target" id="atcTargetName"></p></div><button type="button" class="atc-close" onclick="closeAddToCollection()" aria-label="{{ __('Close') }}"><i class="bi bi-x-lg"></i></button></div>
+  <div class="atc-toast" id="atcToast"></div>
+  <div class="atc-list" id="atcList">
+   @forelse($atcCollections as $collection)
+    <label class="atc-row" data-collection-id="{{ $collection->id }}"><span class="atc-row-icon" style="background-color:{{ $collection->color }}22;color:{{ $collection->color }}">{{ $collection->icon }}</span><span class="atc-row-name">{{ $collection->name }}</span><input type="checkbox" class="atc-checkbox" data-collection-id="{{ $collection->id }}" onchange="atcToggle(this)"></label>
+   @empty
+    <p class="atc-empty" id="atcEmpty">{{ __('No collections yet. Create your first one below.') }}</p>
+   @endforelse
+  </div>
+  <button type="button" class="atc-create-toggle" onclick="toggleAtcCreate()"><i class="bi bi-folder-plus"></i> {{ __('Create new collection') }}</button>
+  <form class="atc-create" id="atcCreateForm" onsubmit="createAtcCollection(event)"><label for="atcCollectionName">{{ __('Collection name') }}</label><div class="atc-create-line"><input id="atcCollectionName" name="name" maxlength="60" required placeholder="{{ __('e.g. Cairo favorites') }}"><button type="submit" id="atcCreateButton">{{ __('Create') }}</button></div><p class="atc-error" id="atcCreateError"></p></form>
+  <div class="atc-footer"><button type="button" class="atc-done" onclick="closeAddToCollection()">{{ __('Done') }}</button></div>
+ </div>
 </div>
-
 <script>
-    const atcBaseUrl = "{{ url('/collections') }}";
-    const atcCsrfToken = "{{ csrf_token() }}";
-    const atcChannelMap = @json(
-        collect(auth()->user()->collections()->with('channels:id')->get())
-            ->flatMap(fn($c) => collect($c->channels)->pluck('id')->map(fn($cid) => [$cid, $c->id]))
-            ->groupBy(fn($pair) => $pair[0])
-            ->map(fn($pairs) => $pairs->pluck(1))
-    );
-
-    let atcTarget = null; // { type, id, removable }
-
-    function openAddToCollection(type, id, name) {
-        atcTarget = { type, id, removable: type === 'channel' };
-        document.getElementById('atcTargetName').textContent = name;
-
-        document.querySelectorAll('.atc-checkbox').forEach(cb => {
-            cb.disabled = false;
-            if (type === 'channel') {
-                const memberships = atcChannelMap[id] || [];
-                cb.checked = memberships.includes(Number(cb.dataset.collectionId));
-            } else {
-                // Organization bulk-add is a one-way action; reset to unchecked each open.
-                cb.checked = false;
-            }
-        });
-
-        document.getElementById('addToCollectionOverlay').classList.add('show');
-    }
-
-    function closeAddToCollection() {
-        document.getElementById('addToCollectionOverlay').classList.remove('show');
-    }
-
-    async function atcToggle(checkbox) {
-        const collectionId = checkbox.dataset.collectionId;
-        const endpointType = atcTarget.type === 'organization' ? 'organizations' : 'channels';
-        const url = `${atcBaseUrl}/${collectionId}/${endpointType}/${atcTarget.id}`;
-
-        const fd = new FormData();
-        fd.append('_token', atcCsrfToken);
-
-        if (!atcTarget.removable) {
-            // One-way bulk add: lock the checkbox after firing so it can't be "unchecked" locally without a matching backend action.
-            checkbox.disabled = true;
-        } else if (!checkbox.checked) {
-            fd.append('_method', 'DELETE');
-        }
-
-        await fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd });
-    }
+const atcBaseUrl=@js(url('/collections')),atcStoreUrl=@js(route('collections.store')),atcCsrfToken=@js(csrf_token());
+const atcChannelMap=@json($atcCollections->flatMap(fn($c)=>$c->channels->map(fn($channel)=>[$channel->id,$c->id]))->groupBy(fn($pair)=>$pair[0])->map(fn($pairs)=>$pairs->pluck(1)));
+let atcTarget=null;
+function openAddToCollection(type,id,name){atcTarget={type,id,removable:type==='channel'};document.getElementById('atcTargetName').textContent=name;document.getElementById('atcToast').classList.remove('show');document.querySelectorAll('.atc-checkbox').forEach(cb=>{cb.disabled=false;cb.checked=type==='channel'?(atcChannelMap[id]||[]).includes(Number(cb.dataset.collectionId)):false});document.getElementById('addToCollectionOverlay').classList.add('show');document.body.style.overflow='hidden'}
+function closeAddToCollection(){document.getElementById('addToCollectionOverlay').classList.remove('show');document.getElementById('atcCreateForm').classList.remove('show');document.body.style.overflow=''}
+function toggleAtcCreate(){const form=document.getElementById('atcCreateForm');form.classList.toggle('show');if(form.classList.contains('show'))setTimeout(()=>document.getElementById('atcCollectionName').focus(),50)}
+function atcMessage(message){const toast=document.getElementById('atcToast');toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200)}
+async function atcToggle(checkbox){if(!atcTarget)return;const collectionId=Number(checkbox.dataset.collectionId),endpoint=atcTarget.type==='organization'?'organizations':'channels',url=`${atcBaseUrl}/${collectionId}/${endpoint}/${atcTarget.id}`,fd=new FormData();fd.append('_token',atcCsrfToken);if(!atcTarget.removable)checkbox.disabled=true;else if(!checkbox.checked)fd.append('_method','DELETE');checkbox.disabled=true;try{const response=await fetch(url,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:fd});if(!response.ok)throw new Error();if(atcTarget.type==='channel'){atcChannelMap[atcTarget.id]=atcChannelMap[atcTarget.id]||[];if(checkbox.checked&&!atcChannelMap[atcTarget.id].includes(collectionId))atcChannelMap[atcTarget.id].push(collectionId);if(!checkbox.checked)atcChannelMap[atcTarget.id]=atcChannelMap[atcTarget.id].filter(id=>id!==collectionId)}atcMessage(checkbox.checked?@js(__('Saved to collection.')):@js(__('Removed from collection.')))}catch(error){checkbox.checked=!checkbox.checked;atcMessage(@js(__('Could not update the collection. Please try again.')))}finally{if(atcTarget?.removable)checkbox.disabled=false}}
+async function createAtcCollection(event){event.preventDefault();if(!atcTarget||atcTarget.type!=='channel')return;const input=document.getElementById('atcCollectionName'),button=document.getElementById('atcCreateButton'),error=document.getElementById('atcCreateError'),fd=new FormData();fd.append('_token',atcCsrfToken);fd.append('name',input.value.trim());fd.append('icon','📁');fd.append('color','#5b4bdf');fd.append('channel_id',atcTarget.id);button.disabled=true;error.style.display='none';try{const response=await fetch(atcStoreUrl,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:fd});const data=await response.json();if(!response.ok)throw new Error(data.message||@js(__('Please check the collection name.')));const collection=data.collection;document.getElementById('atcEmpty')?.remove();const row=document.createElement('label');row.className='atc-row';row.dataset.collectionId=collection.id;row.innerHTML=`<span class="atc-row-icon" style="background-color:${collection.color}22;color:${collection.color}">${collection.icon}</span><span class="atc-row-name"></span><input type="checkbox" class="atc-checkbox" data-collection-id="${collection.id}" checked>`;row.querySelector('.atc-row-name').textContent=collection.name;row.querySelector('input').addEventListener('change',function(){atcToggle(this)});document.getElementById('atcList').appendChild(row);atcChannelMap[atcTarget.id]=atcChannelMap[atcTarget.id]||[];atcChannelMap[atcTarget.id].push(Number(collection.id));input.value='';document.getElementById('atcCreateForm').classList.remove('show');atcMessage(@js(__('Collection created and channel saved.')))}catch(ex){error.textContent=ex.message;error.style.display='block'}finally{button.disabled=false}}
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAddToCollection()});
 </script>
 @endauth

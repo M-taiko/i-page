@@ -81,14 +81,14 @@
     .section-hint { font-size: var(--text-xs); color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 4px; }
     [dir="rtl"] .rtl-flip { transform: scaleX(-1); display: inline-block; }
 
-    /* Channel spotlights */
+    /* Property channel cards */
     .spot-section { padding: 1.25rem 0 var(--space-4); border-bottom: 8px solid var(--surface-bg-secondary); scroll-margin-top: 70px; }
     .spot-strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px var(--space-4) 12px; scrollbar-width: none; scroll-padding-inline: var(--space-4); }
     .spot-strip::-webkit-scrollbar { display: none; }
-    .spot { flex: 0 0 auto; width: 132px; scroll-snap-align: start; text-decoration: none !important; color: inherit; border-radius: 20px; }
+    .spot { flex: 0 0 auto; width: 220px; scroll-snap-align: start; text-decoration: none !important; color: inherit; border-radius: 22px; }
     .spot:focus-visible { outline: 3px solid var(--primary-500); outline-offset: 3px; }
     .spot-tile {
-        position: relative; width: 132px; height: 184px; border-radius: 20px; overflow: hidden;
+        position: relative; width: 220px; height: 168px; border-radius: 22px; overflow: hidden;
         background: linear-gradient(160deg, var(--spot-tone) 0%, color-mix(in srgb, var(--spot-tone) 55%, #0f172a) 100%);
         box-shadow: 0 8px 22px rgba(15, 23, 42, .16);
         transition: transform .25s ease, box-shadow .25s ease;
@@ -97,7 +97,7 @@
     .spot:active .spot-tile { transform: scale(.97); }
     .spot-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .spot-tile::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.72) 100%); }
-    .spot-letter { position: absolute; inset: 0 0 34%; display: flex; align-items: center; justify-content: center; font-size: 56px; font-weight: 800; color: rgba(255,255,255,.92); text-shadow: 0 4px 18px rgba(0,0,0,.18); }
+    .spot-letter { position: absolute; inset: 0 0 30%; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 800; color: rgba(255,255,255,.92); text-shadow: 0 4px 18px rgba(0,0,0,.18); }
     .spot-badge { position: absolute; z-index: 2; top: 9px; inset-inline-start: 9px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.92); color: #0f172a; font-size: 11px; font-weight: 700; }
     .spot-cap { position: absolute; z-index: 2; inset-inline: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 2px; color: #fff; }
     .spot-name { font-size: 13px; font-weight: 800; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -133,8 +133,8 @@
     .soft-empty-chips .chip:hover { border-color: var(--primary-500); color: var(--primary-600); }
 
     @media (min-width: 768px) {
-        .spot, .spot-tile { width: 150px; }
-        .spot-tile { height: 208px; }
+        .spot, .spot-tile { width: 260px; }
+        .spot-tile { height: 184px; }
     }
     @media (prefers-reduced-motion: reduce) {
         .spot-tile { transition: none; }
@@ -275,7 +275,7 @@
                     @php
                         $cover = \App\Support\Designs::coverPaths($channel->design_options ?? [])[0] ?? $channel->logo_path;
                         $tone = $colorFor($channel->name);
-                        $subCount = $channel->childChannels->count();
+                        $subCount = $channel->childChannels->where('type','public')->where('status','active')->count();
                     @endphp
                     <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="spot" role="listitem"
                        style="--spot-tone: {{ $tone }};" aria-label="{{ $channel->name }}"
@@ -284,14 +284,14 @@
                             @if($cover)
                                 <img src="{{ \Illuminate\Support\Facades\Storage::url($cover) }}" alt="" loading="lazy">
                             @else
-                                <span class="spot-letter" aria-hidden="true">{{ mb_substr($channel->name, 0, 1) }}</span>
+                            <span class="spot-letter" aria-hidden="true"><i class="bi bi-building"></i></span>
                             @endif
                             @if($subCount)
                                 <span class="spot-badge"><i class="bi bi-diagram-3"></i> {{ $subCount }}</span>
                             @endif
                             <span class="spot-cap">
                                 <span class="spot-name">{{ $channel->name }}</span>
-                                <span class="spot-meta">{{ $channel->users_count }} {{ __('members') }} · {{ $channel->posts_count }} {{ __('posts') }}</span>
+                                <span class="spot-meta">{{ $subCount }} {{ __('guest services') }} · {{ $channel->posts_count }} {{ __('posts') }}</span>
                             </span>
                         </div>
                     </a>
@@ -309,7 +309,7 @@
     {{-- Posts under the channels; a friendly nudge toward the channels when there are none. --}}
     <section class="posts-section" aria-labelledby="postsTitle">
         <div class="section-head">
-            <h2 id="postsTitle"><i class="bi bi-newspaper"></i> {{ __('Latest posts') }}</h2>
+            <h2 id="postsTitle"><i class="bi bi-newspaper"></i> {{ __('From :name', ['name' => $organization->name]) }}</h2>
         </div>
 
         @if($posts->isNotEmpty())

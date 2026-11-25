@@ -62,7 +62,7 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:60',
@@ -79,10 +79,9 @@ class CollectionController extends Controller
 
         // Optional: create-and-add-channel in one step
         if ($request->filled('channel_id')) {
-            $channel = Channel::find($request->input('channel_id'));
-            if ($channel && auth()->user()->channels()->where('channel_id', $channel->id)->exists()) {
-                $collection->channels()->attach($channel->id);
-            }
+            $channel = Channel::findOrFail($request->integer('channel_id'));
+            $this->ensureSubscribed($channel);
+            $collection->channels()->syncWithoutDetaching([$channel->id]);
         }
 
         if ($request->wantsJson()) {
@@ -244,6 +243,8 @@ class CollectionController extends Controller
     private function ensureSubscribed(Channel $channel): void
     {
         $user = auth()->user();
+        abort_unless($channel->type === 'public' || $channel->canBeAccessedBy($user), 403);
+
         if (!$user->channels()->where('channel_id', $channel->id)->exists()) {
             $user->channels()->attach($channel->id, ['role' => 'member', 'joined_at' => now()]);
         }

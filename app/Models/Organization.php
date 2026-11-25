@@ -88,7 +88,7 @@ class Organization extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_memberships')
-            ->withPivot('role', 'status', 'job_title', 'department_id')
+            ->withPivot('role', 'status', 'job_title', 'department_id', 'can_manage_services', 'can_add_services', 'can_edit_services', 'can_delete_services')
             ->withTimestamps();
     }
 
@@ -105,6 +105,11 @@ class Organization extends Model
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function appointmentServices(): HasMany
+    {
+        return $this->hasMany(AppointmentService::class)->whereNull('channel_id');
     }
 
     public function qrCodes(): HasMany

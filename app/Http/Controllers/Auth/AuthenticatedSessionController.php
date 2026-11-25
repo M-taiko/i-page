@@ -28,6 +28,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        if ($invitation = app(\App\Http\Controllers\ChannelAccessController::class)->resume($request)) {
+            return $invitation;
+        }
+
         // Redirect to user feed instead of organization dashboard
         return redirect()->intended(route('user.feed', absolute: false));
     }

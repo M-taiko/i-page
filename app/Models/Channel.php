@@ -49,13 +49,18 @@ class Channel extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'channel_user')
-            ->withPivot('role', 'status', 'source', 'joined_at', 'muted_at', 'can_post', 'can_edit', 'can_delete')
+            ->withPivot('role', 'status', 'source', 'joined_at', 'muted_at', 'can_post', 'can_edit', 'can_delete', 'can_manage_bookings')
             ->using(ChannelUser::class);
     }
 
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function appointmentServices(): HasMany
+    {
+        return $this->hasMany(AppointmentService::class);
     }
 
     public function qrCodes(): MorphMany
@@ -359,6 +364,15 @@ class Channel extends Model
         return \Illuminate\Support\Facades\DB::table('channel_user')
             ->where('channel_id', $this->id)->where('user_id', $user->id)
             ->where('status', 'approved')->where('can_' . $ability, true)->exists();
+    }
+
+    public function canManageBookings(?User $user): bool
+    {
+        if (!$user) return false;
+        if ($this->canAdminister($user)) return true;
+        return (bool) \Illuminate\Support\Facades\DB::table('channel_user')
+            ->whereIn('channel_id', array_merge([$this->id], $this->ancestorIds()))
+            ->where('user_id',$user->id)->where('status','approved')->where('can_manage_bookings', true)->exists();
     }
 
     public function getMemberCountAttribute(): int

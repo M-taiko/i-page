@@ -257,6 +257,11 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    public function appointmentBookings()
+    {
+        return $this->hasMany(AppointmentBooking::class, 'customer_id');
+    }
+
     public function organizationMemberships()
     {
         return $this->hasMany(OrganizationMembership::class);

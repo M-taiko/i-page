@@ -61,6 +61,11 @@
     .fc-verified { position: absolute; bottom: -4px; inset-inline-end: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface-bg); color: #3b82f6; font-size: 14px; display: flex; align-items: center; justify-content: center; }
     .fc-who { min-width: 0; flex: 1; }
     .fc-source { display: block; font-weight: 800; font-size: 14.5px; color: var(--text-primary); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-source:hover { color: var(--primary-600); text-decoration: underline; }
+    .fc-path { display:flex;align-items:center;gap:3px;min-width:0;margin-top:1px;font-size:11px;line-height:1.35;color:var(--text-tertiary);white-space:nowrap;overflow:hidden; }
+    .fc-path a { color:var(--text-tertiary);text-decoration:none;overflow:hidden;text-overflow:ellipsis;max-width:120px;flex:0 1 auto; }
+    .fc-path a:hover { color:var(--primary-600);text-decoration:underline; }
+    .fc-path i { flex:0 0 auto;font-size:8px;opacity:.65; }
     .fc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
     .fc-org { color: var(--text-secondary); text-decoration: none; font-weight: 600; }
     .fc-pill { padding: 1px 7px; border-radius: 999px; background: var(--surface-hover); font-size: 11px; font-weight: 600; color: var(--text-secondary); }

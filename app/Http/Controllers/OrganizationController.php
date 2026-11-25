@@ -19,8 +19,10 @@ class OrganizationController extends Controller
 
     public function index()
     {
-        $organizations = Organization::with('users')->paginate(15);
-        return view('admin.organizations.index', compact('organizations'));
+        $organizations = Organization::withCount(['users', 'channels', 'posts'])->paginate(15);
+        $activeOrganizations = Organization::where('is_active', true)->count();
+        $inactiveOrganizations = Organization::where('is_active', false)->count();
+        return view('admin.organizations.index', compact('organizations', 'activeOrganizations', 'inactiveOrganizations'));
     }
 
     public function create()
@@ -196,11 +198,15 @@ class OrganizationController extends Controller
             'role' => 'required|in:organization_admin,manager,moderator,staff',
             'permissions' => 'nullable|array',
             'permissions.*' => 'string|exists:permissions,name',
+            'can_manage_services' => 'nullable|boolean',
+            'can_add_services' => 'nullable|boolean',
+            'can_edit_services' => 'nullable|boolean',
+            'can_delete_services' => 'nullable|boolean',
         ]);
 
         OrganizationMembership::where('organization_id', $organization->id)
             ->where('user_id', $user->id)
-            ->update(['role' => $validated['role']]);
+            ->update(['role' => $validated['role'], 'can_manage_services' => false, 'can_add_services' => $request->boolean('can_add_services'), 'can_edit_services' => $request->boolean('can_edit_services'), 'can_delete_services' => $request->boolean('can_delete_services')]);
 
         $user->syncRoles([$validated['role']]);
         $user->syncPermissions($validated['permissions'] ?? []);

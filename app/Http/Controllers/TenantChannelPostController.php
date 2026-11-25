@@ -30,15 +30,25 @@ class TenantChannelPostController extends Controller
     public function store(Request $request, Channel $channel)
     {
         abort_unless($channel->userCan($request->user(), 'post'), 403);
+        abort_unless($request->user()->hasRole('super_admin') || $channel->organization->isActive(), 403, __('This organization is currently suspended.'));
 
         $format = $this->formats->formatOf($request);
 
         $validated = $request->validate([
+            'status' => 'nullable|in:draft,pending_approval,published',
+            'post_type' => 'nullable|in:announcement,news,offer,emergency',
+            'language' => 'nullable|in:ar,en',
+            'requires_acknowledgment' => 'nullable|boolean',
+            'media' => 'nullable|array|max:8',
+            'media.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
             'title' => 'nullable|string|max:150',
             'summary' => 'nullable|string|max:500',
             // A poll question or event description can be short; a standard post needs real content.
             'body' => ['required', 'string', $format === 'standard' ? 'min:10' : 'min:3', 'max:5000'],
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'is_promotion' => 'nullable|boolean',
+            'booking_service_id' => ['nullable', 'required_if:is_promotion,1', 'integer', Rule::exists('appointment_services', 'id')->where(fn ($q) => $q->where('organization_id', $channel->organization_id)->whereNull('channel_id')->where('is_active', true))],
+            'booking_button_label' => 'nullable|string|max:40',
         ] + $this->publishRules() + $this->formats->rules($request));
 
         if ($format === 'poll' && ! $this->formats->pollOptionsAreEnough($validated)) {
@@ -53,8 +63,11 @@ class TenantChannelPostController extends Controller
         $post->summary = $validated['summary'] ?? null;
         $post->body = $validated['body'];
         $post->audience = 'channel';
-        $post->status = 'published';
-        $post->published_at = now();
+        $post->status = $validated['status'] ?? 'published';
+        $post->published_at = $post->status === 'published' ? now() : null;
+        $post->post_type = $request->boolean('is_promotion') ? 'offer' : ($validated['post_type'] ?? 'announcement');
+        $post->language = $validated['language'] ?? ($request->user()->language ?: 'en');
+        $post->requires_acknowledgment = $request->boolean('requires_acknowledgment');
 
         $afterSave = $this->formats->fill($post, $validated, $request);
         $this->applyPublishOptions($post, $request);
@@ -65,7 +78,12 @@ class TenantChannelPostController extends Controller
 
         $post->save();
         $afterSave($post);
-        app(\App\Services\PostNotificationService::class)->published($post);
+        foreach ($request->file('media', []) as $file) {
+            app(\App\Services\MediaService::class)->upload($file, $post, 'public', 'post_attachment');
+        }
+        if ($post->status === 'published') {
+            app(\App\Services\PostNotificationService::class)->published($post);
+        }
 
         return redirect()->to($this->channelUrl($channel))->with('success', __('Post created successfully!'));
     }
@@ -89,6 +107,9 @@ class TenantChannelPostController extends Controller
             'priority' => ['nullable', Rule::in(array_keys(config('posts.priorities')))],
             'badge_key' => ['nullable', Rule::in(array_keys(config('posts.badges')))],
             'badge_label' => 'nullable|string|max:40',
+            'is_promotion' => 'nullable|boolean',
+            'booking_service_id' => ['nullable', 'required_if:is_promotion,1', 'integer', Rule::exists('appointment_services', 'id')->where(fn ($q) => $q->where('organization_id', $channel->organization_id)->whereNull('channel_id')->where('is_active', true))],
+            'booking_button_label' => 'nullable|string|max:40',
         ] + $this->publishRules());
 
         $post->fill([
@@ -99,6 +120,7 @@ class TenantChannelPostController extends Controller
             'priority' => $validated['priority'] ?? $post->priority,
             'badge_key' => $validated['badge_key'] ?? null,
             'badge_label' => ($validated['badge_key'] ?? null) ? ($validated['badge_label'] ?? null) : null,
+            'post_type' => $request->boolean('is_promotion') ? 'offer' : $post->post_type,
         ]);
         $this->applyPublishOptions($post, $request);
         $post->save();
@@ -167,6 +189,13 @@ class TenantChannelPostController extends Controller
         }
 
         $options = $post->options ?? [];
+        if ($request->boolean('is_promotion')) {
+            $options['promotion'] = true;
+            $options['booking_service_id'] = $request->filled('booking_service_id') ? (int) $request->input('booking_service_id') : null;
+            $options['booking_button_label'] = $request->input('booking_button_label') ?: __('Book this offer');
+        } else {
+            unset($options['promotion'], $options['booking_service_id'], $options['booking_button_label']);
+        }
         if ($request->boolean('pinned')) {
             $options['pin_scope'] = $request->input('pin_scope') === 'channel' ? 'channel' : 'all';
         }

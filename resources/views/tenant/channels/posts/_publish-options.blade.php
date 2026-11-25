@@ -3,7 +3,7 @@
 @php
     $post = $post ?? null;
     $tenant = $tenant ?? null;
-    $children = $tenant ? collect() : $channel->childChannels()->pluck('name');
+    $children = ($tenant || ($dynamicChannel ?? false)) ? collect() : $channel->childChannels()->pluck('name');
     $pinned = old('pinned', $post?->isPinned() ? 1 : 0);
     $pinUntil = old('pinned_until', $post && $post->isPinned() && $post->pinned_until->lt(now()->addYears(5)) ? $post->pinned_until->format('Y-m-d\TH:i') : '');
     $pinThumb = $post?->option('pin_thumb');
@@ -96,7 +96,9 @@
         </div>
     </div>
     <p class="small text-muted mt-n2 mb-4">
-        @if ($children->isNotEmpty())
+        @if ($dynamicChannel ?? false)
+            {{ __('When enabled, the post also appears in sub-channels of the selected channel, respecting channel visibility.') }}
+        @elseif ($children->isNotEmpty())
             {{ __('Also appears in: :list (and their sub-channels).', ['list' => $children->implode('، ')]) }}
         @else
             {{ __('This channel has no sub-channels yet; the post will reach new ones automatically.') }}
@@ -127,7 +129,7 @@
                         <input type="radio" class="custom-control-input" id="pin_scope_channel" name="pin_scope" value="channel" @checked($scope === 'channel')>
                         <label class="custom-control-label" for="pin_scope_channel"><strong>{{ __('This channel only') }}</strong></label>
                     </div>
-                    <small class="text-muted mt-1">{{ __('The highlight appears only at the top of :name.', ['name' => $channel->name]) }}</small>
+                    <small class="text-muted mt-1">{{ __('The highlight appears only at the top of :name.', ['name' => ($dynamicChannel ?? false) ? __('the selected channel') : $channel->name]) }}</small>
                 </label>
             </div>
             <div class="col-md-6 mb-2">

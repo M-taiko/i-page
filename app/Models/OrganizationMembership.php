@@ -23,6 +23,10 @@ class OrganizationMembership extends Model
         'manager_user_id',
         'primary_location_id',
         'status',
+        'can_manage_services',
+        'can_add_services',
+        'can_edit_services',
+        'can_delete_services',
         'joined_date',
         'invited_by',
         'business_verified_at',
@@ -32,6 +36,10 @@ class OrganizationMembership extends Model
     protected $casts = [
         'joined_date' => 'datetime',
         'business_verified_at' => 'datetime',
+        'can_manage_services' => 'boolean',
+        'can_add_services' => 'boolean',
+        'can_edit_services' => 'boolean',
+        'can_delete_services' => 'boolean',
     ];
 
     public function organization(): BelongsTo

@@ -44,6 +44,17 @@ Route::group([], function () {
 });
 
 // Authenticated Routes
+Route::middleware(['auth','verified'])->prefix('book/channels/{channel}')->name('guest.bookings.')->controller(\App\Http\Controllers\PublicHotelBookingController::class)->group(function(){
+    Route::get('/','create')->name('create');
+    Route::post('/','store')->middleware('throttle:10,1')->name('store');
+    Route::get('/{booking}','show')->name('show');
+});
+Route::middleware(['auth','verified'])->prefix('appointments/channels/{channel}')->name('guest.appointments.')->controller(\App\Http\Controllers\PublicAppointmentController::class)->group(function(){
+    Route::get('/', 'create')->name('create');
+    Route::post('/', 'store')->middleware('throttle:10,1')->name('store');
+    Route::get('/{booking}', 'show')->name('show');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         try {
@@ -157,6 +168,7 @@ Route::middleware('auth')->prefix('organizations/{organization}/membership')->na
     Route::post('{user}/verify', [\App\Http\Controllers\OrganizationJoinController::class, 'verifyBusinessDetails'])->name('verify');
 
     // Admin-initiated invites (search an existing user, send them a request to join)
+    Route::get('invite/search', [\App\Http\Controllers\OrganizationJoinController::class, 'searchInvitees'])->name('invite-user.search')->middleware('throttle:60,1');
     Route::post('invite', [\App\Http\Controllers\OrganizationJoinController::class, 'inviteUser'])->name('invite-user');
     Route::delete('invite/{user}', [\App\Http\Controllers\OrganizationJoinController::class, 'cancelInvite'])->name('invite-user.cancel');
     Route::post('accept-invite', [\App\Http\Controllers\OrganizationJoinController::class, 'acceptInvite'])->name('accept-invite');
@@ -201,8 +213,36 @@ Route::middleware(['auth', 'verified', 'CheckRole:super_admin'])->prefix('admin'
 });
 
 // Tenant (Organization Admin) Routes
+Route::middleware(['auth','verified'])->prefix('tenant/hotel-group')->name('tenant.hotel-hierarchy.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\HotelHierarchyController::class,'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\HotelHierarchyController::class,'store'])->name('store');
+});
 Route::middleware(['auth', 'verified'])->prefix('tenant')->name('tenant.')->group(function () {
     Route::get('/', [TenantDashboardController::class, 'index'])->name('dashboard');
+    Route::get('services', [\App\Http\Controllers\TenantServiceController::class,'index'])->name('services.index');
+    Route::post('services', [\App\Http\Controllers\TenantServiceController::class,'store'])->name('services.store');
+    Route::put('services/{service}', [\App\Http\Controllers\TenantServiceController::class,'update'])->name('services.update');
+    Route::delete('services/{service}', [\App\Http\Controllers\TenantServiceController::class,'destroy'])->name('services.destroy');
+    Route::prefix('channels/{channel}/reservations')->name('bookings.')->controller(\App\Http\Controllers\HotelBookingController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('rooms', 'rooms')->name('rooms');
+        Route::post('rooms', 'saveRoom')->name('rooms.store');
+        Route::put('rooms/{room}', 'saveRoom')->name('rooms.update');
+        Route::post('rooms/{room}/calendar', 'calendar')->name('rooms.calendar');
+        Route::get('{booking}', 'show')->name('show');
+        Route::post('{booking}/status', 'status')->name('status');
+        Route::post('{booking}/payments', 'payment')->name('payments.store');
+    });
+    Route::prefix('channels/{channel}/appointments')->name('appointments.')->controller(\App\Http\Controllers\ChannelAppointmentController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{booking}', 'show')->name('show');
+        Route::put('/{booking}/status', 'update')->name('update');
+    });
+    Route::get('actions', [\App\Http\Controllers\ActionCenterController::class, 'index'])->name('actions.index');
+    Route::post('actions/{kind}/{id}', [\App\Http\Controllers\ActionCenterController::class, 'decide'])->name('actions.decide');
+    Route::put('channels/{channel}/modules', [\App\Http\Controllers\ChannelModuleController::class, 'update'])->name('channels.modules.update');
     Route::post('switch-organization', [TenantDashboardController::class, 'switchOrganization'])->name('switch-organization');
     Route::resource('channels', TenantChannelController::class);
     Route::post('channels/{channel}/toggle-status', [TenantChannelController::class, 'toggleStatus'])->name('channels.toggle-status');
@@ -396,3 +436,15 @@ Route::middleware(['organization.access'])->prefix('organization/{organization}/
 });
 
 require __DIR__.'/auth.php';
+
+// Channel grants and single-use invitations are scoped by the organization manager.
+Route::middleware(['auth', 'verified'])->prefix('organization/{organization}/dashboard')->name('dashboard.')->controller(\App\Http\Controllers\ChannelAccessController::class)->group(function () {
+    Route::get('users/{user}/channel-access', 'edit')->name('users.channel-access');
+    Route::put('users/{user}/channel-access', 'update')->name('users.channel-access.update');
+    Route::get('channel-invitations', 'invitations')->name('channel-invitations.index');
+    Route::post('channel-invitations', 'storeInvitation')->name('channel-invitations.store');
+    Route::get('channel-invitations/{invite}', 'preview')->name('channel-invitations.preview');
+    Route::delete('channel-invitations/{invite}', 'revoke')->name('channel-invitations.revoke');
+});
+Route::get('channel-invitations/{code}', [\App\Http\Controllers\ChannelAccessController::class, 'show'])->name('channel-invitations.show')->middleware('throttle:60,1');
+Route::post('channel-invitations/{code}', [\App\Http\Controllers\ChannelAccessController::class, 'accept'])->name('channel-invitations.accept')->middleware('throttle:15,1');

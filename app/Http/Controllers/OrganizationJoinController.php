@@ -228,6 +228,36 @@ class OrganizationJoinController extends Controller
         return back()->with('success', __('Invitation sent to :name.', ['name' => $targetUser->full_name]));
     }
 
+    public function searchInvitees(Request $request, Organization $organization): \Illuminate\Http\JsonResponse
+    {
+        $this->authorizeOrgAdmin($organization);
+        $query = trim((string) $request->validate(['q' => 'nullable|string|max:100'])['q'] ?? '');
+        if (mb_strlen($query) < 2) {
+            return response()->json(['users' => []]);
+        }
+
+        $term = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
+        $users = User::query()->whereKeyNot(auth()->id())
+            ->whereDoesntHave('organizationMemberships', fn ($membership) => $membership
+                ->where('organization_id', $organization->id)
+                ->whereIn('status', ['active', 'pending', 'invited']))
+            ->where(function ($builder) use ($term) {
+                $builder->where('first_name', 'like', "%{$term}%")
+                    ->orWhere('last_name', 'like', "%{$term}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$term}%"])
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('mobile', 'like', "%{$term}%");
+            })->orderBy('first_name')->limit(15)->get(['id', 'first_name', 'last_name', 'email', 'mobile']);
+
+        return response()->json(['users' => $users->map(fn ($user) => [
+            'id' => $user->id,
+            'name' => $user->full_name,
+            'email' => $user->email,
+            'mobile' => $user->mobile,
+            'initials' => $user->initials,
+        ])]);
+    }
+
     public function cancelInvite(Organization $organization, User $user): RedirectResponse
     {
         $this->authorizeOrgAdmin($organization);
@@ -349,8 +379,7 @@ class OrganizationJoinController extends Controller
     private function authorizeOrgAdmin(Organization $organization): void
     {
         $user = auth()->user();
-        $isAdmin = $user->hasRole('super_admin')
-            || $user->membershipFor($organization)?->role === 'organization_admin';
+        $isAdmin = \App\Models\Channel::isOrgManager($user, $organization->id);
 
         abort_unless($isAdmin, 403);
     }

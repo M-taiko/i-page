@@ -43,7 +43,7 @@
                         <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-outline-primary m-1"><i class="fe fe-eye"></i> {{ __('View') }}</a>
                     @endcan
                     @can('update', $post)
-                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-outline-secondary m-1"><i class="fe fe-edit"></i> {{ __('Edit') }}</a>
+                        <a href="{{ $post->editUrl() }}" class="btn btn-sm btn-outline-secondary m-1"><i class="fe fe-edit"></i> {{ __('Edit') }}</a>
                     @endcan
                     @if ($post->status === 'pending_approval' && auth()->user()->can('approvePost', $post))
                         <form action="{{ route('posts.approve', $post) }}" method="POST" class="d-inline">

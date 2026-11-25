@@ -65,4 +65,16 @@
     @if ($showWidgets ?? false)
         @include('posts.partials._widgets')
     @endif
+
+    @php
+        $bookingServiceId = $post->option('booking_service_id');
+        $showBookingCta = $post->option('promotion') && $bookingServiceId && $post->channel
+            && app(\App\Services\IndustryModuleService::class)->enabled($post->channel,'bookings')
+            && $post->channel->organization->appointmentServices()->whereKey($bookingServiceId)->where('is_active',true)->exists();
+    @endphp
+    @if($showBookingCta)
+        <a href="{{ route('guest.appointments.create',[$post->channel,'service'=>$bookingServiceId]) }}" class="btn btn-primary btn-block mt-3" style="border-radius:14px;padding:12px;font-weight:800;background:linear-gradient(135deg,#5146e5,#7c3aed);border:0">
+            <i class="bi bi-calendar2-check"></i> {{ $post->option('booking_button_label',__('Book this offer')) }}
+        </a>
+    @endif
 </div>

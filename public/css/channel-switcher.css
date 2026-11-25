@@ -1,0 +1,10 @@
+.ip-workspace .ip-channel-switcher{flex:1;min-width:0;max-width:520px;margin-inline:20px}
+.ip-workspace .ip-channel-switcher .select2-container .select2-selection--single{height:42px;border:1px solid #dfe5ef;border-radius:12px;background:#f6f8fc}
+.ip-workspace .ip-channel-switcher .select2-selection--single .select2-selection__rendered{line-height:40px;padding-inline:14px 30px;color:#26334b;font-size:13px}
+.ip-workspace .ip-channel-switcher .select2-selection--single .select2-selection__arrow{height:40px}
+.ip-channel-dropdown{border:1px solid #dfe5ef!important;border-radius:12px!important;overflow:hidden;box-shadow:0 12px 32px #152b4d20}
+.ip-channel-dropdown .select2-results__option{padding:12px 14px;font-size:13px;white-space:normal}
+.ip-channel-dropdown .select2-search__field{border-radius:8px;padding:8px!important}
+.dark-theme .ip-channel-switcher .select2-container .select2-selection--single,.dark-theme .ip-channel-dropdown{background:#1d293e!important;border-color:#354158!important;color:#e6ebf5}
+.dark-theme .ip-channel-switcher .select2-selection__rendered{color:#e6ebf5!important}
+@media(max-width:575px){.ip-workspace .main-header>.container-fluid{flex-wrap:wrap}.ip-workspace .ip-channel-switcher{order:3;flex-basis:100%;max-width:none;margin:6px 0 10px}.ip-workspace .main-header{height:auto;min-height:112px}.ip-workspace .main-content{padding-top:0}}

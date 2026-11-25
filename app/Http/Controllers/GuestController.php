@@ -76,7 +76,25 @@ class GuestController extends Controller
             'tab' => $tab,
             'hasFeed' => $hasFeed,
             'joinedCount' => $joined->count(),
+            'collections' => $this->collectionStrip($user),
         ]);
+    }
+
+    /**
+     * The member's collections for the story-style strip on /browse (docs/27): pinned first, then their order;
+     * has_new = a channel of the collection published in the last 24 hours.
+     */
+    private function collectionStrip(?\App\Models\User $user)
+    {
+        if (! $user) {
+            return collect();
+        }
+        $since = now()->subDay();
+
+        return $user->collections()->withCount('channels')
+            ->withExists(['channels as has_new' => fn ($c) => $c->whereHas('posts', fn ($p) => $p->where('status', 'published')->where('published_at', '>=', $since))])
+            ->orderByDesc('is_pinned')->orderBy('sort_order')
+            ->get();
     }
 
     /**
@@ -127,24 +145,27 @@ class GuestController extends Controller
     {
         $organization->loadCount(['users', 'channels', 'posts']);
 
-        // Public, top-level channels; sub-channels surface in their parent's "sub-channels" popup.
+        // Public roots only. Hotel properties are the public roots; public service channels
+        // appear inside their property while private staff channels never leave the workspace.
         $channels = $organization->channels()
             ->where('type', 'public')
-            ->whereDoesntHave('parentChannels')
+            ->where('status', 'active')->whereDoesntHave('parentChannels', fn ($q) => $q->where('type','public')->where('status','active'))
             ->withCount('users', 'posts')
-            ->with(['childChannels' => fn ($cq) => $cq->withCount('users', 'posts')])
+            ->with(['childChannels' => fn ($cq) => $cq->where('type','public')->where('status','active')->withCount('users', 'posts')])
             ->orderBy('name')
             ->get();
 
-        // The tenant's own posts shown on its page, plus posts of its public channels (ADR-016).
+        // The tenant page is editorial: tenant-authored page posts plus explicitly pinned
+        // public-channel posts. Ordinary channel posts stay inside their channel.
         $posts = Post::where(fn ($q) => $q
-                ->whereHas('channel', fn ($c) => $c->where('organization_id', $organization->id)->where('type', 'public'))
-                ->orWhere(fn ($t) => $t->whereNull('channel_id')->where('organization_id', $organization->id)
-                    ->whereNotNull('placement')->where('show_on_page', true)))
+                ->where(fn ($t) => $t->whereNull('channel_id')->where('organization_id', $organization->id)
+                    ->whereNotNull('placement')->where('show_on_page', true))
+                ->orWhere(fn ($p) => $p->where('organization_id', $organization->id)
+                    ->whereNotNull('channel_id')->where('pinned_until', '>', now())
+                    ->whereHas('channel', fn ($c) => $c->where('type', 'public')->where('status', 'active'))))
             ->where('status', 'published')
             ->tap(fn ($q) => app(FeedService::class)->decorate($q, auth()->user()))
-            // Pinned first, then the tenant's own posts, then channel posts — newest first in each group.
-            ->orderByRaw('CASE WHEN pinned_until > ? THEN 0 WHEN channel_id IS NULL THEN 1 ELSE 2 END', [now()])
+            ->orderByRaw('CASE WHEN pinned_until > ? THEN 0 ELSE 1 END', [now()])
             ->latest('published_at')
             ->paginate(12)
             ->withQueryString();
@@ -171,7 +192,7 @@ class GuestController extends Controller
     public function channelDetail(Organization $organization, $channelSlug): View
     {
         $channel = $organization->channels()
-            ->where('slug', $channelSlug)
+            ->where('slug', $channelSlug)->where('status','active')
             ->where('type', 'public')
             ->withCount('users')
             ->firstOrFail();
@@ -209,7 +230,7 @@ class GuestController extends Controller
         // popup on the organization page.
         $orgChannels = $organization->channels()
             ->where('type', 'public')
-            ->whereDoesntHave('parentChannels')
+            ->where('status', 'active')->whereDoesntHave('parentChannels', fn ($q) => $q->where('type','public')->where('status','active'))
             ->withCount(['posts', 'users' => fn ($u) => $u->where('channel_user.status', 'approved')])
             ->orderBy('name')
             ->get();

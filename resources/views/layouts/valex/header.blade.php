@@ -2,75 +2,80 @@
     $user = auth()->user();
     $logo = fn (string $name) => asset('assets/valex/img/brand/' . $name);
     $navNotifications = $user->notifications()->latest()->take(8)->get();
-    $navUnreadCount = $navNotifications->whereNull('read_at')->count();
+    $navUnreadCount = $user->notifications()->whereNull('read_at')->count();
+    $channelOptions = \App\Support\ChannelNavigation::options($user, $user->currentOrganization);
+    $routeChannel = request()->route('channel');
+    $selectedChannelId = $routeChannel instanceof \App\Models\Channel ? $routeChannel->id : (int) $routeChannel;
 @endphp
 
 <div class="main-header sticky side-header nav nav-item">
     <div class="container-fluid">
         <div class="main-header-left">
             <div class="responsive-logo">
-                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="32" class="logo-1" /></a>
-                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="32" class="dark-logo-1" style="--bl-ink-1: #e0e7ff; --bl-ink-2: #c4b5fd;" /></a>
-                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="32" class="logo-2" /></a>
-                <a href="{{ route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="32" class="dark-logo-2" /></a>
+                <a href="{{ $user->hasRole('super_admin') ? route('admin.dashboard') : route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="32" class="logo-1" /></a>
+                <a href="{{ $user->hasRole('super_admin') ? route('admin.dashboard') : route('organizations.dashboard') }}"><x-brand-logo animate="idle" :height="32" class="dark-logo-1" style="--bl-ink-1: #e0e7ff; --bl-ink-2: #c4b5fd;" /></a>
+                <a href="{{ $user->hasRole('super_admin') ? route('admin.dashboard') : route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="32" class="logo-2" /></a>
+                <a href="{{ $user->hasRole('super_admin') ? route('admin.dashboard') : route('organizations.dashboard') }}"><x-brand-logo variant="mark" animate="idle" :height="32" class="dark-logo-2" /></a>
             </div>
             <div class="app-sidebar__toggle" data-toggle="sidebar">
-                <a class="open-toggle" href="#"><i class="header-icon fe fe-align-left"></i></a>
-                <a class="close-toggle" href="#"><i class="header-icons fe fe-x"></i></a>
+                <a class="open-toggle" href="#" aria-label="{{ $isRtl ? 'فتح القائمة' : 'Open navigation' }}"><i class="header-icon fe fe-align-left"></i></a>
+                <a class="close-toggle" href="#" aria-label="{{ $isRtl ? 'إغلاق القائمة' : 'Close navigation' }}"><i class="header-icons fe fe-x"></i></a>
             </div>
         </div>
 
+        @if($channelOptions)
+        <div class="ip-channel-switcher">
+            <label class="sr-only" for="workspace-channel">{{ __('Switch channel') }}</label>
+            <select id="workspace-channel" class="form-control" data-placeholder="{{ $isRtl ? 'ابحث عن قناة...' : 'Search and switch channel…' }}">
+                <option value=""></option>
+                @foreach($channelOptions as $option)
+                <option value="{{ $option['url'] }}" @selected($selectedChannelId === $option['id'])>{{ $option['label'] }}</option>
+                @endforeach
+            </select>
+        </div>
+        @else
+        <div class="ip-workspace-context">
+            <span class="ip-context-dot" aria-hidden="true"></span>
+            <span>{{ $user->hasRole('super_admin') ? ($isRtl ? 'إدارة المنصة' : 'Platform workspace') : ($user->currentOrganization?->name ?? ($isRtl ? 'مساحة العمل' : 'Workspace')) }}</span>
+        </div>
+        @endif
         <div class="main-header-right">
             <ul class="nav">
                 {{-- Theme toggle --}}
                 <li>
-                    <a class="new nav-link" href="#" id="valexThemeToggle" title="{{ __('Toggle Theme') }}">
+                    <a class="new nav-link" href="#" id="valexThemeToggle" aria-label="{{ $isRtl ? 'تغيير المظهر' : 'Toggle theme' }}" title="{{ __('Toggle Theme') }}">
                         <i class="fe fe-moon header-icon-svgs"></i>
                     </a>
                 </li>
             </ul>
 
-            {{-- Notifications --}}
-            <div class="dropdown nav-item main-header-notification">
-                <a class="new nav-link" href="#" data-toggle="dropdown" aria-label="{{ __('Notifications') }}">
+            {{-- Notifications (same items and endpoint as the phone bell: docs/27) --}}
+            <div class="nav-item dvn" id="dvNotif" data-latest-url="{{ route('user.notifications.latest') }}" data-read-all-url="{{ route('user.notifications.read-all') }}">
+                <button type="button" class="new nav-link dvn-btn {{ $navUnreadCount ? 'has-unread' : '' }}" id="dvNotifBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="dvNotifPanel" aria-label="{{ __('Notifications') }}">
                     <i class="fe fe-bell header-icon-svgs"></i>
-                    @if ($navUnreadCount > 0)<span class="pulse"></span>@endif
-                </a>
-                <div class="dropdown-menu">
-                    <div class="menu-header-content bg-primary">
-                        <h6 class="dropdown-title mb-1 tx-15 text-white font-weight-semibold">{{ __('Notifications') }}</h6>
-                        <p class="dropdown-title-text subtext mb-0 text-white op-6 pb-0 tx-12">
-                            {{ trans_choice('{0} No unread notifications|{1} You have 1 unread notification|[2,*] You have :count unread notifications', $navUnreadCount, ['count' => $navUnreadCount]) }}
-                        </p>
+                    <span class="dvn-badge" id="dvNotifBadge" @unless ($navUnreadCount) hidden @endunless>{{ $navUnreadCount > 99 ? '99+' : $navUnreadCount }}</span>
+                </button>
+                <div class="dvn-panel" id="dvNotifPanel" role="dialog" aria-label="{{ __('Notifications') }}" hidden>
+                    <div class="dvn-head">
+                        <div>
+                            <strong>{{ __('Notifications') }}</strong>
+                            <small id="dvNotifSub">{{ trans_choice('{0} You\'re all caught up|{1} 1 unread|[2,*] :count unread', $navUnreadCount, ['count' => $navUnreadCount]) }}</small>
+                        </div>
+                        <button type="button" class="dvn-all" id="dvNotifReadAll"><i class="fe fe-check-circle"></i> {{ __('Mark all read') }}</button>
                     </div>
-                    <div class="main-notification-list Notification-scroll">
-                        @forelse ($navNotifications as $notification)
-                            <a class="d-flex p-3 border-bottom" href="{{ $notification->data['link'] ?? route('user.notifications') }}">
-                                <div class="notifyimg {{ $notification->isRead() ? 'bg-secondary' : 'bg-primary' }}">
-                                    <i class="la la-bell text-white"></i>
-                                </div>
-                                <div class="mx-3">
-                                    <h5 class="notification-label mb-1">{{ $notification->data['message'] ?? ucfirst(str_replace('_', ' ', $notification->type)) }}</h5>
-                                    <div class="notification-subtext">{{ $notification->created_at->diffForHumans() }}</div>
-                                </div>
-                            </a>
-                        @empty
-                            <div class="p-4 text-center text-muted">{{ __('No notifications yet') }}</div>
-                        @endforelse
+                    <div class="dvn-list np-list" id="dvNotifList">
+                        @include('notifications._panel-items', ['items' => $navNotifications])
                     </div>
-                    <div class="dropdown-footer">
-                        <a href="{{ route('user.notifications') }}">{{ __('View All') }}</a>
-                    </div>
+                    <a class="dvn-foot" href="{{ route('user.notifications') }}">{{ __('See all notifications') }} <i class="fe fe-arrow-right"></i></a>
                 </div>
             </div>
-
             <div class="nav-item full-screen fullscreen-button">
-                <a class="new nav-link full-screen-link" href="#"><i class="fe fe-maximize header-icon-svgs"></i></a>
+                <a class="new nav-link full-screen-link" href="#" aria-label="{{ $isRtl ? 'ملء الشاشة' : 'Full screen' }}"><i class="fe fe-maximize header-icon-svgs"></i></a>
             </div>
 
             {{-- Profile --}}
             <div class="dropdown main-profile-menu nav nav-item nav-link">
-                <a class="profile-user d-flex" href="#">
+                <a class="profile-user d-flex" href="#" aria-label="{{ $isRtl ? 'قائمة الحساب' : 'Account menu' }}">
                     @if ($user->avatar_path)
                         <img alt="{{ $user->name }}" src="{{ Storage::url($user->avatar_path) }}">
                     @else

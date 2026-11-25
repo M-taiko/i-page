@@ -17,7 +17,7 @@
                     <i class="bi {{ ($isFavorited ?? false) ? 'bi-star-fill' : 'bi-star' }}"></i>
                 </button>
             </form>
-            <button type="button" class="app-bar-icon-btn" onclick="openAddToCollection('channel', {{ $channel->id }}, '{{ $channel->name }}')" aria-label="{{ __('Add to Collection') }}">
+            <button type="button" class="app-bar-icon-btn" onclick="openAddToCollection('channel', {{ $channel->id }}, @js($channel->name))" aria-label="{{ __('Add to Collection') }}">
                 <i class="bi bi-folder-plus"></i>
             </button>
         </div>
@@ -60,12 +60,42 @@
     .channel-hero-subscribe:disabled { opacity: .85; cursor: default; }
     .channel-hero-actions { display: inline-flex; align-items: center; gap: 8px; }
     .channel-hero-actions form { margin: 0; }
+    .channel-hero-collect {
+        min-height: 40px; padding: var(--space-2) var(--space-5); border: 1px solid rgba(255,255,255,.58);
+        border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        color: #fff; background: rgba(255,255,255,.14); font-size: var(--text-sm); font-weight: 800;
+        cursor: pointer; transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .channel-hero-collect:hover { transform: translateY(-2px); background: rgba(255,255,255,.24); box-shadow: 0 10px 24px rgba(15,23,42,.18); }
+    .channel-hero-collect i { font-size: 16px; }
+    .channel-hero-book {
+        position: relative; overflow: hidden; isolation: isolate;
+        border: 1px solid rgba(255,255,255,.7); border-radius: var(--radius-full);
+        padding: var(--space-2) var(--space-5); min-height: 40px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        color: #fff; background: rgba(15,23,42,.28); text-decoration: none;
+        font-size: var(--text-sm); font-weight: 800;
+        box-shadow: 0 10px 28px rgba(15,23,42,.2);
+        transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+        animation: bookingBreathe 2.8s ease-in-out infinite;
+    }
+    .channel-hero-book::before {
+        content: ''; position: absolute; inset: -2px; z-index: -1;
+        background: linear-gradient(110deg,transparent 20%,rgba(255,255,255,.38) 46%,transparent 72%);
+        transform: translateX(-120%); animation: bookingShine 3.2s ease-in-out infinite;
+    }
+    .channel-hero-book:hover { color:#fff; text-decoration:none; transform: translateY(-2px); background:rgba(15,23,42,.42); box-shadow:0 15px 35px rgba(15,23,42,.28); }
+    .channel-hero-book i { font-size: 17px; animation: bookingCalendar 2.8s ease-in-out infinite; }
+    @keyframes bookingBreathe { 0%,100% { box-shadow:0 10px 28px rgba(15,23,42,.18),0 0 0 0 rgba(255,255,255,.2); } 50% { box-shadow:0 12px 32px rgba(15,23,42,.25),0 0 0 7px rgba(255,255,255,0); } }
+    @keyframes bookingShine { 0%,55% { transform:translateX(-120%); } 85%,100% { transform:translateX(120%); } }
+    @keyframes bookingCalendar { 0%,82%,100% { transform:rotate(0) scale(1); } 88% { transform:rotate(-8deg) scale(1.12); } 94% { transform:rotate(6deg) scale(1.08); } }
+    @media (max-width:420px) { .channel-hero-actions { display:flex; flex-wrap:wrap; justify-content:center; width:100%; } .channel-hero-book { flex-basis:100%; max-width:230px; margin-top:2px; } }
     .channel-hero-bell { width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; background: rgba(255,255,255,.2); color: #fff; transition: background .2s, color .2s, transform .15s; }
     .channel-hero-bell:hover { transform: translateY(-1px); }
     .channel-hero-bell.is-on { background: #fff; color: #f59e0b; }
     .channel-hero-bell.ring i { animation: chRing .7s ease; display: inline-block; transform-origin: 50% 10%; }
     @keyframes chRing { 20% { transform: rotate(16deg); } 40% { transform: rotate(-14deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
-    @media (prefers-reduced-motion: reduce) { .channel-hero-bell.ring i { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .channel-hero-bell.ring i, .channel-hero-book, .channel-hero-book::before, .channel-hero-book i { animation: none; } }
 
     /* Instagram-style "stories" strip — all sibling channels of this org */
     .stories-strip {
@@ -186,6 +216,9 @@
     @php
         $avatarPalette = ['#4557f5', '#7c3aed', '#059669', '#d97706', '#dc2626', '#2563eb', '#db2777'];
         $colorFor = fn($seed) => $avatarPalette[crc32($seed) % count($avatarPalette)];
+        $canBook = $channel->type === 'public' && $channel->status === 'active'
+            && app(\App\Services\IndustryModuleService::class)->enabled($channel,'bookings')
+            && $channel->organization->appointmentServices()->where('is_active',true)->exists();
     @endphp
 
     <div class="channel-hero">
@@ -219,11 +252,21 @@
                         </button>
                     </form>
                 @endif
+                @if($canBook)
+                    <a class="channel-hero-book" href="{{ route('guest.appointments.create',$channel) }}" data-tip="{{ __('Book an experience') }}" data-tip-sub="{{ __('Choose a service and appointment time') }}">
+                        <i class="bi bi-calendar2-check-fill"></i><span>{{ __('Book now') }}</span>
+                    </a>
+                @endif
+                <button type="button" class="channel-hero-collect" onclick="openAddToCollection('channel', {{ $channel->id }}, @js($channel->name))" data-tip="{{ __('Save to collection') }}" data-tip-sub="{{ __('Organize this channel in your personal collections') }}">
+                    <i class="bi bi-folder-plus"></i><span>{{ __('Save') }}</span>
+                </button>
             </div>
         @else
-            <button type="button" class="channel-hero-subscribe subscribe" onclick="requireSignIn()">
-                <i class="bi bi-plus-lg"></i> {{ __('Subscribe') }}
-            </button>
+            <div class="channel-hero-actions">
+                <button type="button" class="channel-hero-subscribe subscribe" onclick="requireSignIn()"><i class="bi bi-plus-lg"></i> {{ __('Subscribe') }}</button>
+                @if($canBook)<button type="button" class="channel-hero-book" onclick="requireSignIn()"><i class="bi bi-calendar2-check-fill"></i><span>{{ __('Book now') }}</span></button>@endif
+                <button type="button" class="channel-hero-collect" onclick="requireSignIn()" data-tip="{{ __('Save to collection') }}" data-tip-sub="{{ __('Sign in to organize your favorite channels') }}"><i class="bi bi-folder-plus"></i><span>{{ __('Save') }}</span></button>
+            </div>
         @endauth
     </div>
 

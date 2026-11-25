@@ -5,7 +5,7 @@
     $assets = fn (string $path) => asset('assets/valex/' . $path);
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
+<html lang="{{ $isRtl ? 'ar' : str_replace('_', '-', app()->getLocale()) }}" dir="{{ $isRtl ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,13 +17,18 @@
     <link href="{{ $assets($cssDir . '/icons.css') }}" rel="stylesheet">
     <link href="{{ $assets('plugins/mscrollbar/jquery.mCustomScrollbar.css') }}" rel="stylesheet">
     <link href="{{ $assets('plugins/sidebar/sidebar.css') }}" rel="stylesheet">
+    <link href="{{ $assets('plugins/select2/css/select2.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/channel-switcher.css') }}" rel="stylesheet">
     <link href="{{ $assets($cssDir . '/sidemenu.css') }}" rel="stylesheet">
     @yield('css')
     <link href="{{ $assets($cssDir . '/style.css') }}" rel="stylesheet">
     <link href="{{ asset('css/illustrations.css') }}" rel="stylesheet">
     <link href="{{ $assets($cssDir . '/style-dark.css') }}" rel="stylesheet">
     <link href="{{ $assets($cssDir . '/skin-modes.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    @include('layouts.valex._notifications-assets')
     @stack('styles')
+    <link href="{{ asset('css/admin-workspace.css') }}?v=1" rel="stylesheet">
 
     {{-- Apply the saved theme before first paint to avoid a flash. --}}
     <script>
@@ -35,13 +40,14 @@
     </script>
 </head>
 
-<body class="main-body app sidebar-mini">
+<body class="main-body app sidebar-mini ip-workspace">
     <script>
         if (document.documentElement.classList.contains('dark-theme-pending')) {
             document.body.classList.add('dark-theme');
         }
     </script>
 
+    <a class="ip-skip-link" href="#workspace-content">{{ __('Skip to content') }}</a>
     <div id="global-loader">
         <x-app-loader :size="48" class="loader-img" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" />
     </div>
@@ -51,7 +57,7 @@
     <div class="main-content app-content">
         @include('layouts.valex.header')
 
-        <div class="container-fluid">
+        <main class="container-fluid" id="workspace-content" tabindex="-1">
             @hasSection('page-header')
                 @yield('page-header')
             @endif
@@ -59,7 +65,7 @@
             @include('layouts.valex.flash')
 
             @yield('content')
-        </div>
+        </main>
     </div>
 
     @include('layouts.valex.footer')
@@ -67,6 +73,8 @@
     <a href="#top" id="back-to-top"><i class="las la-angle-double-up"></i></a>
 
     <script src="{{ $assets('plugins/jquery/jquery.min.js') }}"></script>
+    <script src="{{ $assets('plugins/select2/js/select2.min.js') }}"></script>
+    <script src="{{ asset('js/channel-switcher.js') }}"></script>
     <script src="{{ $assets('plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ $assets('plugins/moment/moment.js') }}"></script>
     <script src="{{ $assets('plugins/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
@@ -103,5 +111,6 @@
             paint();
         })();
     </script>
+    <script src="{{ asset('js/admin-workspace.js') }}?v=1"></script>
 </body>
 </html>

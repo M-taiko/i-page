@@ -46,10 +46,16 @@
 
     <div class="col-lg-8">
         <div class="row row-sm">
-            @foreach ([[__('Received'), $stats['received'], 'inbox', 'primary'], [__('Viewed'), $stats['viewed'], 'eye', 'info'], [__('Read'), $stats['read'], 'check', 'success'], [__('Acknowledged'), $stats['acknowledged'], 'check-circle', 'warning'], [__('Tickets'), $stats['tickets'], 'tag', 'danger'], [__('QR scans'), $stats['qrScans'], 'grid', 'purple']] as [$l, $v, $i, $c])
+            @foreach ([[__('Received'), $stats['received'], 'inbox', 'primary'], [__('Viewed'), $stats['viewed'], 'eye', 'info'], [__('Read'), $stats['read'], 'check', 'success'], [__('Bookings'), $stats['bookings'], 'calendar', 'warning'], [__('Tickets'), $stats['tickets'], 'tag', 'danger'], [__('QR scans'), $stats['qrScans'], 'grid', 'purple']] as [$l, $v, $i, $c])
                 <div class="col-6 col-md-4"><x-valex.stat-card :title="$l" :value="$v" :icon="$i" :variant="$c" /></div>
             @endforeach
         </div>
+
+        <x-valex.card :title="__('Booking history') . ' (' . $bookings->count() . ')'" :subtitle="__('Service interests are retained in the customer profile for future CRM segments and campaigns.')">
+            <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>{{ __('Service') }}</th><th>{{ __('Channel') }}</th><th>{{ __('Appointment') }}</th><th>{{ __('Status') }}</th></tr></thead><tbody>
+            @forelse($bookings as $booking)<tr><td>{{ $booking->service->name }}</td><td>{{ $booking->channel->name }}</td><td>{{ $booking->starts_at->format('d M Y, h:i A') }}</td><td><span class="badge badge-primary">{{ __(str_replace('_',' ',$booking->status)) }}</span></td></tr>@empty<tr><td colspan="4" class="text-muted text-center">{{ __('No bookings yet') }}</td></tr>@endforelse
+            </tbody></table></div>
+        </x-valex.card>
 
         <x-valex.card :title="__('Engagement')" :subtitle="__('Share of received posts that were read')">
             <div class="d-flex justify-content-between mb-1"><span class="text-muted">{{ __('Read rate') }}</span><strong>{{ $engagement }}%</strong></div>

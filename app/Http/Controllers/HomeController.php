@@ -24,8 +24,16 @@ class HomeController extends Controller
         // Get all public channels in the organization
         $channels = Channel::where('organization_id', $organization)
             ->where('type', 'public')
-            ->withCount('users', 'posts')
-            ->get();
+            ->with(['parentChannels:id,name,slug'])
+            ->withCount(['users', 'posts', 'childChannels'])
+            ->orderBy('name')
+            ->get()
+            ->sortBy(fn (Channel $channel) => sprintf(
+                '%d-%s',
+                $channel->parentChannels->isNotEmpty() ? 1 : 0,
+                mb_strtolower($channel->name)
+            ))
+            ->values();
 
         // The user's subscribed channels (only if authenticated)
         $subscribedChannelIds = [];

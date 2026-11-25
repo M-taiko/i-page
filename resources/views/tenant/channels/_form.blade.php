@@ -11,7 +11,7 @@
 
             <x-valex.select name="parent_channel_id" :label="__('Parent Channel (optional)')"
                 :placeholder="__('None — this is a top-level channel')"
-                :options="collect($parentOptions)->pluck('name', 'id')->all()" :value="$selectedParentId ?? null"
+                :options="collect(\App\Support\ChannelNavigation::options(auth()->user(), auth()->user()->currentOrganization))->whereIn('id',collect($parentOptions)->pluck('id'))->pluck('label','id')->all()" :value="$selectedParentId ?? null"
                 :help="__('Make this a sub-channel nested under another channel. Visitors will see it inside a popup when they tap the parent channel.')" />
         </x-valex.card>
 
@@ -35,6 +35,7 @@
         </x-valex.card>
 
         @include('channels._design-fields')
+        @include('tenant.channels._booking-fields')
 
         <div class="alert alert-info">
             <strong><i class="fe fe-info"></i> {{ __('Tip') }}</strong>

@@ -5,6 +5,7 @@
 @section('page-header')
     <x-valex.page-header :title="__('Team Members')" :subtitle="__('Manage your organization\'s people, roles, and business details')">
         <x-slot:actions>
+            @if(\App\Models\Channel::isOrgManager(auth()->user(), $org->id))<a href="{{ route('dashboard.channel-invitations.index', $org) }}" class="btn btn-outline-primary"><i class="fe fe-grid"></i> {{ __('QR Invitations') }}</a>@endif
             <a href="{{ route('dashboard.users.create', $organization) }}" class="btn btn-primary"><i class="fe fe-user-plus"></i> {{ __('Add Member') }}</a>
         </x-slot:actions>
     </x-valex.page-header>
@@ -112,6 +113,7 @@
                             </li>
                         </ul>
 
+                        @if(\App\Models\Channel::isOrgManager(auth()->user(), $org->id))<a href="{{ route('dashboard.users.channel-access', [$org, $user]) }}" class="btn btn-outline-primary btn-block mb-3"><i class="fe fe-shield"></i> {{ __('Channel permissions') }}</a>@endif
                         <div class="d-flex border-top pt-3">
                             <button type="button" class="btn btn-sm btn-light flex-fill mx-1"
                                     onclick="openBusinessModal({{ $user->id }}, '{{ addslashes($user->full_name) }}', '{{ addslashes($membership?->job_title ?? '') }}', '{{ addslashes($membership?->employee_id ?? '') }}')">

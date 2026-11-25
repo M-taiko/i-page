@@ -11,6 +11,7 @@
 @endsection
 
 @section('content')
+<div class="ip-action-banner"><div><span class="ip-task-type">{{ __('YOUR WORKSPACE') }}</span><h2>{{ __('Keep your team moving') }}</h2><p>{{ __('Review pending posts and organization or channel join requests in one place.') }}</p></div><a class="btn btn-primary" href="{{ route('tenant.actions.index') }}">{{ __('Open action center') }} <i class="fe fe-arrow-right"></i></a></div>
 <div class="row row-sm">
     <div class="col-sm-6 col-xl-4"><x-valex.stat-card :title="__('Channels')" :value="$stats['total_channels'] . '/' . $stats['max_channels']" icon="message-circle" variant="primary" /></div>
     <div class="col-sm-6 col-xl-4"><x-valex.stat-card :title="__('Posts')" :value="$stats['total_posts']" icon="file-text" variant="success" /></div>

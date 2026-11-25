@@ -20,10 +20,10 @@
             <x-valex.stat-card :title="__('Total Organizations')" :value="$organizations->total()" icon="briefcase" variant="primary" />
         </div>
         <div class="col-sm-6 col-xl-4">
-            <x-valex.stat-card :title="__('Active')" :value="$organizations->where('is_active', true)->count()" icon="check-circle" variant="success" />
+            <x-valex.stat-card :title="__('Active')" :value="$activeOrganizations" icon="check-circle" variant="success" />
         </div>
         <div class="col-sm-6 col-xl-4">
-            <x-valex.stat-card :title="__('Inactive')" :value="$organizations->where('is_active', false)->count()" icon="x-circle" variant="danger" />
+            <x-valex.stat-card :title="__('Inactive')" :value="$inactiveOrganizations" icon="x-circle" variant="danger" />
         </div>
     </div>
 
@@ -55,9 +55,9 @@
                                     </div>
                                 </td>
                                 <td class="text-center"><x-valex.badge variant="primary">{{ $org->max_channels }}</x-valex.badge></td>
-                                <td class="text-center"><x-valex.badge variant="info">{{ $org->users()->count() }}</x-valex.badge></td>
-                                <td class="text-center"><x-valex.badge variant="warning">{{ $org->channels()->count() }}</x-valex.badge></td>
-                                <td class="text-center"><x-valex.badge variant="success">{{ $org->posts()->count() }}</x-valex.badge></td>
+                                <td class="text-center"><x-valex.badge variant="info">{{ $org->users_count }}</x-valex.badge></td>
+                                <td class="text-center"><x-valex.badge variant="warning">{{ $org->channels_count }}</x-valex.badge></td>
+                                <td class="text-center"><x-valex.badge variant="success">{{ $org->posts_count }}</x-valex.badge></td>
                                 <td class="text-center">
                                     @if ($org->is_active)
                                         <x-valex.badge variant="success">{{ __('Active') }}</x-valex.badge>

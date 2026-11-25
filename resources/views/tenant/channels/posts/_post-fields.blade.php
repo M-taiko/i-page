@@ -16,7 +16,7 @@
             <div class="col-6 col-md-4 col-xl mb-2">
                 <label class="card h-100 mb-0 text-center" style="cursor:pointer">
                     <div class="card-body py-3 px-2">
-                        <input type="radio" name="post_format" value="{{ $key }}" class="d-none format-radio" @checked($currentFormat === $key)>
+                        <input type="radio" name="post_format" value="{{ $key }}" class="format-radio composer-radio" @checked($currentFormat === $key)>
                         <i class="fe fe-{{ $f['icon'] }} tx-24 d-block mb-1"></i>
                         <strong class="d-block">{{ __($f['name']) }}</strong>
                         <small class="text-muted">{{ __($f['description']) }}</small>
@@ -36,7 +36,7 @@
     </div>
 
     <x-valex.input name="title" :label="__('Title')" maxlength="150" :placeholder="__('Optional headline')" />
-    <x-valex.textarea name="body" rows="6" required maxlength="5000" id="bodyField"
+    <x-valex.textarea name="body" rows="6" required maxlength="5000"
         :label="__('Post Content')" :placeholder="__('Write your post content here (minimum 10 characters)...')" />
     <div class="small text-muted mb-3"><span id="charCount">0</span> / 5000 {{ __('characters') }}</div>
 
@@ -152,6 +152,19 @@
     </div>
 </x-valex.card>
 
+@if(isset($channel) && app(\App\Services\IndustryModuleService::class)->enabled($channel,'bookings'))
+@php $bookableServices = $channel->organization->appointmentServices()->where('is_active',true)->orderBy('name')->get()->mapWithKeys(fn($service)=>[$service->id=>$service->name.($service->price_from?' · '.__('from').' '.$service->price_from.' '.$service->currency:'')]); @endphp
+<x-valex.card :title="__('Promotional booking button')" :subtitle="__('Turn this post into an offer and send customers directly to the booking form for this channel.')">
+    <input type="hidden" name="is_promotion" value="0">
+    <div class="custom-control custom-switch mb-3"><input type="checkbox" class="custom-control-input" id="is_promotion" name="is_promotion" value="1" @checked(old('is_promotion'))><label class="custom-control-label" for="is_promotion"><strong>{{ __('This is a promotional post with a booking button') }}</strong></label></div>
+    <div class="row" id="promotionFields">
+        <div class="col-md-6"><x-valex.select name="booking_service_id" :label="__('Service or offer to book')" :options="$bookableServices->all()" :placeholder="__('Choose a service')" /></div>
+        <div class="col-md-6"><x-valex.input name="booking_button_label" :label="__('Button text')" :value="__('Book this offer')" maxlength="40" /></div>
+    </div>
+    @if($bookableServices->isEmpty())<div class="alert alert-warning mb-0">{{ __('Add at least one active service in Bookings & appointments before publishing the offer.') }}</div>@endif
+</x-valex.card>
+@endif
+
 
 @push('scripts')
 <script>
@@ -162,12 +175,14 @@
             var f = $('input[name="post_format"]:checked').val() || 'standard';
             $('.fmt').hide(); $('.fmt-' + f).show();
             $('.format-radio').each(function () { $(this).closest('.card').toggleClass('border-primary', this.checked); });
-            $('#bodyField').attr('placeholder', f === 'poll' ? @json(__('Ask your question...')) : f === 'event' ? @json(__('Describe the event...')) : f === 'rating' ? @json(__('What are people rating?')) : @json(__('Write your post content here (minimum 10 characters)...')));
+            $('#body').attr('placeholder', f === 'poll' ? @json(__('Ask your question...')) : f === 'event' ? @json(__('Describe the event...')) : f === 'rating' ? @json(__('What are people rating?')) : @json(__('Write your post content here (minimum 10 characters)...')));
         }
         $('.format-radio').on('change', showFormat);
         showFormat();
 
-        $('#bodyField').on('input', function () { $('#charCount').text(this.value.length); }).trigger('input');
+        $('#body').on('input', function () { $('#charCount').text(this.value.length); }).trigger('input');
+        function togglePromotion(){ $('#promotionFields').toggle($('#is_promotion').is(':checked')); }
+        $('#is_promotion').on('change',togglePromotion); togglePromotion();
 
         $('#addPollOption').on('click', function () {
             if ($('#pollOptions .poll-row').length >= maxOptions) return;

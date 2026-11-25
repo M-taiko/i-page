@@ -1,12 +1,7 @@
 @props(['title', 'value', 'icon' => 'activity', 'variant' => 'primary'])
-
-<div class="card overflow-hidden sales-card bg-{{ $variant }}-gradient">
-    <div class="px-3 pt-3 pb-2">
-        <h6 class="mb-3 tx-12 text-white">{{ $title }}</h6>
-        <div class="d-flex align-items-center justify-content-between">
-            <h4 class="tx-22 font-weight-bold mb-1 text-white">{{ $value }}</h4>
-            <i class="fe fe-{{ $icon }} tx-24 text-white op-7"></i>
-        </div>
+<div class="card ip-stat-card">
+    <div class="card-body d-flex align-items-center justify-content-between">
+        <div><p class="ip-stat-label">{{ $title }}</p><h2 class="ip-stat-value">{{ $value }}</h2></div>
+        <span class="avatar avatar-lg brround bg-{{ $variant }}-transparent text-{{ $variant }}"><i class="fe fe-{{ $icon }} tx-24" aria-hidden="true"></i></span>
     </div>
-    <span id="compositeline-{{ \Illuminate\Support\Str::slug($title) }}" class="pt-1"></span>
 </div>

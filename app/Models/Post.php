@@ -301,6 +301,22 @@ class Post extends Model
         return $ends && \Illuminate\Support\Carbon::parse($ends)->isPast();
     }
 
+    /**
+     * Where this post is edited: tenant posts in the tenant post editor, published channel posts in the
+     * channel post editor, drafts and rejected posts in the approval flow (posts.edit).
+     */
+    public function editUrl(): string
+    {
+        if ($this->isTenantPost()) {
+            return route('organizations.posts.edit', $this->id);
+        }
+        if ($this->channel_id && ! in_array($this->status, ['draft', 'rejected'], true)) {
+            return route('tenant.channels.posts.edit', [$this->channel_id, $this->id]);
+        }
+
+        return route('posts.edit', $this->id);
+    }
+
     /** Friendly time for cards: "Today at 08:30 AM", "Yesterday at …", "Nov 15 at …", or "Nov 15, 2025". */
     public function whenLabel(): string
     {

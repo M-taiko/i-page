@@ -23,6 +23,17 @@
         $private = $post->channel?->type === 'private';
         $fromElsewhere = $context && $post->channel_id !== $context->id;
         $logo = $org?->logo_path ? \Illuminate\Support\Facades\Storage::url($org->logo_path) : null;
+        $channelPath = collect();
+        if (!$isTenant && $post->channel) {
+            $cursor = $post->channel; $seen = [$cursor->id];
+            while ($parent = $cursor->parentChannels()->where('organization_id',$org?->id)->first()) {
+                if (in_array($parent->id,$seen,true)) break;
+                $seen[]=$parent->id;
+                $visible = $parent->type === 'public' || (auth()->check() && $parent->canBeAccessedBy(auth()->user()));
+                if ($visible) $channelPath->prepend($parent);
+                $cursor=$parent;
+            }
+        }
     @endphp
     <article class="fc reveal" data-post="{{ $post->id }}">
         <header class="fc-head">
@@ -34,12 +45,19 @@
             @endif
             <div class="fc-who">
                 @if ($d['show_author'])<a href="{{ $sourceUrl }}" class="fc-source">{{ $source }}</a>@endif
+                @if($org && !$isTenant)
+                    <nav class="fc-path" aria-label="{{ __('Post source hierarchy') }}">
+                        <a href="{{ route('guest.organization-detail',$org) }}">{{ $org->name }}</a>
+                        @foreach($channelPath as $pathChannel)
+                            <i class="bi bi-chevron-right rtl-flip" aria-hidden="true"></i>
+                            <a href="{{ route('guest.channel-detail',[$org,$pathChannel->slug]) }}">{{ $pathChannel->name }}</a>
+                        @endforeach
+                    </nav>
+                @endif
                 <div class="fc-meta">
                     @if ($d['show_date'])<time datetime="{{ $post->published_at?->toIso8601String() }}" title="{{ $post->published_at?->toDayDateTimeString() }}">{{ $post->whenLabel() }}</time>@endif
                     @if ($fromElsewhere)
                         <span class="fc-pill">{{ $isTenant ? '🏢 ' . __('From :tenant', ['tenant' => $org?->name]) : '↳ ' . __('From :channel', ['channel' => $post->channel?->name]) }}</span>
-                    @elseif (! $context && ! $isTenant && $org && $org->name !== $source)
-                        <span class="fc-org">{{ $org->name }}</span>
                     @endif
                     @if ($private)<span class="fc-pill fc-pill-lock"><i class="bi bi-lock-fill"></i> {{ __('Members') }}</span>@endif
                 </div>

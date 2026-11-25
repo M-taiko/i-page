@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\AppointmentBooking;
 use App\Models\Channel;
 use App\Models\Organization;
 use App\Models\Post;
@@ -231,6 +232,7 @@ class CrmService
             'isFollower' => $org->followers()->where('users.id', $user->id)->exists(),
             'channels' => $user->subscribedChannels()->where('channels.organization_id', $org->id)->get(),
             'tickets' => $org->tickets()->where('created_by', $user->id)->latest()->limit(10)->get(),
+            'bookings' => AppointmentBooking::with(['service', 'channel'])->where('organization_id', $org->id)->where('customer_id', $user->id)->latest('starts_at')->limit(10)->get(),
             'stats' => [
                 'received' => $receipts()->count(),
                 'viewed' => $receipts()->whereNotNull('first_viewed_at')->count(),
@@ -238,6 +240,7 @@ class CrmService
                 'acknowledged' => $receipts()->whereNotNull('acknowledged_at')->count(),
                 'posts' => Post::where('organization_id', $org->id)->where('author_id', $user->id)->count(),
                 'tickets' => $org->tickets()->where('created_by', $user->id)->count(),
+                'bookings' => AppointmentBooking::where('organization_id', $org->id)->where('customer_id', $user->id)->count(),
                 'qrScans' => QrScanLog::where('organization_id', $org->id)->where('user_id', $user->id)->count(),
             ],
             'activity' => ActivityLog::where('organization_id', $org->id)->where('user_id', $user->id)->latest()->limit(20)->get(),
@@ -249,7 +252,8 @@ class CrmService
         return User::query()->where(fn ($q) => $q
             ->whereHas('organizationMemberships', fn ($m) => $m->where('organization_id', $org->id))
             ->orWhereHas('followedOrganizations', fn ($f) => $f->where('organizations.id', $org->id))
-            ->orWhereHas('subscribedChannels', fn ($c) => $c->where('channels.organization_id', $org->id)));
+            ->orWhereHas('subscribedChannels', fn ($c) => $c->where('channels.organization_id', $org->id))
+            ->orWhereHas('appointmentBookings', fn ($b) => $b->where('organization_id', $org->id)));
     }
 
     // ------------------------------------------------------------------ Health

@@ -14,7 +14,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesSeeder::class,
             OrganizationTemplateSeeder::class,
-            InternationalDemoSeeder::class,
+            HotelDemoSeeder::class,
+            HotelBookingDemoSeeder::class,
         ]);
     }
 }

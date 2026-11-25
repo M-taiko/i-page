@@ -114,6 +114,11 @@
 
                 <div class="small text-muted text-uppercase font-weight-bold mb-2">{{ __('What they can do') }}</div>
                 <div class="row mb-3">
+                    @foreach(['add'=>__('Add services'),'edit'=>__('Edit and disable services'),'delete'=>__('Delete unused services')] as $serviceAbility=>$serviceLabel)
+                    <div class="col-md-4"><label class="ckbox"><input type="hidden" name="can_{{ $serviceAbility }}_services" value="0"><input type="checkbox" name="can_{{ $serviceAbility }}_services" value="1" @checked($member->pivot->{'can_'.$serviceAbility.'_services'})><span><strong>{{ $serviceLabel }}</strong></span></label></div>
+                    @endforeach
+                </div>
+                <div class="row mb-3">
                     @foreach ($allPermissions as $permission)
                         <div class="col-md-6 col-xl-4 permission-checkbox" data-permission="{{ $permission }}">
                             <label class="ckbox">

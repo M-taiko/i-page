@@ -1,0 +1,9 @@
+@extends('layouts.valex')
+@section('title', __('Invitation QR'))
+@section('page-header')<x-valex.page-header :title="__('Invitation QR')" :subtitle="$invite->label" />@endsection
+@section('content')<div class="row justify-content-center"><div class="col-lg-7"><x-valex.card :title="$invite->label">
+<div class="text-center"><img src="data:image/svg+xml;base64,{{ $image }}" alt="{{ __('Invitation QR') }}" width="280" height="280" style="max-width:100%;background:white;padding:16px;border-radius:16px"><p class="mt-3">{{ __('Expires') }}: {{ $invite->expires_at?->format('Y-m-d H:i') }} · {{ __('Single use') }}</p>
+@if(!$invite->canBeScanned())<div class="alert alert-warning">{{ __('This invitation is no longer active.') }}</div>@endif</div>
+<label for="inviteLink">{{ __('Invitation link') }}</label><input id="inviteLink" readonly class="form-control" value="{{ $invite->url }}" dir="ltr"><div class="d-flex flex-wrap mt-3" style="gap:10px"><a href="data:image/svg+xml;base64,{{ $image }}" download="channel-invitation.svg" class="btn btn-primary">{{ __('Download QR') }}</a><button type="button" class="btn btn-outline-primary" id="copyInvite">{{ __('Copy link') }}</button><a href="{{ route('dashboard.channel-invitations.index', $organization) }}" class="btn btn-light">{{ __('Back') }}</a></div><p id="copyStatus" class="small text-muted mt-2" role="status"></p>
+</x-valex.card></div></div>@endsection
+@push('scripts')<script>document.querySelector('#copyInvite').addEventListener('click',async()=>{const field=document.querySelector('#inviteLink');try{await navigator.clipboard.writeText(field.value);document.querySelector('#copyStatus').textContent=@json(__('Link copied.'));}catch(e){field.focus();field.select();document.querySelector('#copyStatus').textContent=@json(__('Select and copy the link.'));}});</script>@endpush

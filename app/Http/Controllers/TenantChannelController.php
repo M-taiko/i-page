@@ -28,26 +28,14 @@ class TenantChannelController extends Controller
             abort(403);
         }
 
-        // Staff only see the channels they belong to (ADR-015).
-        $channels = Channel::visibleTo(auth()->user(), $organization->id)
-            ->with('childChannels')
-            ->withCount('users', 'posts')
-            ->paginate(10);
-
-        // Every channel should have one QR to display/print here; backfill any
-        // that predate QR generation or whose creation-time generation failed.
-        foreach ($channels as $channel) {
-            $qrCode = $channel->qrCodes()->latest()->first();
-
-            if (!$qrCode) {
-                $qrCode = $this->qrCodeService->generate($channel, $organization, "QR: {$channel->name}");
-            }
-
-            $qrCode->preview_image = $this->qrCodeService->generateImage($qrCode, 180);
-            $channel->primaryQrCode = $qrCode;
+        $treeChannels = Channel::visibleTo(auth()->user(), $organization->id)->where('status','active')
+            ->with('parentChannels:id')->withCount('users','posts')->orderBy('name')->get()->keyBy('id');
+        $treeChildren = [];
+        foreach ($treeChannels as $node) {
+            $parent = $node->parentChannels->first(fn ($item) => $treeChannels->has($item->id));
+            $treeChildren[$parent?->id ?? 0][] = $node;
         }
-
-        return view('tenant.channels.index', compact('organization', 'channels'));
+        return view('tenant.channels.index', compact('organization','treeChannels','treeChildren'));
     }
 
     public function create(Request $request)
@@ -63,7 +51,8 @@ class TenantChannelController extends Controller
                 ->with('error', __('You have reached the maximum number of channels'));
         }
 
-        $parentOptions = Channel::where('organization_id', $organization->id)->orderBy('name')->get();
+        $parentOptions = Channel::visibleTo(auth()->user(), $organization->id)->where('status','active')->orderBy('name')->get()->filter(fn ($item) => $item->canAdminister(auth()->user()));
+        abort_unless(Channel::isOrgManager(auth()->user(),$organization->id) || $parentOptions->isNotEmpty(),403);
 
         // Deep-link from the channels index "Add Sub-Channel" button —
         // pre-selects the parent so the admin doesn't have to find it again.
@@ -89,6 +78,8 @@ class TenantChannelController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:120',
+            'booking_enabled' => 'nullable|boolean',
+            'booking_property_id' => 'nullable|integer',
             'type' => 'required|in:public,private',
             'parent_channel_id' => [
                 'nullable',
@@ -97,14 +88,19 @@ class TenantChannelController extends Controller
             ],
         ] + \App\Support\Designs::channelRules());
 
+        $parent = !empty($validated['parent_channel_id']) ? Channel::where('organization_id',$organization->id)->findOrFail($validated['parent_channel_id']) : null;
+        abort_unless(Channel::isOrgManager(auth()->user(),$organization->id) || ($parent && $parent->canAdminister(auth()->user())),403);
+        $design = \App\Support\Designs::channelAttributes($validated);
+        $design['design_options'] = app(\App\Services\HotelPropertyService::class)->configure($organization,$request->user(),$request->boolean('booking_enabled'),$request->integer('booking_property_id') ?: null,$design['design_options'] ?? [],$parent);
         $channel = Channel::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']) . '-' . Str::random(6),
             'type' => $validated['type'],
+            'audience_profile' => $validated['type'] === 'public' ? 'public' : 'business',
             'organization_id' => $organization->id,
             'status' => 'active',
             'admin_user_id' => auth()->id(),
-        ] + \App\Support\Designs::channelAttributes($validated));
+        ] + $design);
 
         if (!empty($validated['parent_channel_id'])) {
             $channel->parentChannels()->sync([$validated['parent_channel_id']]);
@@ -161,10 +157,10 @@ class TenantChannelController extends Controller
         }
         abort_unless($channel->canAdminister(auth()->user()), 403);
 
-        $parentOptions = Channel::where('organization_id', $organization->id)
-            ->where('id', '!=', $channel->id)
+        $parentOptions = Channel::visibleTo(auth()->user(), $organization->id)
+            ->whereNotIn('id', array_merge([$channel->id],Channel::descendantIdsOf([$channel->id])))
             ->orderBy('name')
-            ->get();
+            ->get()->filter(fn ($item) => $item->canAdminister(auth()->user()));
         $currentParentId = $channel->parentChannels()->first()?->id;
 
         return view('tenant.channels.edit', compact('channel', 'organization', 'parentOptions', 'currentParentId'));
@@ -180,19 +176,25 @@ class TenantChannelController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:120',
+            'booking_enabled' => 'nullable|boolean',
+            'booking_property_id' => 'nullable|integer',
             'type' => 'required|in:public,private',
             'parent_channel_id' => [
                 'nullable',
                 'integer',
                 \Illuminate\Validation\Rule::exists('channels', 'id')->where('organization_id', $organization->id),
-                \Illuminate\Validation\Rule::notIn([$channel->id]),
+                \Illuminate\Validation\Rule::notIn(array_merge([$channel->id],Channel::descendantIdsOf([$channel->id]))),
             ],
         ] + \App\Support\Designs::channelRules());
 
+        $parent = !empty($validated['parent_channel_id']) ? Channel::where('organization_id',$organization->id)->findOrFail($validated['parent_channel_id']) : null;
+        abort_unless(Channel::isOrgManager(auth()->user(),$organization->id) || ($parent && $parent->canAdminister(auth()->user())) || (!$parent && !$channel->parentChannels()->exists()),403);
+        $design = \App\Support\Designs::channelAttributes($validated,$channel);
+        $design['design_options'] = app(\App\Services\HotelPropertyService::class)->configure($organization,$request->user(),$request->boolean('booking_enabled'),$request->integer('booking_property_id') ?: null,$design['design_options'] ?? [],$channel);
         $channel->update([
             'name' => $validated['name'],
             'type' => $validated['type'],
-        ] + \App\Support\Designs::channelAttributes($validated, $channel));
+        ] + $design);
 
         $channel->parentChannels()->sync(
             !empty($validated['parent_channel_id']) ? [$validated['parent_channel_id']] : []
@@ -229,6 +231,7 @@ class TenantChannelController extends Controller
             abort(403);
         }
         abort_unless($channel->canAdminister(auth()->user()), 403);
+
 
         $channel->update([
             'status' => $channel->status === 'active' ? 'archived' : 'active',
@@ -332,6 +335,7 @@ class TenantChannelController extends Controller
                 'show_comments' => $request->boolean('show_comments'),
             ];
         }
+
         $channel->update(['design_options' => $options ?: null]);
 
         return back()->with('success', __('Post display settings saved.'));
