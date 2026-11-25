@@ -22,7 +22,8 @@
         $postUrl = route('guest.post-detail', $post->id);
         $private = $post->channel?->type === 'private';
         $fromElsewhere = $context && $post->channel_id !== $context->id;
-        $logo = $org?->logo_path ? \Illuminate\Support\Facades\Storage::url($org->logo_path) : null;
+        $logoPath = !$isTenant && $post->channel?->logo_path ? $post->channel->logo_path : $org?->logo_path;
+        $logo = $logoPath ? \Illuminate\Support\Facades\Storage::url($logoPath) : null;
         $channelPath = collect();
         if (!$isTenant && $post->channel) {
             $cursor = $post->channel; $seen = [$cursor->id];

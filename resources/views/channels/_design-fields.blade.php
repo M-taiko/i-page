@@ -4,6 +4,16 @@
     $selected = old('design_key', $channel->design_key ?? '');
     $color = old('design_primary_color', $channel->design_options['primary_color'] ?? '');
 @endphp
+<x-valex.card :title="__('Channel images')">
+    <label for="channel_logo">{{ __('Channel image') }}</label>
+    <input id="channel_logo" type="file" name="channel_logo" accept="image/jpeg,image/png,image/webp" class="form-control mb-3">
+    @error('channel_logo')<p class="text-danger">{{ $message }}</p>@enderror
+    @if(!empty($channel->logo_path))<img src="{{ Storage::url($channel->logo_path) }}" alt="" width="72" height="72" style="object-fit:cover;border-radius:16px">@endif
+    <label for="channel_cover" class="d-block mt-3">{{ __('Cover image') }}</label>
+    <input id="channel_cover" type="file" name="channel_cover" accept="image/jpeg,image/png,image/webp" class="form-control">
+    @error('channel_cover')<p class="text-danger">{{ $message }}</p>@enderror
+    @if($cover = \App\Support\Designs::coverPaths($channel->design_options ?? [])[0] ?? null)<img src="{{ Storage::url($cover) }}" alt="" style="width:100%;max-height:170px;object-fit:cover;margin-top:12px;border-radius:12px">@endif
+</x-valex.card>
 <x-valex.card :title="__('Public Page Design')">
     <p class="text-muted small">{{ __('How visitors and subscribers see this channel. Leave on "Inherit" to use the parent channel\'s design (or the classic page).') }}</p>
     <div class="row">

@@ -36,6 +36,21 @@
     .home .nudge{margin:24px 16px;border-radius:22px;background:var(--surface-bg);border:1px solid var(--surface-border);padding:20px}
     .home .seg{margin:0 16px}.home .seg-inner{border-radius:16px;padding:5px}.home .seg a{min-height:44px;border-radius:12px}
     @media(max-width:480px){.home .hero{padding:24px;display:block}.home .hero> :last-child:not(.hero-text){position:absolute;width:90px;height:90px;opacity:.16;inset-inline-end:4px;top:8px;pointer-events:none}.home .hero-text{position:relative;z-index:1}.home .hero h1{max-width:280px}.home .hero p{font-size:14px}.home .hero-cta{display:inline-flex}.home .stories{padding-block:8px 18px}}
+    .hscroll:has(.discover-channel){display:flex;flex-wrap:wrap;overflow:visible}.discover-channel{flex:1 1 230px;min-width:0;border:1px solid var(--surface-border);border-radius:22px;overflow:hidden;background:var(--surface-bg)}.discover-channel.expanded{flex-basis:100%}.channel-preview{display:block;position:relative;width:100%;height:190px;border:0;padding:0;background:#526f60;cursor:pointer;text-align:start;transition:height .35s ease}.expanded .channel-preview{height:340px}.channel-cover{width:100%;height:100%;object-fit:cover}.channel-overlay{position:absolute;inset:0;background:linear-gradient(transparent 35%,#10251ed9)}.channel-identity{position:absolute;bottom:18px;inset-inline:18px;display:flex;align-items:center;gap:12px;color:white;font-size:18px}.channel-identity img{width:52px;height:52px;object-fit:cover;border:2px solid white;border-radius:16px}.expanded .channel-identity img{width:76px;height:76px}.channel-breadcrumbs{display:flex;flex-wrap:wrap;gap:6px;padding:16px 16px 8px;font-size:12px}.channel-breadcrumbs a{color:var(--text-primary)}.channel-breadcrumbs a:hover{text-decoration:underline}.channel-hint{display:block;padding:0 16px 16px;color:var(--text-secondary);font-size:11px}@media(max-width:480px){.discover-channel{flex-basis:calc(50% - 14px)}.channel-preview{height:170px}.expanded .channel-preview{height:290px}}@media(prefers-reduced-motion:reduce){.channel-preview{transition:none}}
+    .home .org-av{overflow:hidden}.home .org-av img{width:100%;height:100%;object-fit:cover;display:block}
+    .home .hscroll:has(.discover-channel){flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:flex-start;scroll-snap-type:x proximity;scroll-padding-inline:16px;overscroll-behavior-inline:contain;padding-bottom:20px}
+    .discover-channel{flex:0 0 min(260px,78vw);scroll-snap-align:start;transition:flex-basis .6s cubic-bezier(.22,1,.36,1),box-shadow .6s ease}
+    .discover-channel.expanded{flex-basis:var(--channel-expanded-width,calc(100% - 32px));box-shadow:0 12px 32px #142c2020}
+    .channel-preview{transition:height .6s cubic-bezier(.22,1,.36,1)}.channel-identity img{transition:width .6s cubic-bezier(.22,1,.36,1),height .6s cubic-bezier(.22,1,.36,1)}
+    @media(max-width:480px){.discover-channel{flex-basis:78vw}.discover-channel.expanded{flex-basis:var(--channel-expanded-width,calc(100% - 32px))}}
+    @media(prefers-reduced-motion:reduce){.discover-channel,.channel-preview,.channel-identity img{transition:none}}
+    /* Expansion changes width only; image, avatar and text regions keep their height. */
+    .discover-channel .channel-preview,.discover-channel.expanded .channel-preview{height:190px;transition:none}
+    .discover-channel .channel-identity img,.discover-channel.expanded .channel-identity img{width:52px;height:52px;transition:none;flex-shrink:0}
+    .channel-identity strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .discover-channel .channel-breadcrumbs{height:64px;box-sizing:border-box;align-content:flex-start;overflow-y:auto}
+    .discover-channel .channel-hint{height:42px;box-sizing:border-box;overflow:hidden}
+    @media(max-width:480px){.discover-channel .channel-preview,.discover-channel.expanded .channel-preview{height:170px}}
     /* Collections as Instagram-style story circles */
     .stories { display: flex; gap: 14px; overflow-x: auto; padding: 6px 16px 12px; scroll-snap-type: x proximity; scrollbar-width: none; }
     .stories::-webkit-scrollbar { display: none; }
@@ -131,7 +146,7 @@
                 <div class="hscroll">
                     @foreach ($organizations as $org)
                         <a href="{{ route('guest.organization-detail', $org->id) }}" class="org" data-tip="{{ $org->name }}" data-tip-sub="{{ trans_choice(':count channel|:count channels', $org->channels_count) }}">
-                            <div class="org-ring"><div class="org-av" style="--av: {{ $colorFor($org->name) }};">{{ mb_substr($org->name, 0, 1) }}</div></div>
+                            <div class="org-ring"><div class="org-av" style="--av: {{ $colorFor($org->name) }};">@if($org->logo_path)<img src="{{ Storage::url($org->logo_path) }}" alt="{{ $org->name }}" loading="lazy">@else{{ mb_substr($org->name, 0, 1) }}@endif</div></div>
                             <div class="org-name">{{ $org->name }}</div>
                         </a>
                     @endforeach
@@ -145,12 +160,7 @@
                 <div class="sec-head"><h2 id="sugTitle">{{ $hasFeed ? __('More channels for you') : __('Channels to start with') }}</h2></div>
                 <div class="hscroll">
                     @foreach ($suggested as $channel)
-                        <a href="{{ route('guest.channel-detail', [$channel->organization_id, $channel->slug]) }}" class="sug" data-tip="{{ $channel->name }}" data-tip-sub="{{ $channel->organization?->name }}">
-                            <div class="sug-av" style="--av: {{ $colorFor($channel->name) }};">{{ mb_substr($channel->name, 0, 1) }}</div>
-                            <div class="sug-name">{{ $channel->name }}</div>
-                            <div class="sug-org">{{ $channel->organization?->name }}</div>
-                            <div class="sug-foot"><span><i class="bi bi-people"></i> {{ $channel->users_count }}</span><span class="sug-go">{{ __('Open') }}</span></div>
-                        </a>
+                        @include('guest.partials.channel-discovery')
                     @endforeach
                 </div>
             </section>
@@ -206,6 +216,39 @@
 @include('partials.feed._script')
 <script>
     function requireSignIn() { document.getElementById('signinModal').classList.add('show'); }
+    document.querySelectorAll('.hscroll:has(.discover-channel)').forEach(track=>{
+        const reduce=matchMedia('(prefers-reduced-motion: reduce)');
+        const size=()=>track.style.setProperty('--channel-expanded-width',Math.max(1,track.clientWidth-32)+'px');
+        size();new ResizeObserver(size).observe(track);
+        let hoverTimer,alignTimer;
+        const expand=card=>{
+            if(card.classList.contains('expanded'))return;
+            track.querySelectorAll('.expanded').forEach(el=>{el.classList.remove('expanded');el.querySelector('button').setAttribute('aria-expanded','false')});
+            card.classList.add('expanded');card.querySelector('button').setAttribute('aria-expanded','true');
+            clearTimeout(alignTimer);
+            alignTimer=setTimeout(()=>card.scrollIntoView({behavior:reduce.matches?'instant':'smooth',block:'nearest',inline:'start'}),reduce.matches?0:620);
+        };
+        track.querySelectorAll('.discover-channel').forEach(card=>{
+            const button=card.querySelector('.channel-preview');
+            button.addEventListener('click',()=>{
+                clearTimeout(hoverTimer);
+                if(card.classList.contains('expanded')){window.location.assign(button.dataset.url);return;}
+                expand(card);
+            });
+            card.addEventListener('pointerenter',event=>{
+                if(event.pointerType!=='mouse'||!matchMedia('(hover:hover)').matches)return;
+                clearTimeout(hoverTimer);hoverTimer=setTimeout(()=>expand(card),220);
+            });
+            card.addEventListener('pointerleave',event=>{
+                clearTimeout(hoverTimer);
+                if(event.pointerType!=='mouse')return;
+                clearTimeout(alignTimer);
+                card.classList.remove('expanded');
+                button.setAttribute('aria-expanded','false');
+            });
+            card.addEventListener('keydown',event=>{if(event.key==='Escape'){clearTimeout(alignTimer);card.classList.remove('expanded');button.setAttribute('aria-expanded','false');button.focus()}});
+        });
+    });
     function closeSignInModal() { document.getElementById('signinModal').classList.remove('show'); }
 
 </script>

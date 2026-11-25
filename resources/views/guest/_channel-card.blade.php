@@ -8,7 +8,7 @@
 @endphp
 <div class="channel-card-wrap">
     <a href="{{ route('guest.channel-detail', [$organization, $channel->slug]) }}" class="channel-card">
-        <div class="channel-icon"><i class="bi bi-chat-dots"></i></div>
+        <div class="channel-icon">@if($channel->logo_path)<img src="{{ Storage::url($channel->logo_path) }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">@else<i class="bi bi-chat-dots"></i>@endif</div>
         <div class="channel-card-name">{{ $channel->name }}</div>
         <div class="channel-card-meta">{{ $channel->users_count }} {{ __('members') }} · {{ $channel->posts_count }} {{ __('posts') }}</div>
         @if($hasChildren)

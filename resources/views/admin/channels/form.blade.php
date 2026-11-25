@@ -14,7 +14,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-7">
         <x-valex.card>
-            <form method="POST" action="{{ isset($channel)
+            <form method="POST" enctype="multipart/form-data" action="{{ isset($channel)
                     ? route('admin.organizations.channels.update', [$organization, $channel])
                     : route('admin.organizations.channels.store', $organization) }}">
                 @csrf

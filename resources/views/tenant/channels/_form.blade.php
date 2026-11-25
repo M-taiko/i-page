@@ -1,5 +1,5 @@
 {{-- Shared by tenant/channels/create and edit. Expects $parentOptions, $selectedParentId, optional $channel. --}}
-<form action="{{ isset($channel) ? route('tenant.channels.update', $channel->id) : route('tenant.channels.store') }}" method="POST">
+<form action="{{ isset($channel) ? route('tenant.channels.update', $channel->id) : route('tenant.channels.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
     @if (isset($channel)) @method('PUT') @endif
 

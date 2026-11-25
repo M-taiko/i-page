@@ -92,6 +92,8 @@ class Designs
     public static function channelRules(): array
     {
         return [
+            'channel_logo' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:5120'],
+            'channel_cover' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:8192'],
             'design_key' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(self::channelDesigns()))],
             'design_primary_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ];
@@ -104,6 +106,9 @@ class Designs
     public static function channelAttributes(array $validated, ?Channel $channel = null): array
     {
         $options = $channel?->design_options ?? [];
+        $images = [];
+        if (!empty($validated['channel_logo'])) $images['logo_path'] = $validated['channel_logo']->store('channels/logos','public');
+        if (!empty($validated['channel_cover'])) $options['cover_paths'] = [$validated['channel_cover']->store('channels/covers','public')];
         unset($options['primary_color']);
 
         if ($color = $validated['design_primary_color'] ?? null) {
@@ -113,7 +118,7 @@ class Designs
         return [
             'design_key' => $validated['design_key'] ?? null,
             'design_options' => $options ?: null,
-        ];
+        ] + $images;
     }
 
     /** Channel options: channel color, else the organization's, else the design accent. */

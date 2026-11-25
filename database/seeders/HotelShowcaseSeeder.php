@@ -49,7 +49,23 @@ class HotelShowcaseSeeder extends Seeder
                     $guests[]=$this->user('guest'.($i+1).'@'.$slug.'.test',$first,'Guest',$password,'member');
                 }
                 foreach (['Waterfront','City Gardens'] as $branchIndex=>$branch) {
+                    $country=Channel::firstOrCreate(['organization_id'=>$org->id,'slug'=>$slug.'-country'],['name'=>$name.' '.($currency==='AED'?'UAE':'Egypt'),'type'=>'public','audience_profile'=>'public','status'=>'active','logo_path'=>$photos['hotel'],'design_options'=>['cover_paths'=>[$photos['hotel']]]]);
                     $root=Channel::firstOrCreate(['organization_id'=>$org->id,'slug'=>$slug.'-'.Str::slug($branch)],['name'=>$name.' · '.$branch,'type'=>'public','audience_profile'=>'public','status'=>'active','admin_user_id'=>$admin->id]);
+                    $root->parentChannels()->syncWithoutDetaching([$country->id]);
+                    foreach(['Front Desk'=>'hotel','Restaurant'=>'restaurant','Room Service'=>'room','Spa'=>'spa','Swimming Pool'=>'pool'] as $department=>$photoKey){
+                        $dept=Channel::firstOrCreate(['organization_id'=>$org->id,'slug'=>$root->slug.'-'.Str::slug($department)],['name'=>$department,'type'=>'public','audience_profile'=>'public','status'=>'active','admin_user_id'=>$admin->id]);
+                        $dept->parentChannels()->syncWithoutDetaching([$root->id]);
+                        $dept->update(['logo_path'=>$photos[$photoKey],'design_options'=>['cover_paths'=>[$photos[$photoKey]],'modules'=>['bookings']]]);
+                        $dept->users()->syncWithoutDetaching([$admin->id=>['role'=>'admin','status'=>'approved','can_post'=>true,'can_edit'=>true,'can_delete'=>true,'can_manage_bookings'=>true]]);
+                        $serviceKind=$photoKey==='hotel'?'room':$photoKey;
+                        $deptService=\App\Models\AppointmentService::where('organization_id',$org->id)->whereNull('channel_id')->where('kind',$serviceKind)->firstOrFail();
+                        $offer=Post::firstOrCreate(['channel_id'=>$dept->id,'title'=>'Discover our '.$department.' experience'],['organization_id'=>$org->id,'author_id'=>$admin->id,'body'=>'Welcome to '.$name.' '.$branch.'. Our '.$department.' team is ready to help you plan a memorable stay. Reserve your preferred time and we will confirm the details.','summary'=>'A special experience from our '.$department.' team.','image_path'=>$photos[$photoKey],'post_type'=>'offer','post_format'=>'standard','card_style'=>'image','status'=>'published','published_at'=>now()->subHours(12),'audience'=>'channel','cascade'=>false,'options'=>['promotion'=>true,'booking_service_id'=>$deptService->id,'booking_button_label'=>'Reserve your experience']]);
+                        foreach(array_slice($guests,0,4) as $g){$dept->users()->syncWithoutDetaching([$g->id=>['role'=>'member','status'=>'approved','joined_at'=>now()]]);$offer->reactions()->firstOrCreate(['user_id'=>$g->id],['type'=>'love']);}
+                        $marker='Showcase department '.$dept->id;
+                        if(!AppointmentBooking::where('organization_id',$org->id)->where('customer_notes',$marker)->exists()){
+                            app(AppointmentBookingService::class)->create($dept,$guests[0],['submission_key'=>(string)Str::uuid(),'service_id'=>$deptService->id,'date'=>now()->addDays(25+$dept->id%100)->toDateString(),'time'=>'15:00','guests'=>1,'customer_name'=>$guests[0]->full_name,'customer_notes'=>$marker,'marketing_consent'=>false]);
+                        }
+                    }
                     $options=$root->design_options??[];$options['cover_paths']=[$photos[$branchIndex?'room':'hotel']];$options['modules']=['bookings'];
                     $root->update(['design_options'=>$options,'logo_path'=>$photos['hotel']]);
                     $root->users()->syncWithoutDetaching([$admin->id=>['role'=>'admin','status'=>'approved','can_post'=>true,'can_edit'=>true,'can_delete'=>true,'can_manage_bookings'=>true]]);
@@ -89,7 +105,7 @@ class HotelShowcaseSeeder extends Seeder
         if($mismatch) throw new \RuntimeException('Showcase tenant isolation check failed.');
         $count=AppointmentBooking::where('customer_notes','like','Showcase %')->count();
         $this->command?->info("Showcase bookings: {$count}; cross-tenant service mismatches: {$mismatch}.");
-        $this->command?->info('Three independent hotel tenants, six showcase properties, 24 illustrated offers and 24 service bookings are ready. Demo password: 123456789. Photos: Unsplash; all activity is fictional.');
+        $this->command?->info('Three independent tenants with country, property and service channels, illustrated offers and bookings. Demo password: 123456789. Photos: Unsplash; all activity is fictional.');
     }
 
     private function user($email,$first,$last,$password,$role): User
