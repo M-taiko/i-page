@@ -26,6 +26,7 @@ class HotelDemoSeeder extends Seeder
         }
         if (User::withTrashed()->exists() || Organization::withTrashed()->exists()) {
             $this->presentation();
+            $this->call(HotelShowcaseSeeder::class);
             return;
         }
         $this->password = Hash::make('123456789');
@@ -105,6 +106,7 @@ class HotelDemoSeeder extends Seeder
             foreach (User::all() as $user) app(DefaultCollections::class)->createFor($user);
         });
         $this->presentation();
+        $this->call(HotelShowcaseSeeder::class);
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         $file = fopen(storage_path('app/hotel-demo-accounts.csv'), 'w');
         fputcsv($file,['Email','Global role','Scope']);
