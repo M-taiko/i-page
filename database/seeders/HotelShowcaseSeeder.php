@@ -99,6 +99,13 @@ class HotelShowcaseSeeder extends Seeder
                 foreach($guests as $guest) app(DefaultCollections::class)->createFor($guest);
             }
             // Give the existing presentation posts a locally cached photograph too.
+            Channel::whereIn('organization_id',Organization::whereIn('slug',['hilton-demo','azure-demo','cedar-demo'])->pluck('id'))->whereNull('logo_path')->each(function($channel)use($photos){
+                $name=strtolower($channel->name);
+                $key=str_contains($name,'spa')?'spa':(str_contains($name,'pool')?'pool':(str_contains($name,'dining')||str_contains($name,'breakfast')||str_contains($name,'restaurant')?'restaurant':(str_contains($name,'room')?'room':'hotel')));
+                $options=$channel->design_options??[];
+                if(empty($options['cover_paths'])&&empty($options['cover_path']))$options['cover_paths']=[$photos[$key]];
+                $channel->update(['logo_path'=>$photos[$key],'design_options'=>$options]);
+            });
             Post::where('organization_id',Organization::where('slug','hilton-demo')->value('id'))->whereNull('image_path')->where('status','published')->each(function($post)use($photos){$post->update(['image_path'=>$photos[array_keys($photos)[$post->id%count($photos)]]]);});
         });
         $mismatch=DB::table('appointment_bookings as b')->join('appointment_services as s','s.id','=','b.service_id')->where('b.customer_notes','like','Showcase %')->whereColumn('b.organization_id','!=','s.organization_id')->count();

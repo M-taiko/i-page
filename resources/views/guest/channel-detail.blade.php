@@ -183,6 +183,7 @@
         min-height: 2.6em;
     }
 
+    .story-item.current { border-radius:18px; background:color-mix(in srgb,var(--primary-500) 12%,transparent); box-shadow:inset 0 0 0 2px var(--primary-500); padding-block:8px; }
     .story-item.current .story-name { color: var(--primary-600); }
 
     /* Post cards (shared) */
@@ -304,7 +305,7 @@
                 <a href="{{ route('guest.channel-detail', [$organization, $sub->slug]) }}"
                    class="story-item {{ $sub->id === $channel->id ? 'current' : '' }}"
                    @if ($sub->id === $channel->id) aria-current="page" @endif
-                   data-tip="{{ $sub->name }}"
+                   data-tip="{{ $sub->id === $channel->id ? 'You are here' : $sub->name }}"
                    data-tip-sub="{{ $sub->id === $channel->id ? __('You are here') : trim(trans_choice(':count member|:count members', $sub->users_count ?? 0) . ($sub->child_channels_count ? ' · ' . trans_choice(':count sub-channel|:count sub-channels', $sub->child_channels_count) : '')) }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($sub->name) }};">
@@ -325,7 +326,7 @@
                 <a href="{{ route('guest.channel-detail', [$organization, $orgChannel->slug]) }}"
                    class="story-item {{ $orgChannel->id === $channel->id ? 'current' : '' }}"
                    @if ($orgChannel->id === $channel->id) aria-current="page" @endif
-                   data-tip="{{ $orgChannel->name }}"
+                   data-tip="{{ $orgChannel->id === $channel->id ? 'You are here' : $orgChannel->name }}"
                    data-tip-sub="{{ $orgChannel->id === $channel->id ? __('You are here') : trans_choice(':count member|:count members', $orgChannel->users_count ?? 0) }}">
                     <div class="story-ring">
                         <div class="story-avatar" style="background-color: {{ $colorFor($orgChannel->name) }};">

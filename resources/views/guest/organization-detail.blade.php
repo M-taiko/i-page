@@ -105,6 +105,23 @@
     .spot-strip.nudge .spot-tile { animation: spotPulse 1.1s ease 2; }
     @keyframes spotPulse { 0%, 100% { transform: none; } 40% { transform: translateY(-6px) scale(1.03); box-shadow: 0 16px 34px rgba(98, 89, 202, .35); } }
 
+    .org-hero{position:relative;isolation:isolate;overflow:hidden;padding-block:36px}
+    .org-hero-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+    .org-hero.has-cover::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#10251e55,#10251ee6);z-index:-1}
+    .org-hero-avatar.has-logo{width:84px;height:84px;background:#fff;padding:3px;box-shadow:0 8px 24px #0003}
+    .org-hero-avatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+    .org-hero-desc{max-width:540px;margin-inline:auto;line-height:1.7}
+    .spot{width:260px;background:var(--surface-bg);border:1px solid var(--surface-border);overflow:hidden;border-radius:22px}
+    .spot-tile{width:100%;height:165px;border-radius:0;box-shadow:none}
+    .spot-tile::after{background:linear-gradient(transparent,#10251e35)}
+    .spot-info{position:relative;padding:0 16px 18px}
+    .spot-logo{position:relative;margin-top:-27px;margin-bottom:12px;width:58px;height:58px;border-radius:17px;border:3px solid var(--surface-bg);background:var(--surface-bg-secondary);display:grid;place-items:center;overflow:hidden;box-shadow:0 4px 12px #0002}
+    .spot-logo img{width:100%;height:100%;object-fit:cover}
+    .spot-info .spot-name{display:block;font-size:16px;color:var(--text-primary);margin-bottom:6px}
+    .spot-info .spot-meta{display:block;font-size:12px;color:var(--text-secondary);line-height:1.6}
+    .spot:hover .spot-tile,.spot:focus-visible .spot-tile{transform:none;box-shadow:none}
+    .spot-tile>img{transition:transform .45s ease}.spot:hover .spot-tile>img{transform:scale(1.04)}
+    @media(prefers-reduced-motion:reduce){.spot-tile>img{transition:none}.spot:hover .spot-tile>img{transform:none}}
     /* Posts */
     .posts-section { padding: 1.25rem 0 var(--space-4); }
     .posts-section .feed-list { padding: 0 var(--space-4); }
@@ -209,8 +226,11 @@
     @endphp
 
     <!-- Org Hero -->
-    <div class="org-hero">
-        <div class="org-hero-avatar">{{ substr($organization->name, 0, 1) }}</div>
+    <div class="org-hero {{ $ogCover ? 'has-cover' : '' }}">
+        @if($ogCover)<img class="org-hero-cover" src="{{ Storage::url($ogCover) }}" alt="" fetchpriority="high">@endif
+        <div class="org-hero-avatar {{ $organization->logo_path ? 'has-logo' : '' }}">
+            @if($organization->logo_path)<img src="{{ Storage::url($organization->logo_path) }}" alt="{{ $organization->name }}">@else{{ mb_substr($organization->name, 0, 1) }}@endif
+        </div>
         <div class="org-hero-name">{{ $organization->name }}</div>
         @if($organization->description)
             <div class="org-hero-desc">{{ Str::limit($organization->description, 100) }}</div>
@@ -289,10 +309,11 @@
                             @if($subCount)
                                 <span class="spot-badge"><i class="bi bi-diagram-3"></i> {{ $subCount }}</span>
                             @endif
-                            <span class="spot-cap">
-                                <span class="spot-name">{{ $channel->name }}</span>
-                                <span class="spot-meta">{{ $subCount }} {{ __('guest services') }} · {{ $channel->posts_count }} {{ __('posts') }}</span>
-                            </span>
+                        </div>
+                        <div class="spot-info">
+                            <span class="spot-logo">@if($channel->logo_path)<img src="{{ Storage::url($channel->logo_path) }}" alt="" loading="lazy">@else<i class="bi bi-building"></i>@endif</span>
+                            <span class="spot-name">{{ $channel->name }}</span>
+                            <span class="spot-meta">{{ $subCount }} {{ __('guest services') }} · {{ $channel->posts_count }} {{ __('posts') }}</span>
                         </div>
                     </a>
                 @endforeach
