@@ -51,6 +51,11 @@
     .discover-channel .channel-breadcrumbs{height:64px;box-sizing:border-box;align-content:flex-start;overflow-y:auto}
     .discover-channel .channel-hint{height:42px;box-sizing:border-box;overflow:hidden}
     @media(max-width:480px){.discover-channel .channel-preview,.discover-channel.expanded .channel-preview{height:170px}}
+    .organization-preview .organization-cover{filter:blur(3px);transform:scale(1.06)}
+    .organization-preview .channel-overlay{background:linear-gradient(180deg,#10201d44,#10201dcc)}
+    .organization-identity{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;color:white;text-align:center}
+    .organization-logo{width:64px;height:64px;flex-shrink:0;background:var(--surface-bg);border:3px solid #fff;border-radius:19px;overflow:hidden;display:grid;place-items:center;font-size:24px;color:var(--text-primary);box-shadow:0 5px 18px #0003}
+    .organization-logo img{width:100%;height:100%;object-fit:cover}.organization-identity strong{font-size:16px;line-height:22px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.organization-identity small{font-size:12px;opacity:.85}
     /* Collections as Instagram-style story circles */
     .stories { display: flex; gap: 14px; overflow-x: auto; padding: 6px 16px 12px; scroll-snap-type: x proximity; scrollbar-width: none; }
     .stories::-webkit-scrollbar { display: none; }
@@ -145,10 +150,18 @@
                 </div>
                 <div class="hscroll">
                     @foreach ($organizations as $org)
-                        <a href="{{ route('guest.organization-detail', $org->id) }}" class="org" data-tip="{{ $org->name }}" data-tip-sub="{{ trans_choice(':count channel|:count channels', $org->channels_count) }}">
-                            <div class="org-ring"><div class="org-av" style="--av: {{ $colorFor($org->name) }};">@if($org->logo_path)<img src="{{ Storage::url($org->logo_path) }}" alt="{{ $org->name }}" loading="lazy">@else{{ mb_substr($org->name, 0, 1) }}@endif</div></div>
-                            <div class="org-name">{{ $org->name }}</div>
-                        </a>
+                        @php $orgCover=\App\Support\Designs::coverPaths($org->design_options??[])[0]??$org->logo_path; @endphp
+                        <article class="discover-channel organization-preview">
+                            <button type="button" class="channel-preview" aria-expanded="false" aria-label="{{ $org->name }}" data-url="{{ route('guest.organization-detail',$org->id) }}">
+                                @if($orgCover)<img class="channel-cover organization-cover" src="{{ Storage::url($orgCover) }}" alt="" loading="lazy">@endif
+                                <span class="channel-overlay"></span>
+                                <span class="organization-identity">
+                                    <span class="organization-logo">@if($org->logo_path)<img src="{{ Storage::url($org->logo_path) }}" alt="" loading="lazy">@else{{ mb_substr($org->name,0,1) }}@endif</span>
+                                    <strong>{{ $org->name }}</strong>
+                                    <small>{{ trans_choice(':count channel|:count channels',$org->channels_count) }}</small>
+                                </span>
+                            </button>
+                        </article>
                     @endforeach
                 </div>
             </section>
