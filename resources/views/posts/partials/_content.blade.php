@@ -3,6 +3,7 @@
      $cardStyle (channel override, ADR-014), $hideMedia (compact layouts), $hideReactions.
      "compact" (the default template): title and text beside a thumbnail. --}}
 @include('posts.partials._styles')
+@include('posts.partials._image-viewer')
 @php
     $style = ($cardStyle ?? null) ?: ($post->card_style ?: 'compact');
     $hideMedia = $hideMedia ?? false;
@@ -36,10 +37,10 @@
                 @if ($text)<div class="pf-body">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $text }}</a>@else{{ $text }}@endif</div>@endif
             </div>
             @if ($thumb)
-                @if ($url)<a href="{{ $url }}" class="pf-thumb" tabindex="-1" aria-hidden="true">@else<span class="pf-thumb">@endif
+                <a href="{{ $url ?: $thumb }}" class="pf-thumb" @if(!$url) data-full-image @endif aria-label="{{ $url ? __('View post') : __('View full image') }}">
                     <img src="{{ $thumb }}" alt="" loading="lazy">
                     @if ($extraImages)<span class="pf-thumb-more">+{{ $extraImages }}</span>@endif
-                @if ($url)</a>@else</span>@endif
+                </a>
             @endif
         </div>
     @else
@@ -50,7 +51,7 @@
         @if ($style === 'gradient')
             <div class="pf-text">
                 @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif
-                <div class="pf-body">{{ $text }}</div>
+                <div class="pf-body">@if($url)<a class="pf-link" href="{{ $url }}">{{ $text }}</a>@else{{ $text }}@endif</div>
             </div>
         @else
             @if ($post->title)<div class="pf-title">@if ($url)<a class="pf-link" href="{{ $url }}">{{ $post->title }}</a>@else{{ $post->title }}@endif</div>@endif

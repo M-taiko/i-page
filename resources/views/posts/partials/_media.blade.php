@@ -8,12 +8,12 @@
     }
 @endphp
 @if (count($urls) === 1)
-    <div class="pf-media"><img class="pf-single" src="{{ $urls[0] }}" alt=""></div>
+    <div class="pf-media"><a href="{{ $url ?? $urls[0] }}" @if(empty($url)) data-full-image @endif aria-label="{{ empty($url) ? __('View full image') : __('View post') }}"><img class="pf-single" src="{{ $urls[0] }}" alt=""></a></div>
 @elseif (count($urls) > 1)
     <div class="pf-media">
         <div class="pf-carousel" data-autoplay="{{ $post->option('gallery.autoplay', true) ? 1 : 0 }}" data-interval="{{ $post->option('gallery.interval', 4) }}">
             <div class="pf-track">
-                @foreach ($urls as $u)<div class="pf-slide"><img src="{{ $u }}" alt="" loading="lazy"></div>@endforeach
+                @foreach ($urls as $u)<div class="pf-slide"><a href="{{ $url ?? $u }}" @if(empty($url)) data-full-image @endif aria-label="{{ empty($url) ? __('View full image') : __('View post') }}"><img src="{{ $u }}" alt="" loading="lazy"></a></div>@endforeach
             </div>
             <button type="button" class="pf-nav pf-prev" aria-label="{{ __('Previous') }}">&#8249;</button>
             <button type="button" class="pf-nav pf-next" aria-label="{{ __('Next') }}">&#8250;</button>
